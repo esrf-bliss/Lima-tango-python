@@ -1842,7 +1842,7 @@ class LimaCCDs(PyTango.Device_4Impl) :
     def configStore(self,args):
         config_name = args.pop(0)
         config = self.__control.config()
-        config.store(config_name,*args)
+        config.store(config_name,args)
 
     @Core.DEB_MEMBER_FUNCT
     def configApply(self,config_name):
