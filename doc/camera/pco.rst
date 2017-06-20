@@ -60,31 +60,46 @@ Attributes
 ======================= ======= ======================= ======================================================================
 Attribute name          RW      Type                    Description
 ======================= ======= ======================= ======================================================================
+acqTimeoutRetry         rw      DevLong                 Maximum Timeout retries during acq (0 - infinite)
 adc                     rw      DevLong                 Number of working ADC's
 adcMax                  ro      DevLong                 Maximum number of ADC's
+binInfo                 ro      DevLong                 PCO hw binning info
+bytesPerPixel           ro      DevLong                 Bytes per Pixel
 camInfo                 ro      DevString               General camera parameters information
+camName                 ro      DevString               Camera Name
+camNameBase             ro      DevString               Camera Name (Pco)
+camNameEx               ro      DevString               Camera Name, Interface, Sensor
 camType                 ro      DevString               Camera Type
 cdiMode                 rw      DevLong                 Correlated Double Imaging Mode
                                                          - enabled/disabled = 1/0 (rw)
                                                          - not allowed = -1 (ro)
 clXferPar               ro      DevString               General CameraLink parameters
 cocRunTime              ro      DevDouble               cocRunTime (s) - only valid after the camera is armed
-frameRate               ro      DevString               Framerate, calculated as: 1/cocRunTime (1/s)
+coolingTemperature      ro      DevDouble               Cooling Temperature
+firmwareInfo            ro      DevString               Firmware info
+frameRate               ro      DevDouble               Framerate, calculated as: 1/cocRunTime (1/s)
 info                    ro      DevString               General camera parameters information
 lastError               ro      DevString               The last PCO error message
 lastImgAcquired         ro      DevLong                 Last image acquired (during recording)
 lastImgRecorded         ro      DevLong                 Last image recorded (during recording)
+logMsg                  ro      DevString               Last Log msgs
+logPcoEnabled           ro      DevLong                 PCO logs are enabled
 maxNbImages             ro      DevLong                 The maximum number of images which can be acquired by the camera (recording mode)
-pcoLogsEnabled          ro      DevLong                 PCO logs are enabled
 pixelRate               ro      DevLong                 Actual Pixel Rate (Hz)
 pixelRateInfo           ro      DevString               Pixel Rate information
 pixelRateValidValues    ro      DevString               Allowed Pixel Rates
+roiInfo                 ro      DevString               PCO ROI info
+roiLastFixed            ro      DevString               Last fixed ROI info
 rollingShutter          rw      DevLong                 Rolling Shutter Mode (**only for some types of EDGE**)
                                                          - 1 = ROLLING
                                                          - 2 = GLOBAL
                                                          - 4 = GLOBAL RESET
+rollingShutterInfo      ro      DevString               Rolling Shutter info
+temperatureInfo         ro      DevString               Temperature info
 traceAcq                ro      DevString               Debug information for some types of acq
 version                 ro      DevString               Version information of the plugin
+versionAtt              ro      DevString               Version of att file
+versionSdk              ro      DevString               PCO SDK Release
 ======================= ======= ======================= ======================================================================
 
 For the above attributes which use "talk" command you can refer to the PCO documentation for more information.

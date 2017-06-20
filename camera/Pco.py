@@ -52,6 +52,7 @@ from Lima import Pco as PcoAcq
 #from LimaCCDs import CallableReadEnum,CallableWriteEnum
 from AttrHelper import get_attr_4u, get_attr_string_value_list,_getDictKey, _getDictValue
 
+VERSION_ATT ="20170620"
 
 RESET_CLOSE_INTERFACE	= 100
 
@@ -71,27 +72,37 @@ class Pco(PyTango.Device_4Impl):
 											'acqTimeoutRetry': 'AcqTimeoutRetry',
 											'adc': 'Adc',
 											'adcMax': 'AdcMax',
+											'binInfo': 'BinningInfo',
 											'bytesPerPixel': 'BytesPerPixel',
 											'camInfo': 'CamInfo',
+											'camName': 'CameraName',
+											'camNameBase': 'CameraNameBase',
+											'camNameEx': 'CameraNameEx',
 											'camType': 'CamType',
 											'cdiMode': 'CDIMode',
 											'clXferPar': 'ClTransferParam',
 											'cocRunTime': 'CocRunTime',
+											'coolingTemperature': 'CoolingTemperature',
+											'firmwareInfo': 'FirmwareInfo',
 											'frameRate': 'FrameRate',
 											'info': 'CamInfo',
 											'lastError': 'LastError',
-											'lastFixedRoi': 'LastFixedRoi',
 											'lastImgAcquired': 'LastImgAcquired',
 											'lastImgRecorded': 'LastImgRecorded',
+											'logMsg': 'MsgLog',
+											'logPcoEnabled': 'PcoLogsEnabled',
 											'maxNbImages': 'MaxNbImages',
-											'pcoLogsEnabled': 'PcoLogsEnabled',
 											'pixelRate': 'PixelRate',
 											'pixelRateInfo': 'PixelRateInfo',
 											'pixelRateValidValues': 'PixelRateValidValues',
+											'roiInfo': 'RoiInfo',
+											'roiLastFixed': 'LastFixedRoi',
 											'rollingShutter': 'RollingShutter',
 											'rollingShutterInfo': 'RollingShutterInfo',
+											'temperatureInfo': 'TemperatureInfo',
 											'traceAcq': 'TraceAcq',
 											'version': 'Version',
+											'versionSdk': 'SdkRelease',
                                             }
         
         
@@ -120,9 +131,8 @@ class Pco(PyTango.Device_4Impl):
     def __getattr__(self,name) :
         return get_attr_4u(self, name, _PcoCam)
 
-
-
-        
+    def read_versionAtt(self,attr) :
+        attr.set_value(VERSION_ATT)
 
 #==================================================================
 #
@@ -214,6 +224,16 @@ class PcoClass(PyTango.DeviceClass):
              'description': 'max number of ADC'
              }],
 
+         'binInfo':	  
+         [[PyTango.DevString,
+           PyTango.SCALAR,
+           PyTango.READ],
+           {
+             'unit': 'N/A',
+             'format': '%s',
+             'description': 'pco binning info'
+             }],
+
          'bytesPerPixel':	  
          [[PyTango.DevLong,
            PyTango.SCALAR,
@@ -234,14 +254,34 @@ class PcoClass(PyTango.DeviceClass):
              'description': 'general cam information'
              }],
 
-         'info':	  
+         'camName':	  
          [[PyTango.DevString,
            PyTango.SCALAR,
            PyTango.READ],
            {
              'unit': 'N/A',
              'format': '%s',
-             'description': 'general cam information'
+             'description': 'camera name'
+             }],
+
+         'camNameBase':	  
+         [[PyTango.DevString,
+           PyTango.SCALAR,
+           PyTango.READ],
+           {
+             'unit': 'N/A',
+             'format': '%s',
+             'description': 'camera name (pco)'
+             }],
+
+         'camNameEx':	  
+         [[PyTango.DevString,
+           PyTango.SCALAR,
+           PyTango.READ],
+           {
+             'unit': 'N/A',
+             'format': '%s',
+             'description': 'camera name, interface, sensor'
              }],
 
          'camType':	  
@@ -282,6 +322,27 @@ class PcoClass(PyTango.DeviceClass):
              'description': 'coc Runtime'
              }],
 
+
+         'coolingTemperature':	  
+         [[PyTango.DevLong,
+           PyTango.SCALAR,
+           PyTango.READ_WRITE], 
+           {
+             'unit': 'degrees',
+             'format': '%d',
+             'description': 'cooling temperature'
+             }],
+
+         'firmwareInfo':	  
+         [[PyTango.DevString,
+           PyTango.SCALAR,
+           PyTango.READ],
+           {
+             'unit': 'N/A',
+             'format': '%s',
+             'description': 'firmware info'
+             }],
+
          'frameRate':	  
          [[PyTango.DevDouble,
            PyTango.SCALAR,
@@ -290,6 +351,16 @@ class PcoClass(PyTango.DeviceClass):
              'unit': 'frames/s',
              'format': '%g',
              'description': 'frames per second (= 1/cocRuntime)'
+             }],
+
+         'info':	  
+         [[PyTango.DevString,
+           PyTango.SCALAR,
+           PyTango.READ],
+           {
+             'unit': 'N/A',
+             'format': '%s',
+             'description': 'general cam information'
              }],
 
          'lastError':	  
@@ -302,14 +373,14 @@ class PcoClass(PyTango.DeviceClass):
              'description': 'last PCO error'
              }],
 
-         'lastFixedRoi':	  
-         [[PyTango.DevString,
+         'lastImgAcquired':	  
+         [[PyTango.DevLong,
            PyTango.SCALAR,
            PyTango.READ],
            {
              'unit': 'N/A',
-             'format': '%s',
-             'description': 'last fixed roi info'
+             'format': '%ld',
+             'description': 'last image acquired'
              }],
 
          'lastImgRecorded':	  
@@ -322,27 +393,17 @@ class PcoClass(PyTango.DeviceClass):
              'description': 'last image recorded in camera RAM (not for all cams)'
              }],
 
-         'lastImgAcquired':	  
-         [[PyTango.DevLong,
+         'logMsg':	  
+         [[PyTango.DevString,
            PyTango.SCALAR,
            PyTango.READ],
            {
              'unit': 'N/A',
-             'format': '%ld',
-             'description': 'last image acquired'
+             'format': '%s',
+             'description': 'print the log msgs'
              }],
 
-         'maxNbImages':	  
-         [[PyTango.DevLong,
-           PyTango.SCALAR,
-           PyTango.READ],
-           {
-             'unit': 'N/A',
-             'format': '%ld',
-             'description': 'max nr of images in camera RAM (not for all cams)'
-             }],
-
-         'pcoLogsEnabled':	  
+         'logPcoEnabled':	  
          [[PyTango.DevLong,
            PyTango.SCALAR,
            PyTango.READ],
@@ -352,14 +413,14 @@ class PcoClass(PyTango.DeviceClass):
              'description': 'PCO logs are enabled'
            }],
 
-         'pixelRateInfo':	  
-         [[PyTango.DevString,
+         'maxNbImages':	  
+         [[PyTango.DevLong,
            PyTango.SCALAR,
            PyTango.READ],
            {
              'unit': 'N/A',
-             'format': '%s',
-             'description': 'pixel rate info'
+             'format': '%ld',
+             'description': 'max nr of images in camera RAM (not for all cams)'
              }],
 
          'pixelRate':	  
@@ -372,6 +433,16 @@ class PcoClass(PyTango.DeviceClass):
              'description': 'pixel rate in Hz'
            }],
 
+         'pixelRateInfo':	  
+         [[PyTango.DevString,
+           PyTango.SCALAR,
+           PyTango.READ],
+           {
+             'unit': 'N/A',
+             'format': '%s',
+             'description': 'pixel rate info'
+             }],
+
          'pixelRateValidValues':	  
          [[PyTango.DevString,
            PyTango.SCALAR,
@@ -382,7 +453,25 @@ class PcoClass(PyTango.DeviceClass):
              'description': 'pixel rate valid values in Hz'
              }],
 
+         'roiInfo':	  
+         [[PyTango.DevString,
+           PyTango.SCALAR,
+           PyTango.READ],
+           {
+             'unit': 'N/A',
+             'format': '%s',
+             'description': 'pco roi info'
+             }],
 
+         'roiLastFixed':	  
+         [[PyTango.DevString,
+           PyTango.SCALAR,
+           PyTango.READ],
+           {
+             'unit': 'N/A',
+             'format': '%s',
+             'description': 'last fixed roi info'
+             }],
 
          'rollingShutter':	  
          [[PyTango.DevLong,
@@ -405,6 +494,16 @@ class PcoClass(PyTango.DeviceClass):
              'description': 'rolling shutter info'
              }],
 
+         'temperatureInfo':	  
+         [[PyTango.DevString,
+           PyTango.SCALAR,
+           PyTango.READ],
+           {
+             'unit': 'N/A',
+             'format': '%s',
+             'description': 'teperature info'
+             }],
+
          'traceAcq':	  
          [[PyTango.DevString,
            PyTango.SCALAR,
@@ -423,6 +522,26 @@ class PcoClass(PyTango.DeviceClass):
              'unit': 'N/A',
              'format': '%s',
              'description': 'complete version info'
+             }],
+
+         'versionAtt':	  
+         [[PyTango.DevString,
+           PyTango.SCALAR,
+           PyTango.READ],
+           {
+             'unit': 'N/A',
+             'format': '%s',
+             'description': 'att file version'
+             }],
+
+         'versionSdk':	  
+         [[PyTango.DevString,
+           PyTango.SCALAR,
+           PyTango.READ],
+           {
+             'unit': 'N/A',
+             'format': '%s',
+             'description': 'pco sdk release'
              }],
 
         }
