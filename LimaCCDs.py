@@ -66,6 +66,7 @@ from EnvHelper import create_tango_objects
 from AttrHelper import get_attr_4u
 from AttrHelper import _getDictKey, _getDictValue
 from Lima import Core
+import ImageHelper
 
 import plugins
 import camera
@@ -181,69 +182,6 @@ class LimaCCDs(PyTango.Device_4Impl) :
         Core.Bpp32S : "Bpp32S",
         }
 
-    # DATA_ARRAY DevEncoded 
-    #enum DataArrayCategory {
-        #ScalarStack = 0;
-        #Spectrum;
-        #Image;
-        #SpectrumStack;
-        #ImageStack;
-    #};
-
-    class DataArrayCategory:
-        ScalarStack, Spectrum, Image, SpectrumStack, ImageStack = range(5)
-
-    #enum DataArrayType{
-      #DARRAY_UINT8 = 0;
-      #DARRAY_UINT16;
-      #DARRAY_UINT32;
-      #DARRAY_UINT64;
-      #DARRAY_INT8;
-      #DARRAY_INT16;
-      #DARRAY_INT32;
-      #DARRAY_INT64;
-      #DARRAY_FLOAT32;
-      #DARRAY_FLOAT64;
-    #};
-
-    ImageType2DataArrayType = {
-        Core.Bpp8 : 0 ,
-        Core.Bpp10 : 1 ,
-        Core.Bpp12 : 1 ,
-        Core.Bpp14 : 1 ,
-        Core.Bpp16 : 1,
-        Core.Bpp32 : 2 ,
-        Core.Bpp8S : 4 ,
-        Core.Bpp10S : 5 ,
-        Core.Bpp12S : 5 ,
-        Core.Bpp14S : 5 ,
-        Core.Bpp16S : 5,
-        Core.Bpp32S : 6 ,
-        }        
-
-    # The DATA_ARRAY definition
-    #struct {
-      #unsigned int Magic= 0x44544159;
-      #unsigned short Version;
-      #unsigned  short HeaderLength;
-      #DataArrayCategory Category;
-      #DataArrayType DataType;
-      #unsigned short DataEndianness;
-      #unsigned short NbDim;
-      #unsigned short Dim[8]
-      #unsigned int DimStep[8]
-    #} DataArrayHeaderStruct;
-
-    DataArrayVersion = 2
-    DataArrayPackStr = '<IHHIIHHHHHHHHIIIIIIII'
-    DataArrayMagic = struct.unpack('>I', 'DTAY')[0]	# 0x44544159
-    DataArrayHeaderLen = 64
-    DataArrayMaxNbDim = 6
-
-    def DataArrayUser(klass, DataArrayCategory=DataArrayCategory):
-        klass.DataArrayCategory = DataArrayCategory
-        return klass
-
     # INIT events on video_last_image
     class VideoImageCallback(Core.CtVideo.ImageCallback):
         def __init__(self, device):
@@ -262,7 +200,7 @@ class LimaCCDs(PyTango.Device_4Impl) :
                 device.push_change_event("video_last_image", "VIDEO_IMAGE",
                                          _video_image_2_struct(image))          
 
-    @DataArrayUser
+    @ImageHelper.DataArrayUser
     class ImageStatusCallback(Core.CtControl.ImageStatusCallback):
 
         DefaultMaxEventRate = 25
@@ -305,8 +243,9 @@ class LimaCCDs(PyTango.Device_4Impl) :
                 if (last_image_ready >= 0) and self.__image_events_push_data:
                     control = self.__control()
                     image = control.ReadImage(last_image_ready)
-                    category = self.DataArrayCategory.Image
-                    data = device._image_2_data_array(image, category)
+                    category = ImageHelper.DataArrayCategory.Image
+                    data = ImageHelper.image_2_data_array(image, category,
+                                                          force_release_data = True)
                     device.push_change_event("last_image", 'DATA_ARRAY', data)
             if self.__last_image_saved != last_image_saved:
                 device.push_change_event("last_image_saved",
@@ -411,7 +350,6 @@ class LimaCCDs(PyTango.Device_4Impl) :
         if SystemHasFeature('Core.Bpp32F'):
             self.ImageType2NbBytes[Core.Bpp32F] = (4,1)
             self.ImageType2String[Core.Bpp32F] = 'Bpp32F'
-            self.ImageType2DataArrayType[Core.Bpp32F] = 8
             
         #ImageType Bpp1 to Bpp24
         if SystemHasFeature('Core.Bpp1'):
@@ -421,7 +359,6 @@ class LimaCCDs(PyTango.Device_4Impl) :
                                                        (Core.Bpp24,(4,0),"Bpp24",2)] :
                 self.ImageType2NbBytes[Bpp_type] = Bpp_def
                 self.ImageType2String[Bpp_type] = Bpp_name
-                self.ImageType2DataArrayType[Bpp_type] = Bpp_size
 
         self.__Name2SubClass = {'acc_time_mode' : self.__control.acquisition}
 
@@ -1106,7 +1043,8 @@ class LimaCCDs(PyTango.Device_4Impl) :
         status = self.__control.getStatus()
         last_img_ready = status.ImageCounters.LastImageReady
         image = self.__control.ReadImage(last_img_ready)
-        data = self._image_2_data_array(image, self.DataArrayCategory.Image)
+        data = ImageHelper.image_2_data_array(image, ImageHelper.DataArrayCategory.Image,
+                                              force_release_data = True)
         attr.set_value('DATA_ARRAY', data)
 
     ## @brief last image acquired
@@ -1710,70 +1648,15 @@ class LimaCCDs(PyTango.Device_4Impl) :
             release()
         return self.__dataflat_cache
 
-    ##@brief get a DATA_ARRAY from a Data object
-    #
-    @Core.DEB_MEMBER_FUNCT
-    def _image_2_data_array(self, data, category):
-        d = data.buffer
-        s = [d.shape[i] for i in xrange(len(d.shape) - 1, -1, -1)]
-        if (category == self.DataArrayCategory.ImageStack) and (len(s) == 2):
-            s += [1]
-        nbDim = len(s)
-        maxNbDim = self.DataArrayMaxNbDim
-        if nbDim > maxNbDim:
-            raise ValueError, 'Invalid nb of dimensions: max is %d' % maxNbDim
-
-        image = self.__control.image()
-        imageType = image.getImageType()
-        dataType = self.ImageType2DataArrayType.get(imageType, -1)
-        bigEndian = numpy.dtype(d.dtype.byteorder + 'i4') == numpy.dtype('>i4')
-
-        def steps_gen(s):
-            size = self.ImageType2NbBytes.get(imageType, (1, 0))[0]
-            for x in s:
-                yield size
-                size *= x
-        t = [i for i in steps_gen(s)]
-
-        s += [0] * (maxNbDim - nbDim)
-        t += [0] * (maxNbDim - nbDim)
-
-        #prepare the structure
-        dataheader = struct.pack(
-          self.DataArrayPackStr,
-          self.DataArrayMagic,			# 4 bytes I - magic number
-          self.DataArrayVersion,		# 2 bytes H - version
-          self.DataArrayHeaderLen,		# 2 bytes H - this header length
-          category,				# 4 bytes I - category (enum)
-          dataType,   				# 4 bytes I - data type (enum)
-          bigEndian,   				# 2 bytes H - endianness
-          nbDim, 				# 2 bytes H - nb of dims
-          s[0],s[1],s[2],s[3],s[4],s[5],        # 12 bytes H x 6 - dims
-          t[0],t[1],t[2],t[3],t[4],t[5],        # 24 bytes I x 6 - stepsbytes
-          0, 0)    				# padding 2 x 4 bytes
-        if len(dataheader) != self.DataArrayHeaderLen:
-            raise RuntimeError, 'Invalid header len: %d (expected %d)' % \
-                  (len(dataheader), self.DataArrayHeaderLen)
-
-        flatData = d.ravel()
-        flatData.dtype = numpy.uint8
-        
-        dataStr = dataheader + flatData.tostring()        
-        release = getattr(data, 'releaseBuffer', None)
-        if release:
-            release()
-        
-        return dataStr
-  
-
     ##@brief get image data
     #
     @Core.DEB_MEMBER_FUNCT
     def readImage(self,frame_number):
         deb.Param('readImage: frame_number=%d' % frame_number)
         image = self.__control.ReadImage(frame_number)
-        category = self.DataArrayCategory.Image
-        self._datacache = self._image_2_data_array(image, category)
+        category = ImageHelper.DataArrayCategory.Image
+        self._datacache = ImageHelper.image_2_data_array(image, category,
+                                                         force_release_data = True)
         return ('DATA_ARRAY',  self._datacache)  
   
     ##@brief get the data for an image sequence 
@@ -1793,8 +1676,9 @@ class LimaCCDs(PyTango.Device_4Impl) :
 
                   (start, end, step, nbFrames))
         imageStack = self.__control.ReadImage(start, nbFrames)
-        category = self.DataArrayCategory.ImageStack
-        self._dataseqcache = self._image_2_data_array(imageStack, category)
+        category = ImageHelper.DataArrayCategory.ImageStack
+        self._dataseqcache = ImageHelper.image_2_data_array(imageStack, category,
+                                                            force_release_data = True)
         return ('DATA_ARRAY',  self._dataseqcache)  
   
 
