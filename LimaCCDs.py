@@ -435,8 +435,6 @@ class LimaCCDs(PyTango.Device_4Impl) :
                                   'buffer' : self.__control.buffer}
 
         self.__Attribute2FunctionBase = {'acq_trigger_mode':'TriggerMode',
-                                         'saving_overwrite_policy' : 'OverwritePolicy',
-                                         'saving_format' : 'Format',
                                          'saving_managed_mode' : 'ManagedMode',
                                          'shutter_mode' : 'Mode',
 					 'image_rotation':'Rotation',
@@ -471,6 +469,9 @@ class LimaCCDs(PyTango.Device_4Impl) :
         self.__SavingFormatDefaultSuffix = {Core.CtSaving.RAW : '.raw',
                                             Core.CtSaving.EDF : '.edf',
                                             Core.CtSaving.CBFFormat : '.cbf'}
+
+        # default saving stream
+        self.__SavingStream = 0;
 
         if SystemHasFeature('Core.CtSaving.TIFFFormat'):
             self.__SavingFormat['TIFF'] = Core.CtSaving.TIFFFormat
@@ -1313,19 +1314,19 @@ class LimaCCDs(PyTango.Device_4Impl) :
     def read_saving_directory(self,attr) :
         saving = self.__control.saving()
 
-        attr.set_value(saving.getDirectory())
+        attr.set_value(saving.getDirectory(self.__SavingStream))
 
     @Core.DEB_MEMBER_FUNCT
     def write_saving_directory(self,attr) :
         data = attr.get_write_value()
         saving = self.__control.saving()
-        saving.setDirectory(data)
+        saving.setDirectory(data, self.__SavingStream)
 
     @Core.DEB_MEMBER_FUNCT
     def read_saving_prefix(self,attr) :
         saving = self.__control.saving()
 
-        attr.set_value(saving.getPrefix())
+        attr.set_value(saving.getPrefix(self.__SavingStream))
 
     @Core.DEB_MEMBER_FUNCT
     def write_saving_prefix(self,attr) :
@@ -1333,58 +1334,62 @@ class LimaCCDs(PyTango.Device_4Impl) :
         saving = self.__control.saving()
         prefix = data
 
-        directory = saving.getDirectory()
-        suffix = saving.getSuffix()
-        overwritePolicy = saving.getOverwritePolicy()
+        directory = saving.getDirectory(self.__SavingStream)
+        suffix = saving.getSuffix(self.__SavingStream)
+        overwritePolicy = saving.getOverwritePolicy(self.__SavingStream)
         if overwritePolicy == Core.CtSaving.Abort:
             matchFiles = glob.glob(os.path.join(directory,'%s*%s' % (prefix,suffix)))
             lastnumber = _getLastFileNumber(prefix,suffix,matchFiles)
         else:
             lastnumber = -1
-        saving.setPrefix(prefix)
-        saving.setNextNumber(lastnumber + 1)
+        saving.setPrefix(prefix, self.__SavingStream)
+        saving.setNextNumber(lastnumber + 1, self.__SavingStream)
 
     @Core.DEB_MEMBER_FUNCT
     def read_saving_suffix(self,attr) :
         saving = self.__control.saving()
 
-        attr.set_value(saving.getSuffix())
+        attr.set_value(saving.getSuffix(self.__SavingStream))
 
     @Core.DEB_MEMBER_FUNCT
     def write_saving_suffix(self,attr) :
         data = attr.get_write_value()
         saving = self.__control.saving()
 
-        saving.setSuffix(data)
+        saving.setSuffix(data, self.__SavingStream)
 
     @Core.DEB_MEMBER_FUNCT
     def read_saving_next_number(self,attr) :
         saving = self.__control.saving()
 
-        attr.set_value(saving.getNextNumber())
+        attr.set_value(saving.getNextNumber(self.__SavingStream))
 
     @Core.DEB_MEMBER_FUNCT
     def write_saving_next_number(self,attr) :
         data = attr.get_write_value()
         saving = self.__control.saving()
 
-        saving.setNextNumber(data)
+        saving.setNextNumber(data, self.__SavingStream)
 
     @Core.DEB_MEMBER_FUNCT
     def read_saving_frame_per_file(self,attr) :
         saving = self.__control.saving()
 
-        attr.set_value(saving.getFramesPerFile())
+        attr.set_value(saving.getFramesPerFile(self.__SavingStream))
 
     @Core.DEB_MEMBER_FUNCT
     def write_saving_frame_per_file(self,attr) :
         data = attr.get_write_value()
         saving = self.__control.saving()
 
-        saving.setFramesPerFile(data)
+        saving.setFramesPerFile(data, self.__SavingStream)
         
     ## @brief Change the saving Format
     #
+    def read_saving_format(self, attr) :
+        saving = self.__control.saving()
+        attr.set_value(saving.getSavingFormat(self.__SavingStream))
+
     @Core.DEB_MEMBER_FUNCT
     def write_saving_format(self,attr) :
         data = attr.get_write_value()
@@ -1396,11 +1401,38 @@ class LimaCCDs(PyTango.Device_4Impl) :
                                            'Wrong value %s: %s'%('saving_format',data.upper()),\
                                            'LimaCCD Class')
         else:
-            saving.setFormat(value)
+            saving.setFormat(value, self.__SavingStream)
             defaultSuffix = self.__SavingFormatDefaultSuffix.get(value,'.unknown')
-            saving.setSuffix(defaultSuffix)
+            saving.setSuffix(defaultSuffix, self.__SavingStream)
 
-    
+    @Core.DEB_MEMBER_FUNCT
+    def read_saving_overwrite_policy(self, attr) :
+        saving = self.__control.saving()
+        attr.set_value(saving.getOverwritePolicy(self.__SavingStream))
+
+    @Core.DEB_MEMBER_FUNCT
+    def write_saving_overwrite_policy(self, attr) :
+        data = attr.get_write_value()
+        saving = self.__control.saving()
+        value = _getDictValue(self.__SavingOverwritePolicy,data.upper())
+        if value is None:
+            PyTango.Except.throw_exception('WrongData',\
+                                           'Wrong value %s: %s'%('saving_overwrite_policy',data.upper()),\
+                                           'LimaCCD Class')
+        else:
+            saving.setOverwritePolicy(value, self.__SavingStream)
+
+    @Core.DEB_MEMBER_FUNCT
+    def read_saving_stream_active(self, attr) :
+        saving = self.__control.saving()
+        attr.set_value(saving.getStreamActive(self.__SavingStream))
+
+    @Core.DEB_MEMBER_FUNCT
+    def write_saving_stream_active(self, attr) :
+        data = attr.get_write_value()
+        saving = self.__control.saving()
+        saving.setStreamActive(self.__SavingStream, data)
+
     ## @brief get the maximum number of task for concurrent writing (saving)
     #
     @RequiresSystemFeature('Core.CtSaving.setMaxConcurrentWritingTask')
@@ -1925,6 +1957,10 @@ class LimaCCDs(PyTango.Device_4Impl) :
         config = self.__control.config()
         config.load()
 
+    @Core.DEB_MEMBER_FUNCT
+    def setSavingStream(self, streamNb) :
+        self.__SavingStream = streamNb
+
 #==================================================================
 #
 #    LimaCCDsClass class definition
@@ -2346,6 +2382,10 @@ class LimaCCDsClass(PyTango.DeviceClass) :
           PyTango.READ_WRITE]],
         'saving_max_writing_task':
         [[PyTango.DevShort,
+          PyTango.SCALAR,
+          PyTango.READ_WRITE]],
+        'saving_stream_active':
+        [[PyTango.DevBoolean,
           PyTango.SCALAR,
           PyTango.READ_WRITE]],
         'debug_modules_possible':
