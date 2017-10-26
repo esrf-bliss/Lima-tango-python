@@ -184,7 +184,7 @@ acq_trigger_mode	    rw	    DevString		    Trigger mode:
 							       that each frames need a new trigger input 
 							       (e.g. for 4 frames 4 pulses are waiting for)
 							     - **Internal_trigger_multi**, as for internal_trigger except 
-							       that for each frame the acqStart() has to called once.
+							       that for each frame the startAcq() has to called once.
 							     - **External_gate**, wait for a gate signal for each frame, 
 							       the gate period is the exposure time.
 							     - **External_start_stop**
