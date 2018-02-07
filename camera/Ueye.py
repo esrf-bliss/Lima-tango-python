@@ -68,17 +68,17 @@ class Ueye(PyTango.Device_4Impl):
         return AttrHelper.get_attr_string_value_list(self, attr_name)
 #==================================================================
 #
-#    Dexela read/write attribute methods
+#    Ueye read/write attribute methods
 #
 #==================================================================
     def __getattr__(self,name) :
         #use AttrHelper
-        return AttrHelper.get_attr_4u(self,name,_DexelaInterface)
+        return AttrHelper.get_attr_4u(self,name,_UeyeInterface)
 
 
 #==================================================================
 #
-#    DexelaClass class definition
+#    UeyeClass class definition
 #
 #==================================================================
 class UeyeClass(PyTango.DeviceClass):
