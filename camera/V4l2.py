@@ -41,7 +41,7 @@
 #
 import PyTango
 from Lima import Core
-from Lima import v4l2 as V4l2Acq
+from Lima import V4l2 as V4l2Acq
 from Lima.Server import AttrHelper
 
 
