@@ -33,8 +33,8 @@ def getDataFromFile(filepath,index = 0) :
         datas = getDatasFromFile(filepath,index,index+1)
         return datas[0]
     except:
-	import traceback
-	traceback.print_exc()
+        import traceback
+        traceback.print_exc()
         return Core.Processlib.Data()   # empty
 
 ##@brief the function read all known data file
@@ -51,14 +51,14 @@ def getDatasFromFile(filepath,fromIndex = 0,toIndex = -1) :
             header = f.GetHeader(i)
             rData = Core.Processlib.Data()
             rData.buffer = a
-	    try:
-              rData.header = header
-	    except TypeError:
-	      pass
+            try:
+                rData.header = header
+            except TypeError:
+                pass
             returnDatas.append(rData)
     except:
-	import traceback
-	traceback.print_exc()
+        import traceback
+        traceback.print_exc()
     finally:
         return returnDatas
 
@@ -89,8 +89,8 @@ class BasePostProcess(PyTango.Device_4Impl) :
         return True
 
     def init_device(self):
-	self.set_state(PyTango.DevState.OFF)
-	self.get_device_properties(self.get_device_class())
+        self.set_state(PyTango.DevState.OFF)
+        self.get_device_properties(self.get_device_class())
 
     def Start(self) :
         self.set_state(PyTango.DevState.ON)
@@ -102,11 +102,11 @@ class BasePostProcess(PyTango.Device_4Impl) :
 #    Read RunLevel attribute
 #------------------------------------------------------------------
     def read_RunLevel(self, attr):
-	attr.set_value(self._runLevel)
+        attr.set_value(self._runLevel)
 
 #------------------------------------------------------------------
 #    Write RunLevel attribute
 #------------------------------------------------------------------
     def write_RunLevel(self, attr):
-	data = attr.get_write_value()
-	self._runLevel = data
+        data = attr.get_write_value()
+        self._runLevel = data

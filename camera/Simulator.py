@@ -87,7 +87,7 @@ class Simulator(PyTango.Device_4Impl):
     def read_peaks(self,attr):
         gauss_peaks = _SimuFrameBuilder.getPeaks()
         peak_list = [(p.x0, p.y0, p.fwhm, p.max) for p in gauss_peaks]
-	peak_list_flat = list(itertools.chain(*peak_list))
+        peak_list_flat = list(itertools.chain(*peak_list))
         attr.set_value(map(float, peak_list_flat))
 
     def write_peaks(self,attr) :

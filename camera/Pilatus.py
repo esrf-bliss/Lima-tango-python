@@ -77,7 +77,7 @@ class Pilatus(PyTango.Device_4Impl):
                                 'HIGH' : 3,
                                 'ULTRA HIGH' : 4}
 
-	self.__CamStatus = {'ERROR' : 0,
+        self.__CamStatus = {'ERROR' : 0,
                             'DISCONNECTED' : 1,
                             'STANDBY' : 2,
                             'SETTING_ENERGY' :3,

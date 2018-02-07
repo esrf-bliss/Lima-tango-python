@@ -109,8 +109,8 @@ def get_control(**keys) :
     global _XpadCam
     global _XpadInterface
     if _XpadCam is None:
-	_XpadCam = XpadAcq.Camera()
-	_XpadInterface = XpadAcq.Interface(_XpadCam)
+        _XpadCam = XpadAcq.Camera()
+        _XpadInterface = XpadAcq.Interface(_XpadCam)
     return Core.CtControl(_XpadInterface)
 
 def get_tango_specific_class_n_device():

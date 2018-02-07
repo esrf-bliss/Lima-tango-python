@@ -145,8 +145,8 @@ def get_control(cam_num = "0",**keys) :
     global _RoperScientificInterface
     my_cam_num = int(cam_num)
     if _RoperScientificCam is None:
-	_RoperScientificCam = RoperScientificAcq.Camera(my_cam_num)
-	_RoperScientificInterface = RoperScientificAcq.Interface(_RoperScientificCam)
+        _RoperScientificCam = RoperScientificAcq.Camera(my_cam_num)
+        _RoperScientificInterface = RoperScientificAcq.Interface(_RoperScientificCam)
     return Core.CtControl(_RoperScientificInterface)
 
 def get_tango_specific_class_n_device():

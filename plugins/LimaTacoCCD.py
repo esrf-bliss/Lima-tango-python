@@ -168,14 +168,14 @@ class LimaTacoCCDs(PyTango.Device_4Impl, object):
     def __init__(self,cl, name):
         PyTango.Device_4Impl.__init__(self,cl,name)
         self.init_device()
-	try: 
-	    self.__bpm_mgr  = processlib.Tasks.BpmManager()
-	    self.__bpm_task = processlib.Tasks.BpmTask(self.__bpm_mgr)
-	except AttributeError:
-	    self.__bpm_mgr = None
-	    self.__bpm_task = None
-	self.__key_header_delimiter = '='
-	self.__entry_header_delimiter = '\n'
+        try: 
+            self.__bpm_mgr  = processlib.Tasks.BpmManager()
+            self.__bpm_task = processlib.Tasks.BpmTask(self.__bpm_mgr)
+        except AttributeError:
+            self.__bpm_mgr = None
+            self.__bpm_task = None
+        self.__key_header_delimiter = '='
+        self.__entry_header_delimiter = '\n'
         self.__image_number_header_delimiter = ';'
 
         self.__last_exp_time= None
@@ -299,14 +299,14 @@ class LimaTacoCCDs(PyTango.Device_4Impl, object):
         control = _control_ref()
         data = control.ReadImage(int(frame_nb))
         self._data_cache = numpy.array(data.buffer.ravel())
-	self._data_cache.dtype = numpy.uint8
+        self._data_cache.dtype = numpy.uint8
         release = getattr(data, 'releaseBuffer', None)
         if release:
             release()
         if self._data_cache.shape[0] != frame_size:
             raise Core.Exception, ('Client expects %d bytes, frame has %d' % 
                                    (frame_size, self._data_cache.shape[0]))
-	return self._data_cache
+        return self._data_cache
 
 #------------------------------------------------------------------
 #    DevCcdReadAll command:
@@ -410,7 +410,7 @@ class LimaTacoCCDs(PyTango.Device_4Impl, object):
 #------------------------------------------------------------------
     @Core.DEB_MEMBER_FUNCT
     def DevCcdWrite(self):
-	self.DevCcdWriteFile(-1)
+        self.DevCcdWriteFile(-1)
 
 #------------------------------------------------------------------
 #    DevCcdSetExposure command:
@@ -431,7 +431,7 @@ class LimaTacoCCDs(PyTango.Device_4Impl, object):
         elif exp_time > 0 and trig_mode == Core.ExtGate:
             acq.setTriggerMode(Core.ExtTrigSingle)
         if exp_time > 0. :
-	    acq.setAcqExpoTime(exp_time)
+            acq.setAcqExpoTime(exp_time)
 
         self.__last_exp_time= exp_time
 
@@ -580,9 +580,9 @@ class LimaTacoCCDs(PyTango.Device_4Impl, object):
             if not key:
                 continue
             try:
-	        val = '='.join(token[1:]).strip()
-	    except ValueError:
-		continue
+                val = '='.join(token[1:]).strip()
+            except ValueError:
+                continue
             if val.endswith(';'):
                 val = val[:-1]
             header_map[key] = val
@@ -626,9 +626,9 @@ class LimaTacoCCDs(PyTango.Device_4Impl, object):
 
     @Core.DEB_MEMBER_FUNCT
     def DevCcdHeaderDelimiter(self,delimiter) :
-	deb.Param('Setting file header delimiter: %s' % delimiter)
-	self.__key_header_delimiter = delimiter[0]
-	self.__entry_header_delimiter = delimiter[1]
+        deb.Param('Setting file header delimiter: %s' % delimiter)
+        self.__key_header_delimiter = delimiter[0]
+        self.__entry_header_delimiter = delimiter[1]
         if len(delimiter) > 2:
             self.__image_number_header_delimiter = delimiter[2]
 
@@ -727,7 +727,7 @@ class LimaTacoCCDs(PyTango.Device_4Impl, object):
 
     @Core.DEB_MEMBER_FUNCT
     def setAutosave(self, autosave_act,auto_header):
-	control = _control_ref()
+        control = _control_ref()
         saving = control.saving()
         deb.Param('Setting autosave active: %s' % autosave_act)
         if autosave_act:
@@ -738,7 +738,7 @@ class LimaTacoCCDs(PyTango.Device_4Impl, object):
 
     @Core.DEB_MEMBER_FUNCT
     def getAutosave(self):
-	control = _control_ref()
+        control = _control_ref()
         saving = control.saving()
         saving_mode = saving.getSavingMode()
         auto_header = saving_mode == Core.CtSaving.AutoHeader
@@ -749,21 +749,21 @@ class LimaTacoCCDs(PyTango.Device_4Impl, object):
     @Core.DEB_MEMBER_FUNCT
     def setLiveDisplay(self, livedisplay_act):
         deb.Param('Setting live display active: %s' % livedisplay_act)
-	control = _control_ref()
-	try:
-	    display = control.display()
-	except AttributeError:
-	    return
-	display.setActive(livedisplay_act)
+        control = _control_ref()
+        try:
+            display = control.display()
+        except AttributeError:
+            return
+        display.setActive(livedisplay_act)
 
     @Core.DEB_MEMBER_FUNCT
     def getLiveDisplay(self):
-	control = _control_ref()
-	try:
-	    display = control.display()
-	    livedisplay_act = display.isActive()
-	except AttributeError:
-	    livedisplay_act = False
+        control = _control_ref()
+        try:
+            display = control.display()
+            livedisplay_act = display.isActive()
+        except AttributeError:
+            livedisplay_act = False
         deb.Return('Getting live display active: %s' % livedisplay_act)
         return livedisplay_act
 
@@ -781,13 +781,13 @@ class LimaTacoCCDs(PyTango.Device_4Impl, object):
             err_msg = ('Invalid acq. mode: stripe_concat=%s, frame_accum=%s' %
                        (stripe_concat, frame_accum))
             raise Core.Exception,err_msg
-	control = _control_ref()
+        control = _control_ref()
         acq = control.acquisition()
         acq.setAcqMode(acq_mode)
         
     @Core.DEB_MEMBER_FUNCT
     def getAcqMode(self):
-	control = _control_ref()
+        control = _control_ref()
         acq = control.acquisition()
         acq_mode = acq.getAcqMode()
         stripe_concat = (acq_mode == Core.Concatenation)
@@ -820,9 +820,9 @@ class LimaTacoCCDs(PyTango.Device_4Impl, object):
 #------------------------------------------------------------------
     @Core.DEB_MEMBER_FUNCT
     def DevCcdWriteAll(self):
-	control = _control_ref()
-	acq = control.acquisition()
-	nbConcat = acq.getConcatNbFrames()
+        control = _control_ref()
+        acq = control.acquisition()
+        nbConcat = acq.getConcatNbFrames()
 
         saving = control.saving()
         saving.writeFrame(0,nbConcat)
@@ -903,9 +903,9 @@ class LimaTacoCCDs(PyTango.Device_4Impl, object):
         elif argin == 2:
             triggerMode = Core.ExtTrigMult
         elif argin == 3:
-	    triggerMode = Core.ExtStartStop
-	elif argin == 4:
-	    triggerMode = Core.ExtTrigReadout
+            triggerMode = Core.ExtStartStop
+        elif argin == 4:
+            triggerMode = Core.ExtTrigReadout
         else:
             raise Core.Exception,'Invalid ext. trig: %s' % argin
 
@@ -928,10 +928,10 @@ class LimaTacoCCDs(PyTango.Device_4Impl, object):
             returnValue = 1
         elif triggerMode == Core.ExtTrigMult:
             returnValue = 2
-	elif triggerMode == Core.ExtStartStop:
-	    returnValue = 3
-	elif triggerMode == Core.ExtTrigReadout:
-	    returnValue = 4
+        elif triggerMode == Core.ExtStartStop:
+            returnValue = 3
+        elif triggerMode == Core.ExtTrigReadout:
+            returnValue = 4
         else:
             raise Core.Exception, 'Invalid trigger mode: %s' % triggerMode
         return returnValue

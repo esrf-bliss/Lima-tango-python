@@ -113,9 +113,9 @@ _UeyeInterface = None
 def get_control(address="0", **keys) :
     global _UeyeInterface
     if _UeyeInterface is None:
-	ueye = UeyeModule.Camera(int(address))
+        ueye = UeyeModule.Camera(int(address))
         _UeyeInterface = UeyeModule.Interface(ueye)
-	_UeyeInterface._ref_interface = ueye
+        _UeyeInterface._ref_interface = ueye
     return Core.CtControl(_UeyeInterface)
 
 

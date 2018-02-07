@@ -52,51 +52,51 @@ class PeakFinderDeviceServer(BasePostProcess) :
 #    Device constructor
 #------------------------------------------------------------------
     def __init__(self,cl, name):
-	self.__peakFinderMgr = None
+        self.__peakFinderMgr = None
         
         self.__ComputingMode = {'MAXIMUM' : 0,
                                 'CM' : 1}
 
-	BasePostProcess.__init__(self,cl,name)
-	PeakFinderDeviceServer.init_device(self)
+        BasePostProcess.__init__(self,cl,name)
+        PeakFinderDeviceServer.init_device(self)
 
     def set_state(self,state) :
-	if(state == PyTango.DevState.OFF) :
-	    if(self.__peakFinderMgr) :
-		self.__peakFinderMgr = None
-		ctControl = _control_ref()
-		extOpt = ctControl.externalOperation()
-		extOpt.delOp(self.PEAK_FINDER_TASK_NAME)
-	elif(state == PyTango.DevState.ON) :
-	    if not self.__peakFinderMgr:
+        if(state == PyTango.DevState.OFF) :
+            if(self.__peakFinderMgr) :
+                self.__peakFinderMgr = None
+                ctControl = _control_ref()
+                extOpt = ctControl.externalOperation()
+                extOpt.delOp(self.PEAK_FINDER_TASK_NAME)
+        elif(state == PyTango.DevState.ON) :
+            if not self.__peakFinderMgr:
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__peakFinderMgr = extOpt.addOp(Core.PEAKFINDER,self.PEAK_FINDER_TASK_NAME,
                                                     self._runLevel)
             self.__peakFinderMgr.clearCounterStatus()
             
-	PyTango.Device_4Impl.set_state(self,state)
+        PyTango.Device_4Impl.set_state(self,state)
 
 #------------------------------------------------------------------
 #    Read BufferSize attribute
 #------------------------------------------------------------------
     def read_BufferSize(self, attr):
-	value_read = self.__peakFinderMgr.getBufferSize()
-	attr.set_value(value_read)
+        value_read = self.__peakFinderMgr.getBufferSize()
+        attr.set_value(value_read)
 
 
 #------------------------------------------------------------------
 #    Write BufferSize attribute
 #------------------------------------------------------------------
     def write_BufferSize(self, attr):
-	data = attr.get_write_value()
+        data = attr.get_write_value()
         self.__peakFinderMgr.setBufferSize(data)
 
 #------------------------------------------------------------------
 #    Read ComputingMode attribute
 #------------------------------------------------------------------
     def read_ComputingMode(self, attr):
-	value_read = self.__peakFinderMgr.getComputingMode()
+        value_read = self.__peakFinderMgr.getComputingMode()
         attr.set_value(AttrHelper.getDictKey(self.__ComputingMode,value_read))
 
 
@@ -104,7 +104,7 @@ class PeakFinderDeviceServer(BasePostProcess) :
 #    Write ComputingMode attribute
 #------------------------------------------------------------------
     def write_ComputingMode(self, attr):
-	data = attr.get_write_value()
+        data = attr.get_write_value()
         t = AttrHelper.getDictValue(self.__ComputingMode,data)
         self.__peakFinderMgr.setComputingMode(t)
             
@@ -112,8 +112,8 @@ class PeakFinderDeviceServer(BasePostProcess) :
 #    Read CounterStatus attribute
 #------------------------------------------------------------------
     def read_CounterStatus(self, attr):
-	value_read = self.__peakFinderMgr.getCounterStatus()
-	attr.set_value(value_read)
+        value_read = self.__peakFinderMgr.getCounterStatus()
+        attr.set_value(value_read)
 
 
 #==================================================================
@@ -200,8 +200,8 @@ class PeakFinderDeviceServerClass(PyTango.DeviceClass):
 #    PeakFinderDeviceServerClass Constructor
 #------------------------------------------------------------------
     def __init__(self, name):
-	PyTango.DeviceClass.__init__(self, name)
-	self.set_type(name);
+        PyTango.DeviceClass.__init__(self, name)
+        self.set_type(name);
 
 
 

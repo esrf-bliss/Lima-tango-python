@@ -50,8 +50,8 @@ class PerkinElmer(PyTango.Device_4Impl):
                                  'OFFSET ONLY' : _PerkinElmerIterface.OffsetOnly,
                                  'OFFSET AND GAIN' : _PerkinElmerIterface.OffsetAndGain}
 	
-	self.__KeepFirstImage = {'YES' : True,
-				 'NO' : False}
+        self.__KeepFirstImage = {'YES' : True,
+                                 'NO' : False}
 	
         self.__Attribute2FunctionBase = {'gain': 'Gain',
                                          'correction_mode': 'CorrectionMode',

@@ -33,23 +33,23 @@ class BackgroundSubstractionDeviceServer(BasePostProcess) :
     def __init__(self,cl,name) :
         self.__backGroundTask = None
         self.__backGroundImage = Core.Processlib.Data()
-	self.get_device_properties(self.get_device_class())
-	self.__deleteDarkAfterRead = False
+        self.get_device_properties(self.get_device_class())
+        self.__deleteDarkAfterRead = False
         self.__offset = 0
 
         BasePostProcess.__init__(self,cl,name)
         BackgroundSubstractionDeviceServer.init_device(self)
 
     def set_state(self,state) :
-	if(state == PyTango.DevState.OFF) :
-	    if(self.__backGroundTask) :
-		self.__backGroundTask = None
-		ctControl = _control_ref()
-		extOpt = ctControl.externalOperation()
-		extOpt.delOp(self.BACKGROUND_TASK_NAME)
-	elif(state == PyTango.DevState.ON) :
-	    if not self.__backGroundTask:
-		try:
+        if(state == PyTango.DevState.OFF) :
+            if(self.__backGroundTask) :
+                self.__backGroundTask = None
+                ctControl = _control_ref()
+                extOpt = ctControl.externalOperation()
+                extOpt.delOp(self.BACKGROUND_TASK_NAME)
+        elif(state == PyTango.DevState.ON) :
+            if not self.__backGroundTask:
+                try:
                   ctControl = _control_ref()
                   extOpt = ctControl.externalOperation()
                   self.__backGroundTask = extOpt.addOp(Core.BACKGROUNDSUBSTRACTION,
@@ -58,19 +58,19 @@ class BackgroundSubstractionDeviceServer(BasePostProcess) :
                   self.__backGroundTask.setBackgroundImage(self.__backGroundImage)
                   if self.__offset :
                       self.__backGroundTask.setOffset(self.__offset)
-		except:
-                        self.__offset = 0
-			import traceback
-			traceback.print_exc()
-			return
-	PyTango.Device_4Impl.set_state(self,state)
+                except:
+                    self.__offset = 0
+                    import traceback
+                    traceback.print_exc()
+                    return
+        PyTango.Device_4Impl.set_state(self,state)
 
     def read_delete_dark_after_read(self,attr) :
-	attr.set_value(self.__deleteDarkAfterRead)
+        attr.set_value(self.__deleteDarkAfterRead)
 
     def write_delete_dark_after_read(self,attr) :
-	data = attr.get_write_value()
-	self.__deleteDarkAfterRead = data
+        data = attr.get_write_value()
+        self.__deleteDarkAfterRead = data
 
     def read_offset(self,attr) :
         attr.set_value(self.__offset)
@@ -89,45 +89,45 @@ class BackgroundSubstractionDeviceServer(BasePostProcess) :
     def setBackgroundImage(self,filepath) :
         deb.Param('filepath=%s' % filepath)
         image = getDataFromFile(filepath)
-	if self.__deleteDarkAfterRead:
-	    os.unlink(filepath)
-	self._setBackgroundImage(image)
-	
+        if self.__deleteDarkAfterRead:
+            os.unlink(filepath)
+        self._setBackgroundImage(image)
+
     def _setBackgroundImage(self,image):
-	self.__backGroundImage = image
+        self.__backGroundImage = image
         if(self.__backGroundTask) :
             self.__backGroundTask.setBackgroundImage(image)
 
     @Core.DEB_MEMBER_FUNCT
     def takeNextAcquisitionAsBackground(self):
-	class GetBackgroundImage(Core.Processlib.SinkTaskBase):
-	    def __init__(self,cnt,control_ref):
-		Core.Processlib.SinkTaskBase.__init__(self)
-		self.__control_ref = control_ref
-		ctControl = _control_ref()
-		saving = ctControl.saving()
-		self.__previous_saving_mode = saving.getSavingMode()
-		saving.setSavingMode(Core.CtSaving.Manual)
-		self.__cnt = cnt
-		
-	    def process(self,data):
-		background = Core.Processlib.Data()
-		background.buffer = data.buffer
-		self.__cnt._setBackgroundImage(background)
-		ctControl = _control_ref()
-		extOpt = ctControl.externalOperation()
-		extOpt.delOp(BackgroundSubstractionDeviceServer.GET_BACKGROUND_IMAGE)
-		saving = ctControl.saving()
-		saving.setSavingMode(self.__previous_saving_mode)
-		self.__cnt.Start()
+        class GetBackgroundImage(Core.Processlib.SinkTaskBase):
+            def __init__(self,cnt,control_ref):
+                Core.Processlib.SinkTaskBase.__init__(self)
+                self.__control_ref = control_ref
+                ctControl = _control_ref()
+                saving = ctControl.saving()
+                self.__previous_saving_mode = saving.getSavingMode()
+                saving.setSavingMode(Core.CtSaving.Manual)
+                self.__cnt = cnt
 
-	self.Stop()
-	ctControl = _control_ref()
-	extOpt = ctControl.externalOperation()
-	self.__getImageTask = extOpt.addOp(Core.USER_SINK_TASK,self.GET_BACKGROUND_IMAGE,
-					   self._runLevel)
-	self.__background = GetBackgroundImage(self,_control_ref)
-	self.__getImageTask.setSinkTask(self.__background)
+            def process(self,data):
+                background = Core.Processlib.Data()
+                background.buffer = data.buffer
+                self.__cnt._setBackgroundImage(background)
+                ctControl = _control_ref()
+                extOpt = ctControl.externalOperation()
+                extOpt.delOp(BackgroundSubstractionDeviceServer.GET_BACKGROUND_IMAGE)
+                saving = ctControl.saving()
+                saving.setSavingMode(self.__previous_saving_mode)
+                self.__cnt.Start()
+
+        self.Stop()
+        ctControl = _control_ref()
+        extOpt = ctControl.externalOperation()
+        self.__getImageTask = extOpt.addOp(Core.USER_SINK_TASK,self.GET_BACKGROUND_IMAGE,
+                                           self._runLevel)
+        self.__background = GetBackgroundImage(self,_control_ref)
+        self.__getImageTask.setSinkTask(self.__background)
 	
 class BackgroundSubstractionDeviceServerClass(PyTango.DeviceClass) :
         #	 Class Properties
@@ -178,8 +178,8 @@ class BackgroundSubstractionDeviceServerClass(PyTango.DeviceClass) :
 #    RoiCounterDeviceServerClass Constructor
 #------------------------------------------------------------------
     def __init__(self, name):
-	PyTango.DeviceClass.__init__(self, name)
-	self.set_type(name);
+        PyTango.DeviceClass.__init__(self, name)
+        self.set_type(name);
 
 _control_ref = None
 def set_control_ref(control_class_ref) :

@@ -32,26 +32,26 @@ class FlatfieldDeviceServer(BasePostProcess) :
         self.__normalize = True
 
         self.__flatFieldImage = Core.Processlib.Data()
-        
+
         BasePostProcess.__init__(self,cl,name)
         FlatfieldDeviceServer.init_device(self)
 
     def set_state(self,state) :
-	if(state == PyTango.DevState.OFF) :
-	    if(self.__flatFieldTask) :
-		self.__flatFieldTask = None
-		ctControl = _control_ref()
-		extOpt = ctControl.externalOperation()
-		extOpt.delOp(self.FLATFIELD_TASK_NAME)
-	elif(state == PyTango.DevState.ON) :
-	    if not self.__flatFieldTask:
+        if(state == PyTango.DevState.OFF) :
+            if(self.__flatFieldTask) :
+                self.__flatFieldTask = None
+                ctControl = _control_ref()
+                extOpt = ctControl.externalOperation()
+                extOpt.delOp(self.FLATFIELD_TASK_NAME)
+        elif(state == PyTango.DevState.ON) :
+            if not self.__flatFieldTask:
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__flatFieldTask = extOpt.addOp(Core.FLATFIELDCORRECTION,
                                                     self.FLATFIELD_TASK_NAME,
                                                     self._runLevel)
                 self.__flatFieldTask.setFlatFieldImage(self.__flatFieldImage, self.__normalize)
-	PyTango.Device_4Impl.set_state(self,state)
+        PyTango.Device_4Impl.set_state(self,state)
 
     def setFlatFieldImage(self,filepath) :
         self.__flatFieldImage = getDataFromFile(filepath)
@@ -83,12 +83,12 @@ class FlatfieldDeviceServer(BasePostProcess) :
 class FlatfieldDeviceServerClass(PyTango.DeviceClass) :
         #	 Class Properties
     class_property_list = {
-	}
+        }
 
 
     #	 Device Properties
     device_property_list = {
-	}
+        }
 
 
     #	 Command definitions
@@ -96,34 +96,34 @@ class FlatfieldDeviceServerClass(PyTango.DeviceClass) :
         'setFlatFieldImage':
         [[PyTango.DevString,"Full path of flatfield image file"],
          [PyTango.DevVoid,""]],
-	'Start':
-	[[PyTango.DevVoid,""],
-	 [PyTango.DevVoid,""]],
-	'Stop':
-	[[PyTango.DevVoid,""],
-	 [PyTango.DevVoid,""]],
-	}
+        'Start':
+        [[PyTango.DevVoid,""],
+         [PyTango.DevVoid,""]],
+        'Stop':
+        [[PyTango.DevVoid,""],
+         [PyTango.DevVoid,""]],
+        }
 
 
     #	 Attribute definitions
     attr_list = {
-	'RunLevel':
-	    [[PyTango.DevLong,
-	    PyTango.SCALAR,
-	    PyTango.READ_WRITE]],
-	'normalize':
-	    [[PyTango.DevBoolean,
-	    PyTango.SCALAR,
-	    PyTango.READ_WRITE]],
-	}
+        'RunLevel':
+            [[PyTango.DevLong,
+            PyTango.SCALAR,
+            PyTango.READ_WRITE]],
+        'normalize':
+            [[PyTango.DevBoolean,
+            PyTango.SCALAR,
+            PyTango.READ_WRITE]],
+        }
 
 
 #------------------------------------------------------------------
 #    RoiCounterDeviceServerClass Constructor
 #------------------------------------------------------------------
     def __init__(self, name):
-	PyTango.DeviceClass.__init__(self, name)
-	self.set_type(name);
+        PyTango.DeviceClass.__init__(self, name)
+        self.set_type(name);
 
 _control_ref = None
 def set_control_ref(control_class_ref) :
@@ -131,4 +131,4 @@ def set_control_ref(control_class_ref) :
     _control_ref= control_class_ref
 
 def get_tango_specific_class_n_device() :
-   return FlatfieldDeviceServerClass,FlatfieldDeviceServer
+    return FlatfieldDeviceServerClass,FlatfieldDeviceServer

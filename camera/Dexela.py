@@ -77,8 +77,8 @@ class Dexela(PyTango.Device_4Impl):
         self.get_device_properties(self.get_device_class())
 
 	#Full well mode
-	self.__FullWellMode = {'HIGH' : _DexelaInterface.High,
-			       'LOW' : _DexelaInterface.Low}
+        self.__FullWellMode = {'HIGH' : _DexelaInterface.High,
+                               'LOW' : _DexelaInterface.Low}
         self.__SkipFirstFrame = {'YES' : True,
                                  'NO' : False}
 #------------------------------------------------------------------
@@ -142,7 +142,7 @@ def get_control(format_file) :
     global _DexelaInterface
 
     if _DexelaInterface is None:
-	_DexelaInterface = DexelaAcq.Interface(format_file)
+        _DexelaInterface = DexelaAcq.Interface(format_file)
     return Core.CtControl(_DexelaInterface)
 
 def get_tango_specific_class_n_device():

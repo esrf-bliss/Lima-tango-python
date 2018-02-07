@@ -49,44 +49,44 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
 #    Device constructor
 #------------------------------------------------------------------
     def __init__(self,cl, name):
-	self.__roi2spectrumMgr = None
+        self.__roi2spectrumMgr = None
         self.__roiName2ID = {}
         self.__roiID2Name = {}
         self.__currentRoiId = 0
-	BasePostProcess.__init__(self,cl,name)
-	Roi2spectrumDeviceServer.init_device(self)
+        BasePostProcess.__init__(self,cl,name)
+        Roi2spectrumDeviceServer.init_device(self)
 
     def set_state(self,state) :
-	if(state == PyTango.DevState.OFF) :
-	    if(self.__roi2spectrumMgr) :
-		self.__roi2spectrumMgr = None
-		ctControl = _control_ref()
-		extOpt = ctControl.externalOperation()
-		extOpt.delOp(self.ROI_SPECTRUM_TASK_NAME)
-	elif(state == PyTango.DevState.ON) :
-	    if not self.__roi2spectrumMgr:
+        if(state == PyTango.DevState.OFF) :
+            if(self.__roi2spectrumMgr) :
+                self.__roi2spectrumMgr = None
+                ctControl = _control_ref()
+                extOpt = ctControl.externalOperation()
+                extOpt.delOp(self.ROI_SPECTRUM_TASK_NAME)
+        elif(state == PyTango.DevState.ON) :
+            if not self.__roi2spectrumMgr:
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__roi2spectrumMgr = extOpt.addOp(Core.ROI2SPECTRUM,
                                                       self.ROI_SPECTRUM_TASK_NAME,
                                                       self._runLevel)
             self.__roi2spectrumMgr.clearCounterStatus()
-            
-	PyTango.Device_4Impl.set_state(self,state)
+
+        PyTango.Device_4Impl.set_state(self,state)
 
 #------------------------------------------------------------------
 #    Read BufferSize attribute
 #------------------------------------------------------------------
     def read_BufferSize(self, attr):
-	value_read = self.__roi2spectrumMgr.getBufferSize()
-	attr.set_value(value_read)
+        value_read = self.__roi2spectrumMgr.getBufferSize()
+        attr.set_value(value_read)
 
 
 #------------------------------------------------------------------
 #    Write BufferSize attribute
 #------------------------------------------------------------------
     def write_BufferSize(self, attr):
-	data = attr.get_write_value()
+        data = attr.get_write_value()
         self.__roi2spectrumMgr.setBufferSize(data)
 
 
@@ -94,8 +94,8 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
 #    Read CounterStatus attribute
 #------------------------------------------------------------------
     def read_CounterStatus(self, attr):
-	value_read = self.__roi2spectrumMgr.getCounterStatus()
-	attr.set_value(value_read)
+        value_read = self.__roi2spectrumMgr.getCounterStatus()
+        attr.set_value(value_read)
 
 
 #==================================================================
@@ -125,7 +125,7 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
     def setRois(self,argin) :
         if self.__roi2spectrumMgr is None:
             raise RuntimeError('should start the device first')
-        
+
         if not len(argin) % 5:
             roi_list = []
             for roi_id,x,y,width,height in grouper(5,argin):
@@ -136,7 +136,7 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
             self.__roi2spectrumMgr.updateRois(roi_list)
         else:
             raise AttributeError('should be a vector as follow [roi_id0,x0,y0,width0,height0,...')
-        
+
     def getNames(self):
         if self.__roi2spectrumMgr is None:
             raise RuntimeError('should start the device first')
@@ -163,14 +163,14 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
         if self.__roi2spectrumMgr is None:
             raise RuntimeError('should start the device first')
         roi_mode_list = []
-	rois_modes = self.__roi2spectrumMgr.getRoiModes()
+        rois_modes = self.__roi2spectrumMgr.getRoiModes()
         for roi_name in argin:
             for name, roi_mode in rois_modes:
                 if name == roi_name:
                     break
             else:
                 raise ValueError('Roi %s not defined yet' % roi_name)
-	    roi_mode_map = {
+            roi_mode_map = {
                 Roi2SpectrumTask.COLUMN_SUM: 'COLUMN_SUM',
                 Roi2SpectrumTask.LINES_SUM:  'LINES_SUM',
             }
@@ -178,7 +178,7 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
         return roi_mode_list
 
     def setRoiModes(self,argin) :
-	roi_mode_map = {
+        roi_mode_map = {
             'COLUMN_SUM': Roi2SpectrumTask.COLUMN_SUM,
             'LINES_SUM':  Roi2SpectrumTask.LINES_SUM,
         }
@@ -191,7 +191,7 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
     def setMaskFile(self,argin) :
         mask = getDataFromFile(*argin)
         self.__roi2spectrumMgr.setMask(mask)
-    
+
     def readImage(self,argin) :
         roiId,fromImageId = argin
         roi_name = self.__roiID2Name.get(roiId,None)
@@ -202,7 +202,7 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
             raise 'Overrun ask id %d, given id %d (no more in memory' % (fromImageId,startImage)
         self._data_cache = data         # Tango is not so beautiful
         return data.buffer.ravel()
-    
+
 #==================================================================
 #
 #    Roi2spectrumClass class definition
@@ -212,12 +212,12 @@ class Roi2spectrumDeviceServerClass(PyTango.DeviceClass):
 
     #	 Class Properties
     class_property_list = {
-	}
+        }
 
 
     #	 Device Properties
     device_property_list = {
-	}
+        }
 
 
     #	 Command definitions
@@ -233,13 +233,13 @@ class Roi2spectrumDeviceServerClass(PyTango.DeviceClass):
          [PyTango.DevVoid,""]],
         'getRois':
         [[PyTango.DevVarStringArray,"rois alias"],
-	 [PyTango.DevVarLongArray,"roi vector [roi_id0,x0,y0,width0,height0,roi_id1,x1,y1,width1,heigh1,...]"]],
+         [PyTango.DevVarLongArray,"roi vector [roi_id0,x0,y0,width0,height0,roi_id1,x1,y1,width1,heigh1,...]"]],
         'getNames':
         [[PyTango.DevVoid,""],
-	 [PyTango.DevVarStringArray,"rois alias"]],
+         [PyTango.DevVarStringArray,"rois alias"]],
         'getRoiModes':
         [[PyTango.DevVarStringArray,"rois alias"],
-	 [PyTango.DevVarStringArray,"rois modes"]],
+         [PyTango.DevVarStringArray,"rois modes"]],
         'setRoiModes':
         [[PyTango.DevVarStringArray,"roi mode vector [alias0,mode0,alias1,mode1,...]"],
          [PyTango.DevVoid,""]],
@@ -247,43 +247,43 @@ class Roi2spectrumDeviceServerClass(PyTango.DeviceClass):
 ##        [[PyTango.DevVarStringArray,"Full path of mask file"],
 ##         [PyTango.DevVoid,""]],
         'clearAllRois':
-	[[PyTango.DevVoid,""],
-	 [PyTango.DevVoid,""]],
+        [[PyTango.DevVoid,""],
+         [PyTango.DevVoid,""]],
         'readImage':
         [[PyTango.DevVarLongArray,"[roiId,from which frame]"],
          [PyTango.DevVarLongArray,"The image"]],
-	'Start':
-	[[PyTango.DevVoid,""],
-	 [PyTango.DevVoid,""]],
-	'Stop':
-	[[PyTango.DevVoid,""],
-	 [PyTango.DevVoid,""]],
-	}
+        'Start':
+        [[PyTango.DevVoid,""],
+         [PyTango.DevVoid,""]],
+        'Stop':
+        [[PyTango.DevVoid,""],
+         [PyTango.DevVoid,""]],
+        }
 
 
     #	 Attribute definitions
     attr_list = {
-	'BufferSize':
-	    [[PyTango.DevLong,
-	    PyTango.SCALAR,
-	    PyTango.READ_WRITE]],
-	'CounterStatus':
-	    [[PyTango.DevLong,
-	    PyTango.SCALAR,
-	    PyTango.READ]],
-	'RunLevel':
-	    [[PyTango.DevLong,
-	    PyTango.SCALAR,
-	    PyTango.READ_WRITE]],
-	}
+        'BufferSize':
+            [[PyTango.DevLong,
+            PyTango.SCALAR,
+            PyTango.READ_WRITE]],
+        'CounterStatus':
+            [[PyTango.DevLong,
+            PyTango.SCALAR,
+            PyTango.READ]],
+        'RunLevel':
+            [[PyTango.DevLong,
+            PyTango.SCALAR,
+            PyTango.READ_WRITE]],
+        }
 
 
 #------------------------------------------------------------------
 #    Roi2spectrumDeviceServerClass Constructor
 #------------------------------------------------------------------
     def __init__(self, name):
-	PyTango.DeviceClass.__init__(self, name)
-	self.set_type(name);
+        PyTango.DeviceClass.__init__(self, name)
+        self.set_type(name);
 
 
 
@@ -293,4 +293,4 @@ def set_control_ref(control_class_ref) :
     _control_ref= control_class_ref
 
 def get_tango_specific_class_n_device() :
-   return Roi2spectrumDeviceServerClass,Roi2spectrumDeviceServer
+    return Roi2spectrumDeviceServerClass,Roi2spectrumDeviceServer

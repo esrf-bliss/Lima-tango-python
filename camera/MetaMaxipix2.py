@@ -189,7 +189,7 @@ class MetaMaxipix2(PyTango.Device_4Impl):
     def __init__(self,*args) :
         PyTango.Device_4Impl.__init__(self,*args)
 
-	_PriamAcq = _MaxipixAcqM1.getPriamAcq()
+        _PriamAcq = _MaxipixAcqM1.getPriamAcq()
         self.__SignalLevel = {'LOW_FALL': _PriamAcq.LOW_FALL,\
                               'HIGH_RISE': _PriamAcq.HIGH_RISE,
                               '??': -1}

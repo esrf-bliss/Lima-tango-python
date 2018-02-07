@@ -344,7 +344,7 @@ def get_control(config_fname, **keys) :
     global _SlsDetectorCam, _SlsDetectorHwInter, _SlsDetectorEiger
     global _SlsDetectorCorrection, _SlsDetectorControl
     if _SlsDetectorControl is None:
-	_SlsDetectorCam = SlsDetectorHw.Camera(config_fname)
+        _SlsDetectorCam = SlsDetectorHw.Camera(config_fname)
         _SlsDetectorHwInter = SlsDetectorHw.Interface(_SlsDetectorCam)
         if _SlsDetectorCam.getType() == SlsDetectorHw.Camera.EigerDet:
             _SlsDetectorEiger = SlsDetectorHw.Eiger(_SlsDetectorCam)

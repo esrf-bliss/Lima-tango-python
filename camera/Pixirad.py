@@ -108,22 +108,20 @@ class Pixirad(PyTango.Device_4Impl):
                              'COLMODE_4COL'  : PixiradModule.Camera.COLMODE_4COL};
 
 
-	self.__SyncOutFunction = {'SHUTTER' : PixiradModule.Camera.SHUTTER,\
-				  'RODONE'  : PixiradModule.Camera.RODONE,\
-				  'READ'    : PixiradModule.Camera.READ};
-	
-	self.__TrsfMode = {'UNMOD' : PixiradModule.Camera.UNMOD,\
-				  'UNMODH'  : PixiradModule.Camera.UNMODH,\
-				  'MOD'    : PixiradModule.Camera.MOD};
-	
-	self.__HybridMode = {'CDTE' : PixiradModule.Camera.CDTE,\
-				  'GAAS'  : PixiradModule.Camera.GAAS};
-	  
-	self.__Polarity = { 'POS' : PixiradModule.Camera.POS,\
-			    'NEG' : PixiradModule.Camera.NEG};
-			    
-			    
-			    
+        self.__SyncOutFunction = {'SHUTTER' : PixiradModule.Camera.SHUTTER,
+                                  'RODONE'  : PixiradModule.Camera.RODONE,
+                                  'READ'    : PixiradModule.Camera.READ};
+
+        self.__TrsfMode = {'UNMOD' : PixiradModule.Camera.UNMOD,
+                           'UNMODH'  : PixiradModule.Camera.UNMODH,
+                           'MOD'    : PixiradModule.Camera.MOD};
+
+        self.__HybridMode = {'CDTE' : PixiradModule.Camera.CDTE,
+                             'GAAS'  : PixiradModule.Camera.GAAS};
+
+        self.__Polarity = { 'POS' : PixiradModule.Camera.POS,
+                            'NEG' : PixiradModule.Camera.NEG};
+
 	#__Attribute2FunctionBase		????    
 	  
         self.init_device()
@@ -155,10 +153,10 @@ class Pixirad(PyTango.Device_4Impl):
 ### Call directly set/get 
     def __getattr__(self,name) :      
         try:  
-	  return AttrHelper.get_attr_4u(self, name, _PixiradInterface)
+            return AttrHelper.get_attr_4u(self, name, _PixiradInterface)
         except:
-	  return AttrHelper.get_attr_4u(self, name, _PixiradCamera)
-        
+            return AttrHelper.get_attr_4u(self, name, _PixiradCamera)
+
         
 
 ############## COMMANDS ###################

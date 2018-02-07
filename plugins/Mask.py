@@ -39,21 +39,21 @@ class MaskDeviceServer(BasePostProcess) :
         MaskDeviceServer.init_device(self)
 
     def set_state(self,state) :
-	if(state == PyTango.DevState.OFF) :
-	    if(self.__maskTask) :
-		self.__maskTask = None
-		ctControl = _control_ref()
-		extOpt = ctControl.externalOperation()
-		extOpt.delOp(self.MASK_TASK_NAME)
-	elif(state == PyTango.DevState.ON) :
-	    if not self.__maskTask:
+        if(state == PyTango.DevState.OFF) :
+            if(self.__maskTask) :
+                self.__maskTask = None
+                ctControl = _control_ref()
+                extOpt = ctControl.externalOperation()
+                extOpt.delOp(self.MASK_TASK_NAME)
+        elif(state == PyTango.DevState.ON) :
+            if not self.__maskTask:
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__maskTask = extOpt.addOp(Core.MASK,
                                                self.MASK_TASK_NAME,
                                                self._runLevel)
                 self.__maskTask.setMaskImage(self.__maskImage)
-	PyTango.Device_4Impl.set_state(self,state)
+        PyTango.Device_4Impl.set_state(self,state)
 
     def setMaskImage(self,filepath) :
         self.__maskImage = getDataFromFile(filepath)
@@ -123,8 +123,8 @@ class MaskDeviceServerClass(PyTango.DeviceClass) :
 #    RoiCounterDeviceServerClass Constructor
 #------------------------------------------------------------------
     def __init__(self, name):
-	PyTango.DeviceClass.__init__(self, name)
-	self.set_type(name);
+        PyTango.DeviceClass.__init__(self, name)
+        self.set_type(name);
 
 _control_ref = None
 def set_control_ref(control_class_ref) :

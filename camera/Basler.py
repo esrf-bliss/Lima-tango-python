@@ -175,10 +175,10 @@ def get_control(frame_transmission_delay = 0, inter_packet_delay = 0,
     print "basler camera_id:", camera_id
 
     if _BaslerCam is None:
-	_BaslerCam = BaslerAcq.Camera(camera_id, int(packet_size))
-	_BaslerCam.setInterPacketDelay(int(inter_packet_delay))
-	_BaslerCam.setFrameTransmissionDelay(int(frame_transmission_delay))
-	_BaslerInterface = BaslerAcq.Interface(_BaslerCam)
+        _BaslerCam = BaslerAcq.Camera(camera_id, int(packet_size))
+        _BaslerCam.setInterPacketDelay(int(inter_packet_delay))
+        _BaslerCam.setFrameTransmissionDelay(int(frame_transmission_delay))
+        _BaslerInterface = BaslerAcq.Interface(_BaslerCam)
     return Core.CtControl(_BaslerInterface)
 
 def get_tango_specific_class_n_device():

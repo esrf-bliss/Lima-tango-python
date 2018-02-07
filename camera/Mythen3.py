@@ -60,9 +60,9 @@ class Mythen3 (PyTango.Device_4Impl):
         PyTango.Device_4Impl.__init__(self, cl, name)
         Mythen3.init_device(self)
 
- 	self.__Status = {'Running' : Mythen3Acq.Camera.Running,
-			         'WaitForTrigger' : Mythen3Acq.Camera.WaitForTrigger,
-			         'NoDataInBuffer' : Mythen3Acq.Camera.NoDataInBuffer}
+        self.__Status = {'Running' : Mythen3Acq.Camera.Running,
+                         'WaitForTrigger' : Mythen3Acq.Camera.WaitForTrigger,
+                         'NoDataInBuffer' : Mythen3Acq.Camera.NoDataInBuffer}
 
         self.__Switch = {'OFF': Mythen3Acq.Camera.OFF,
                          'ON': Mythen3Acq.Camera.ON}
@@ -138,7 +138,7 @@ class Mythen3 (PyTango.Device_4Impl):
 
     @Core.DEB_MEMBER_FUNCT
     def read_serialNumbers(self, attr):
-	data = _Mythen3Camera.getSerialNumbers(); 
+        data = _Mythen3Camera.getSerialNumbers(); 
         attr.set_value([data[i] for i in range(len(data))])
 
     @Core.DEB_MEMBER_FUNCT

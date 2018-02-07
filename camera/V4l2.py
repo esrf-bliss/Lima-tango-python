@@ -110,7 +110,7 @@ _V4l2Interface = None
 def get_control(video_device='/dev/video0', **keys) :
     global _V4l2Interface
     if _V4l2Interface is None:
-	_V4l2Interface = V4l2Acq.Interface(video_device)
+        _V4l2Interface = V4l2Acq.Interface(video_device)
     return Core.CtControl(_V4l2Interface)
 
 def get_tango_specific_class_n_device():

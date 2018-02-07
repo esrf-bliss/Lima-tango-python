@@ -526,9 +526,9 @@ class LimaCCDs(PyTango.Device_4Impl) :
             import traceback
             traceback.print_exc()
 
-	if SystemHasFeature('Core.BAYER_BG8'):
-	    self.__VideoMode['BAYER_BG8'] = Core.BAYER_BG8
-	    self.__VideoMode['BAYER_BG16'] = Core.BAYER_BG16
+        if SystemHasFeature('Core.BAYER_BG8'):
+            self.__VideoMode['BAYER_BG8'] = Core.BAYER_BG8
+            self.__VideoMode['BAYER_BG16'] = Core.BAYER_BG16
 
         #new formats added in core 1.7
         if SystemHasFeature('Core.YUV411PACKED'):
@@ -536,7 +536,7 @@ class LimaCCDs(PyTango.Device_4Impl) :
             self.__VideoMode['YUV422PACKED'] = Core.YUV422PACKED
             self.__VideoMode['YUV444PACKED'] = Core.YUV444PACKED
 
-                
+        
         self.__VideoSource = {}
         if SystemHasFeature('Core.CtVideo.BASE_IMAGE'):
             self.__VideoSource = {'BASE_IMAGE': Core.CtVideo.BASE_IMAGE,
@@ -617,8 +617,8 @@ class LimaCCDs(PyTango.Device_4Impl) :
         raise AttributeError('LimaCCDs has no attribute %s' % name)
 
     def gc(self):
-    	import gc
-	gc.collect()
+        import gc
+        gc.collect()
 
     @Core.DEB_MEMBER_FUNCT
     def apply_config(self) :
@@ -680,8 +680,8 @@ class LimaCCDs(PyTango.Device_4Impl) :
     @RequiresSystemFeature('Core.HwDetInfoCtrlObj.getUserDetectorName')
     @Core.DEB_MEMBER_FUNCT
     def read_user_detector_name(self,attr) :        
-	value = self.__detinfo.getUserDetectorName() 
-	attr.set_value(value)
+        value = self.__detinfo.getUserDetectorName() 
+        attr.set_value(value)
 
     ## @brief Write the User-defined Camera name
     #
@@ -696,8 +696,8 @@ class LimaCCDs(PyTango.Device_4Impl) :
     @RequiresSystemFeature('Core.HwDetInfoCtrlObj.getUserInstrumentName')
     @Core.DEB_MEMBER_FUNCT
     def read_user_instrument_name(self,attr) :        
-	value = self.__detinfo.getUserInstrumentName() 
-	attr.set_value(value)
+        value = self.__detinfo.getUserInstrumentName() 
+        attr.set_value(value)
 
     ## @brief Write the user instrument name
     #
@@ -1540,7 +1540,7 @@ class LimaCCDs(PyTango.Device_4Impl) :
     def read_shared_memory_names(self,attr) :
         try:
             shared_memory = self.__control.display()
-	    shared_memory_names= shared_memory.getNames()
+            shared_memory_names= shared_memory.getNames()
         except:
             shared_memory_names = ['', '']
         attr.set_value(shared_memory_names)
@@ -2694,7 +2694,7 @@ def main() :
         if dev:
             dev[0].apply_config()
 
-	try:
+        try:
             export_default_plugins()
         except:
             print 'SEB_EXP'

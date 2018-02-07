@@ -49,12 +49,12 @@ class RoiCounterDeviceServer(BasePostProcess) :
 #    Device constructor
 #------------------------------------------------------------------
     def __init__(self,cl, name):
-	self.__roiCounterMgr = None
+        self.__roiCounterMgr = None
         self.__roiName2ID = {}
         self.__roiID2Name = {}
         self.__currentRoiId = 0
-	BasePostProcess.__init__(self,cl,name)
-	RoiCounterDeviceServer.init_device(self)
+        BasePostProcess.__init__(self,cl,name)
+        RoiCounterDeviceServer.init_device(self)
         try:
             ctControl = _control_ref()
             config = ctControl.config()
@@ -76,35 +76,35 @@ class RoiCounterDeviceServer(BasePostProcess) :
             pass
 
     def set_state(self,state) :
-	if(state == PyTango.DevState.OFF) :
-	    if(self.__roiCounterMgr) :
-		self.__roiCounterMgr = None
-		ctControl = _control_ref()
-		extOpt = ctControl.externalOperation()
-		extOpt.delOp(self.ROI_COUNTER_TASK_NAME)
-	elif(state == PyTango.DevState.ON) :
-	    if not self.__roiCounterMgr:
+        if(state == PyTango.DevState.OFF) :
+            if(self.__roiCounterMgr) :
+                self.__roiCounterMgr = None
+                ctControl = _control_ref()
+                extOpt = ctControl.externalOperation()
+                extOpt.delOp(self.ROI_COUNTER_TASK_NAME)
+        elif(state == PyTango.DevState.ON) :
+            if not self.__roiCounterMgr:
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__roiCounterMgr = extOpt.addOp(Core.ROICOUNTERS,self.ROI_COUNTER_TASK_NAME,
                                                     self._runLevel)
             self.__roiCounterMgr.clearCounterStatus()
-            
-	PyTango.Device_4Impl.set_state(self,state)
+
+        PyTango.Device_4Impl.set_state(self,state)
 
 #------------------------------------------------------------------
 #    Read BufferSize attribute
 #------------------------------------------------------------------
     def read_BufferSize(self, attr):
-	value_read = self.__roiCounterMgr.getBufferSize()
-	attr.set_value(value_read)
+        value_read = self.__roiCounterMgr.getBufferSize()
+        attr.set_value(value_read)
 
 
 #------------------------------------------------------------------
 #    Write BufferSize attribute
 #------------------------------------------------------------------
     def write_BufferSize(self, attr):
-	data = attr.get_write_value()
+        data = attr.get_write_value()
         self.__roiCounterMgr.setBufferSize(data)
 
 
@@ -112,8 +112,8 @@ class RoiCounterDeviceServer(BasePostProcess) :
 #    Read CounterStatus attribute
 #------------------------------------------------------------------
     def read_CounterStatus(self, attr):
-	value_read = self.__roiCounterMgr.getCounterStatus()
-	attr.set_value(value_read)
+        value_read = self.__roiCounterMgr.getCounterStatus()
+        attr.set_value(value_read)
 
 
 #==================================================================
@@ -141,11 +141,11 @@ class RoiCounterDeviceServer(BasePostProcess) :
             self.__roiID2Name.pop(roi_id,None)
         if not len(self.__roiName2ID):
             self.Stop()
-            
+
     def setRois(self,argin) :
         if self.__roiCounterMgr is None:
             raise RuntimeError('should start the device first')
-        
+
         if not len(argin) % 5:
             roi_list = []
             for roi_id,x,y,width,height in grouper(5,argin):
@@ -156,11 +156,11 @@ class RoiCounterDeviceServer(BasePostProcess) :
             self.__roiCounterMgr.updateRois(roi_list)
         else:
             raise AttributeError('should be a vector as follow [roi_id0,x0,y0,width0,height0,...')
-        
+
     def setArcRois(self,argin) :
         if self.__roiCounterMgr is None:
             raise RuntimeError('should start the device first')
-        
+
         if not len(argin) % 7:
             arc_list = []
             for roi_id,x,y,r1,r2,start,end in grouper(7,argin):
@@ -181,14 +181,14 @@ class RoiCounterDeviceServer(BasePostProcess) :
         if self.__roiCounterMgr is None:
             raise RuntimeError('should start the device first')
         roi_type_list = []
-	rois_types = self.__roiCounterMgr.getTypes()
+        rois_types = self.__roiCounterMgr.getTypes()
         for roi_name in argin:
             for name, roi_type in rois_types:
                 if name == roi_name:
                     break
             else:
                 raise ValueError('Roi %s not defined yet' % roi_name)
-	    roi_type_map = {
+            roi_type_map = {
                 RoiCounterTask.SQUARE: 'SQUARE',
                 RoiCounterTask.ARC:    'ARC',
                 RoiCounterTask.MASK:   'MASK',
@@ -267,7 +267,7 @@ class RoiCounterDeviceServer(BasePostProcess) :
         except:
             import traceback
             traceback.print_exc()
-            
+
     def apply_config(self,c) :
         try:
             active = c.get("active",False)
@@ -315,7 +315,7 @@ class RoiCounterDeviceServer(BasePostProcess) :
         except:
             import traceback
             traceback.print_exc()
-            
+
     def clearAllRois(self):
         if self.__roiCounterMgr :
             self.__roiCounterMgr.clearAllRois()
@@ -324,7 +324,7 @@ class RoiCounterDeviceServer(BasePostProcess) :
     def setMaskFile(self,argin) :
         mask = getDataFromFile(*argin)
         self.__roiCounterMgr.setMask(mask)
-    
+
     def readCounters(self,argin) :
         roiResultCounterList = self.__roiCounterMgr.readCounters(argin)
         if roiResultCounterList:
@@ -333,7 +333,7 @@ class RoiCounterDeviceServer(BasePostProcess) :
                 if minListSize > len(resultList):
                     minListSize = len(resultList)
 
-            
+
             if minListSize :
                 returnArray = numpy.zeros(minListSize * len(roiResultCounterList) * 7,dtype = numpy.double)
                 returnArray[0] = float(minListSize)
@@ -361,12 +361,12 @@ class RoiCounterDeviceServerClass(PyTango.DeviceClass):
 
     #	 Class Properties
     class_property_list = {
-	}
+        }
 
 
     #	 Device Properties
     device_property_list = {
-	}
+        }
 
 
     #	 Command definitions
@@ -379,22 +379,22 @@ class RoiCounterDeviceServerClass(PyTango.DeviceClass):
          [PyTango.DevVoid,""]],
         'setRois':
         [[PyTango.DevVarLongArray,"roi vector [roi_id0,x0,y0,width0,height0,roi_id1,x1,y1,width1,heigh1,...]"],
-	 [PyTango.DevVoid,""]],
+         [PyTango.DevVoid,""]],
         'setArcRois':
         [[PyTango.DevVarDoubleArray,"roi arc vector [roi_id,centerX,centerY,rayon1,rayon2,angle_start,angle_end,...]"],
-	[PyTango.DevVoid,""]],
+        [PyTango.DevVoid,""]],
         'getNames':
         [[PyTango.DevVoid,""],
-	 [PyTango.DevVarStringArray,"rois alias"]],
+         [PyTango.DevVarStringArray,"rois alias"]],
         'getRoiTypes':
         [[PyTango.DevVarStringArray,"rois alias"],
-	 [PyTango.DevVarStringArray,"rois types"]],
+         [PyTango.DevVarStringArray,"rois types"]],
         'getRois':
         [[PyTango.DevVarStringArray,"rois alias"],
-	 [PyTango.DevVarLongArray,"roi vector [roi_id0,x0,y0,width0,height0,roi_id1,x1,y1,width1,heigh1,...]"]],
+         [PyTango.DevVarLongArray,"roi vector [roi_id0,x0,y0,width0,height0,roi_id1,x1,y1,width1,heigh1,...]"]],
         'getArcRois':
         [[PyTango.DevVarStringArray,"rois alias"],
-	 [PyTango.DevVarDoubleArray,"roi vector [roi arc vector [roi_id,centerX,centerY,rayon1,rayon2,angle_start,angle_end,...]"]],
+         [PyTango.DevVarDoubleArray,"roi vector [roi arc vector [roi_id,centerX,centerY,rayon1,rayon2,angle_start,angle_end,...]"]],
         'clearAllRois':
         [[PyTango.DevVoid,""],
          [PyTango.DevVoid,""]],
@@ -404,38 +404,38 @@ class RoiCounterDeviceServerClass(PyTango.DeviceClass):
         'readCounters':
         [[PyTango.DevLong,"from which frame"],
          [PyTango.DevVarDoubleArray,"roi_id,frame number,sum,average,std,min,max,..."]],
-	'Start':
-	[[PyTango.DevVoid,""],
-	 [PyTango.DevVoid,""]],
-	'Stop':
-	[[PyTango.DevVoid,""],
-	 [PyTango.DevVoid,""]],
-	}
+        'Start':
+        [[PyTango.DevVoid,""],
+         [PyTango.DevVoid,""]],
+        'Stop':
+        [[PyTango.DevVoid,""],
+         [PyTango.DevVoid,""]],
+        }
 
 
     #	 Attribute definitions
     attr_list = {
-	'BufferSize':
-	    [[PyTango.DevLong,
-	    PyTango.SCALAR,
-	    PyTango.READ_WRITE]],
-	'CounterStatus':
-	    [[PyTango.DevLong,
-	    PyTango.SCALAR,
-	    PyTango.READ]],
-	'RunLevel':
-	    [[PyTango.DevLong,
-	    PyTango.SCALAR,
-	    PyTango.READ_WRITE]],
-	}
+        'BufferSize':
+            [[PyTango.DevLong,
+            PyTango.SCALAR,
+            PyTango.READ_WRITE]],
+        'CounterStatus':
+            [[PyTango.DevLong,
+            PyTango.SCALAR,
+            PyTango.READ]],
+        'RunLevel':
+            [[PyTango.DevLong,
+            PyTango.SCALAR,
+            PyTango.READ_WRITE]],
+        }
 
 
 #------------------------------------------------------------------
 #    RoiCounterDeviceServerClass Constructor
 #------------------------------------------------------------------
     def __init__(self, name):
-	PyTango.DeviceClass.__init__(self, name)
-	self.set_type(name);
+        PyTango.DeviceClass.__init__(self, name)
+        self.set_type(name);
 
 
 
@@ -445,4 +445,4 @@ def set_control_ref(control_class_ref) :
     _control_ref= control_class_ref
 
 def get_tango_specific_class_n_device() :
-   return RoiCounterDeviceServerClass,RoiCounterDeviceServer
+    return RoiCounterDeviceServerClass,RoiCounterDeviceServer

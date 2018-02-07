@@ -100,7 +100,7 @@ class Frelon(PyTango.Device_4Impl):
     def init_device(self):
         self.set_state(PyTango.DevState.ON)
         self.get_device_properties(self.get_device_class())
-	self.ResetLinkWaitTime = 5	
+        self.ResetLinkWaitTime = 5	
 
     @Core.DEB_MEMBER_FUNCT
     def getAttrStringValueList(self, attr_name):
@@ -116,7 +116,7 @@ class Frelon(PyTango.Device_4Impl):
     @Core.DEB_MEMBER_FUNCT
     def resetLink(self) :
         _FrelonAcq.getEspiaDev().resetLink()
-	time.sleep(self.ResetLinkWaitTime)
+        time.sleep(self.ResetLinkWaitTime)
 
     ## @brief read the espia board id
     #
@@ -417,7 +417,7 @@ _FrelonAcq = None
 def get_control(espia_dev_nb = 0,**keys) :
     global _FrelonAcq
     if _FrelonAcq is None:
-	_FrelonAcq = FrelonAcq.FrelonAcq(int(espia_dev_nb))
+       _FrelonAcq = FrelonAcq.FrelonAcq(int(espia_dev_nb))
     return _FrelonAcq.getGlobalControl() 
 
 def get_tango_specific_class_n_device():

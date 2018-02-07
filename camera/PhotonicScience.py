@@ -56,7 +56,7 @@ class PhotonicScience(PyTango.Device_4Impl):
     def __init__(self,*args) :
         PyTango.Device_4Impl.__init__(self,*args)
 
-	self.__Attribute2FunctionBase = {}
+        self.__Attribute2FunctionBase = {}
         self.init_device()
 
 #------------------------------------------------------------------
@@ -113,8 +113,8 @@ def get_control(camera_library_path = "",**keys) :
     global _PhotonicScienceCam
     global _PhotonicScienceInterface
     if _PhotonicScienceCam is None:
-	_PhotonicScienceCam = PhotonicScienceAcq.Camera(camera_library_path)
-	_PhotonicScienceInterface = PhotonicScienceAcq.Interface(_PhotonicScienceCam)
+        _PhotonicScienceCam = PhotonicScienceAcq.Camera(camera_library_path)
+        _PhotonicScienceInterface = PhotonicScienceAcq.Interface(_PhotonicScienceCam)
     return Core.CtControl(_PhotonicScienceInterface)
 
 def get_tango_specific_class_n_device():

@@ -510,8 +510,8 @@ def get_control(cam_ip_address = "localhost",port=3456,**keys) :
     port = int(port)
     print "Getting control for IMXPAD: %s / %s" % (cam_ip_address, port)
     if _imXPADCam is None:
-		_imXPADCam = XpadAcq.Camera(cam_ip_address,port)
-		_imXPADInterface = XpadAcq.Interface(_imXPADCam)
+        _imXPADCam = XpadAcq.Camera(cam_ip_address,port)
+        _imXPADInterface = XpadAcq.Interface(_imXPADCam)
     return Core.CtControl(_imXPADInterface)
 
 def get_tango_specific_class_n_device():
