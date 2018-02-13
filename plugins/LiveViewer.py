@@ -143,6 +143,8 @@ class LiveViewer (PyTango.Device_4Impl):
             Core.Bpp14S : (2,1, PyTango.DevShort) , 
             Core.Bpp16  : (2,0, PyTango.DevUShort),
             Core.Bpp16S : (2,1, PyTango.DevShort),
+            Core.Bpp24  : (4,0, PyTango.DevULong),
+            Core.Bpp24S : (4,1, PyTango.DevLong),
             Core.Bpp32  : (4,0, PyTango.DevULong),
             Core.Bpp32S : (4,1, PyTango.DevLong)
             }
