@@ -94,6 +94,19 @@ class Basler(PyTango.Device_4Impl):
         #use AttrHelper
         return get_attr_4u(self,name,_BaslerCam)
 
+    def read_AcquisitionFrameRateEnable(self, attr):
+        attr.set_value(_BaslerCam.getAcquisitionFrameRateEnable())
+
+    def write_AcquisitionFrameRateEnable(self, attr):
+        data=attr.get_write_value()
+        _BaslerCam.setAcquisitionFrameRateEnable(data)
+
+    def read_AcquisitionFrameRateAbs(self, attr):
+        attr.set_value(_BaslerCam.getAcquisitionFrameRateAbs())
+
+    def write_AcquisitionFrameRateAbs(self, attr):
+        data=attr.get_write_value()
+        _BaslerCam.setAcquisitionFrameRateAbs(data)
 
 #==================================================================
 #
@@ -136,6 +149,14 @@ class BaslerClass(PyTango.DeviceClass):
         }
 
     attr_list = {
+        'AcquisitionFrameRateEnable':
+            [[PyTango.DevBoolean,
+              PyTango.SCALAR,
+              PyTango.READ_WRITE]],
+        'AcquisitionFrameRateAbs':
+            [[PyTango.DevDouble,
+              PyTango.SCALAR,
+              PyTango.READ_WRITE]],
         }
 
     def __init__(self,name) :
