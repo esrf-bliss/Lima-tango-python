@@ -602,6 +602,16 @@ class LimaCCDs(PyTango.Device_4Impl) :
         if self.BufferMaxMemory:
             self.__control.buffer().setMaxMemory(int(self.BufferMaxMemory))
 
+        # Setup local buffer proxy if defined
+        self.__local_buffer_active= False
+        self.__local_buffer_proxy= None
+        if len(self.LocalBufferDevice):
+            try:
+                self.__local_buffer_proxy= PyTango.DeviceProxy(self.LocalBufferDevice)
+            except:
+                self.__local_buffer_proxy= None
+                deb.Error("Local Buffer Device [%s] cannot be imported"%self.LocalBufferDevice)
+
         unsupported_feature = 'Core.Never.Unsupported.Feature'
         if SystemHasFeature(unsupported_feature):
             deb.Error('System reports having %s' % unsupported_feature)
@@ -1313,13 +1323,23 @@ class LimaCCDs(PyTango.Device_4Impl) :
     def read_saving_directory(self,attr) :
         saving = self.__control.saving()
 
-        attr.set_value(saving.getDirectory())
+        if self.__local_buffer_active:
+            limadir= saving.getDirectory()
+            finaldir= self.__local_buffer_proxy.GetFinalPath(limadir)
+            attr.set_value(finaldir)
+        else:
+            attr.set_value(saving.getDirectory())
 
     @Core.DEB_MEMBER_FUNCT
     def write_saving_directory(self,attr) :
         data = attr.get_write_value()
         saving = self.__control.saving()
-        saving.setDirectory(data)
+
+        if self.__local_buffer_active:
+            newname= self.__local_buffer_proxy.PrepareDirectory(data)
+            saving.setDirectory(newname)
+        else:
+            saving.setDirectory(data)
 
     @Core.DEB_MEMBER_FUNCT
     def read_saving_prefix(self,attr) :
@@ -1581,7 +1601,30 @@ class LimaCCDs(PyTango.Device_4Impl) :
     def read_config_available_name(self,attr) :
         config = self.__control.config()
         attr.set_value(config.getAlias())
-        
+
+    def read_local_buffer_active(self,attr):
+        attr.set_value(self.__local_buffer_active)
+
+    def write_local_buffer_active(self,attr):
+        active= attr.get_write_value()
+        if active:
+            self.__local_buffer_active= False
+            if not len(self.LocalBufferDevice):
+                raise Exception("No Local Buffer Device name defined")
+            if not self.__local_buffer_proxy:
+                self.__local_buffer_proxy= PyTango.DeviceProxy(self.LocalBufferDevice)
+            self.__local_buffer_proxy.ping()
+            self.__local_buffer_proxy.Start()
+            self.__local_buffer_active= True
+        else:
+            self.__local_buffer_active= False
+            if self.__local_buffer_proxy is not None:
+                self.__local_buffer_proxy.Stop()
+
+    def read_local_buffer_device(self,attr):
+        attr.set_value(self.LocalBufferDevice)
+
+
 #==================================================================
 #
 #    LimaCCDs command methods
@@ -1971,6 +2014,9 @@ class LimaCCDsClass(PyTango.DeviceClass) :
         'SavingMaxConcurrentWritingTask':
         [PyTango.DevShort,
          "Maximum concurrent writing tasks",[1]],
+        'LocalBufferDevice' :
+        [PyTango.DevString,
+         "local buffer tango device name",[""]],
         }
 
     #    Command definitions
@@ -2440,6 +2486,14 @@ class LimaCCDsClass(PyTango.DeviceClass) :
         [[PyTango.DevShort,
           PyTango.SCALAR,
           PyTango.READ_WRITE]],
+        'local_buffer_active':
+        [[PyTango.DevBoolean,
+          PyTango.SCALAR,
+          PyTango.READ_WRITE]],
+        'local_buffer_device':
+        [[PyTango.DevString,
+          PyTango.SCALAR,
+          PyTango.READ]],
         }
 
 
