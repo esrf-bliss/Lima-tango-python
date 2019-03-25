@@ -60,15 +60,24 @@ if 'linux' in sys.platform:
     from EnvHelper import setup_lima_env
     LimaCameraType = setup_lima_env(sys.argv)
 
+print "------------------", "EnvHelper 1"
 from EnvHelper import get_sub_devices
+print "------------------", "EnvHelper 2"
 from EnvHelper import get_lima_camera_type, get_lima_device_name
+print "------------------", "EnvHelper 3"
 from EnvHelper import create_tango_objects
+print "------------------", "AttHelper 1"
 from AttrHelper import get_attr_4u
+print "------------------", "attHelper 2"
 from AttrHelper import _getDictKey, _getDictValue
+print "------------------", "Core"
 from Lima import Core
 
+print "------------------", "plugins"
 import plugins
+print "------------------", "camera"
 import camera
+print "------------------", "xxx"
 try:
     import EdfFile
 except ImportError:
@@ -2682,11 +2691,14 @@ def main() :
             import traceback
             traceback.print_exc()
 
+        print "------------------", "instance"
         U = PyTango.Util.instance()
 
         # create ct control
+        print "------------------", "get control"
         control = _get_control()
 
+        print "------------------", "ver"
         if pytango_ver >= (8,1,7) and control is not None:
             master_dev_name = get_lima_device_name()
             beamline_name, _, camera_name = master_dev_name.split('/')
@@ -2700,12 +2712,15 @@ def main() :
                 tango_classes.add(tango_class)
             for tango_class in tango_classes:
                 py.add_class(tango_class.TangoClassClass, tango_class)
+            print "------------------", "init"
 
             U.server_init()
+            print "------------------", "init1"
 
             export_ct_control(ct_map)
 
         else:
+            print "------------------", "init2"
             U.server_init()
 
         # Configurations management (load default or custom config)

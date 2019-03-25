@@ -393,12 +393,12 @@ def to_tango_object(ct, name_id):
                                         self.__dict__["__name"])
             return PyTango.client._Device, (name,)
 
+    for name, value in patched_members.items():
+        setattr(klass, name, property(*value))
+
     klass.__name__ = ct_klass_name
     ct_tango_map[ct_klass] = klass
-    kl = klass(ct, name_id)
-    for name, value in patched_members.items():
-        setattr(kl, name, property(*value))
-    return kl
+    return klass(ct, name_id)
 
 
 def create_tango_objects(ct_control, name_template):
