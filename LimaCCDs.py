@@ -2,7 +2,7 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2017
+# Copyright (C) : 2009-2015
 # European Synchrotron Radiation Facility
 # CS40220 38043 Grenoble Cedex 9 
 # FRANCE
@@ -446,7 +446,6 @@ class LimaCCDs(PyTango.Device_4Impl) :
 					 'image_rotation':'Rotation',
                                          'video_mode':'Mode',
                                          'buffer_max_memory': 'MaxMemory',
-                                         'buffer_max_number': 'MaxNumber',
                                          'acc_mode': 'Mode',
                                          'acc_threshold_before': 'ThresholdBefore',
                                          'acc_offset_before': 'OffsetBefore'}
@@ -590,11 +589,11 @@ class LimaCCDs(PyTango.Device_4Impl) :
             self.__control.registerImageStatusCallback(self.__image_status_cbk)
 
         # Setup a user-defined detector name if it exists
-        if self.UserInstrumentName:
-            if SystemHasFeature('Core.HwDetInfoCtrlObj.setUserInstrumentName'):
-                self.__detinfo.setUserInstrumentName(self.UserInstrumentName)
+        if self.InstrumentName:
+            if SystemHasFeature('Core.HwDetInfoCtrlObj.setInstrumentName'):
+                self.__detinfo.setInstrumentName(self.InstrumentName)
             else:
-                deb.Warning('UserInstrumentName not supported in this version')
+                deb.Warning('InstrumentName not supported in this version')
 
         # Setup a user-defined detector name if it exists
         if self.UserDetectorName:
@@ -713,21 +712,21 @@ class LimaCCDs(PyTango.Device_4Impl) :
         data = attr.get_write_value()
         self.__detinfo.setUserDetectorName(data)
         
-    ## @brief Read the user instrument name
+    ## @brief Read the instrument name
     #
-    @RequiresSystemFeature('Core.HwDetInfoCtrlObj.getUserInstrumentName')
+    @RequiresSystemFeature('Core.HwDetInfoCtrlObj.getInstrumentName')
     @Core.DEB_MEMBER_FUNCT
-    def read_user_instrument_name(self,attr) :        
-        value = self.__detinfo.getUserInstrumentName() 
-        attr.set_value(value)
+    def read_instrument_name(self,attr) :        
+	value = self.__detinfo.getInstrumentName() 
+	attr.set_value(value)
 
-    ## @brief Write the user instrument name
+    ## @brief Write the instrument name
     #
-    @RequiresSystemFeature('Core.HwDetInfoCtrlObj.setUserInstrumentName')
+    @RequiresSystemFeature('Core.HwDetInfoCtrlObj.setInstrumentName')
     @Core.DEB_MEMBER_FUNCT
-    def write_user_instrument_name(self,attr) :
+    def write_instrument_name(self,attr) :
         data = attr.get_write_value()
-        self.__detinfo.setUserInstrumentName(data)
+        self.__detinfo.setInstrumentName(data)
 
     ## @brief Read the Camera pixelsize
     #
@@ -1206,8 +1205,7 @@ class LimaCCDs(PyTango.Device_4Impl) :
     def read_ready_for_next_image(self,attr) :
         interface = self.__control.hwInterface()
         status = interface.getStatus()
-	ready = status.det == Core.DetIdle or status.det & Core.DetWaitForTrigger
-        attr.set_value(bool(ready))
+        attr.set_value(status.det == Core.DetIdle)
 
     ## @brief this flag is true when acquisition is finished
     #
@@ -1965,7 +1963,7 @@ class LimaCCDsClass(PyTango.DeviceClass) :
         'UserDetectorName' :
         [PyTango.DevString,
          "A user detector identifier, e.g frelon-saxs",[]],
-        'UserInstrumentName' :
+        'InstrumentName' :
         [PyTango.DevString,
          "The instrument name, e.g ESRF-ID02",[]],
         'BufferMaxMemory' :
@@ -2086,7 +2084,7 @@ class LimaCCDsClass(PyTango.DeviceClass) :
              'label': "user detector name",
              'description':"A user defined detector name, will be saved in the saved file header",
          }],
-        'user_instrument_name':
+        'instrument_name':
         [[PyTango.DevString,
           PyTango.SCALAR,
           PyTango.READ_WRITE],
@@ -2446,10 +2444,6 @@ class LimaCCDsClass(PyTango.DeviceClass) :
         [[PyTango.DevShort,
           PyTango.SCALAR,
           PyTango.READ_WRITE]],
-        'buffer_max_number':
-        [[PyTango.DevShort,
-          PyTango.SCALAR,
-          PyTango.READ]],
         }
 
 

@@ -132,11 +132,7 @@ class CallableWrite:
 
 ## @brief helper for automatic attribute to command mapping
 # To be called from __getattr__
-# if update_dict is True the __dict__ is updated for the new attribute
-# means for next call to the attr will not pass through this helper but will get
-# the callable object from the __dict_ object dictionnary.
-# set update_dict to False to avoid keep reference of some objects you want to delete
-def get_attr_4u(obj,name,interface,update_dict=True) :
+def get_attr_4u(obj,name,interface) :
 
     if name.startswith('read_') or name.startswith('write_') :
         split_name = name.split('_')[1:]
@@ -170,7 +166,7 @@ def get_attr_4u(obj,name,interface,update_dict=True) :
                 callable_obj = CallableWrite('_'.join(split_name),
                                                      function2Call)
                 
-        if update_dict: obj.__dict__[name] = callable_obj
+        obj.__dict__[name] = callable_obj
         return callable_obj
 
     raise AttributeError('%s has no attribute %s' % (obj.__class__.__name__,name))
