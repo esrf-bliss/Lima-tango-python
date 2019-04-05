@@ -188,7 +188,7 @@ def check_link_strict_version():
     global StrictVersionPolicy
 
     cmd = 'from Lima import Core; '
-    cmd += 'import os; print os.environ["LIMA_LINK_STRICT_VERSION"]'
+    cmd += 'import os; print (os.environ["LIMA_LINK_STRICT_VERSION"])'
     args = ['python', '-c', cmd]
     pobj = Popen(args, stdout=PIPE)
     strict_link = pobj.stdout.readline().strip().upper()
@@ -210,7 +210,7 @@ def setup_env(mod):
             ver = 'v' + ver
         filt_vers = [set_env_version_depth(x) for x in all_vers]
         if ver not in filt_vers:
-            print 'Warning: could not find %s=%s' % (env_var_name, ver)
+            print ('Warning: could not find %s=%s' % (env_var_name, ver))
             return
     else:
         ver = all_vers[-1]
@@ -255,7 +255,7 @@ def check_lima_dir():
     global LimaDir
     if LimaDir is not None:
         return LimaDir
-    args = ['python', '-c', 'from Lima import Core; print Core.__file__']
+    args = ['python', '-c', 'from Lima import Core; print (Core.__file__)']
     pobj = Popen(args, stdout=PIPE)
     core_init_dir = pobj.stdout.readline().strip()
     core_dir = os.path.dirname(core_init_dir)
@@ -271,7 +271,7 @@ def version_cmp(x, y):
 
 def print_debug(msg):
     if Debug:
-        print msg
+        print (msg)
 
 def __get_ct_classes():
     import Lima.Core
@@ -384,7 +384,7 @@ def to_tango_object(ct, name_id):
             return setattr(self.__dict__["__ct"], name, value)
 
         def __dir__(self):
-            return dir(self.__dict__["__ct"]) + keys
+            return dir(self.__dict__["__ct"]) + list(keys)
 
         def __reduce__(self):
             import PyTango.client
@@ -416,7 +416,6 @@ def create_tango_objects(ct_control, name_template):
     # tango device will communicate with this object.
     # tango stores a weakref to it so we must keep track of it
     tango_ct_control = to_tango_object(ct_control, tango_ct_control_name)
-
     for ct_name in __get_ct_classes():
         # "CtImage" becomes "image()"
         ct_func_name = ct_name[2:].lower()
@@ -426,17 +425,14 @@ def create_tango_objects(ct_control, name_template):
         ct = ct_func()
         tango_ct_name = name_template.format(type=ct_name)
         tango_ct = to_tango_object(ct, tango_ct_name)
-
         # patch tango_ct_control
         getter = functools.partial(lambda obj, ct: ct, tango_ct)
-        getter = types.MethodType(getter, tango_ct, tango_ct.__class__)
+        #getter = types.MethodType(getter, tango_ct, tango_ct.__class__)
+        getter = types.MethodType(getter, tango_ct)
         setattr(tango_ct_control, ct_func_name, getter)
-
         tango_object = server.register_object(tango_ct, tango_ct_name, ct_name,
                                               member_filter=__filter)
-
         tango_ct_map[tango_ct_name] = tango_ct, tango_object
-
         print("ctcontrol.{0}() = {1}".format(ct_func_name, getattr(tango_ct_control, ct_func_name)()))
 
     tango_object = server.register_object(tango_ct_control,
