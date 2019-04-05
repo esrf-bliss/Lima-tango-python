@@ -717,8 +717,8 @@ class LimaCCDs(PyTango.Device_4Impl) :
     @RequiresSystemFeature('Core.HwDetInfoCtrlObj.getInstrumentName')
     @Core.DEB_MEMBER_FUNCT
     def read_instrument_name(self,attr) :        
-	value = self.__detinfo.getInstrumentName() 
-	attr.set_value(value)
+        value = self.__detinfo.getInstrumentName() 
+        attr.set_value(value)
 
     ## @brief Write the instrument name
     #
@@ -914,7 +914,7 @@ class LimaCCDs(PyTango.Device_4Impl) :
         else:
             msg = "Accumulation threshold plugins not loaded"
             deb.Error(msg)
-            raise Exception, msg
+            raise Exception(msg)
 
     ## @brief active/unactive calculation of saturated images and counters
     #
@@ -1725,7 +1725,7 @@ class LimaCCDs(PyTango.Device_4Impl) :
         nbDim = len(s)
         maxNbDim = self.DataArrayMaxNbDim
         if nbDim > maxNbDim:
-            raise ValueError, 'Invalid nb of dimensions: max is %d' % maxNbDim
+            raise ValueError('Invalid nb of dimensions: max is %d' % maxNbDim)
 
         image = self.__control.image()
         imageType = image.getImageType()
@@ -1756,8 +1756,8 @@ class LimaCCDs(PyTango.Device_4Impl) :
           t[0],t[1],t[2],t[3],t[4],t[5],        # 24 bytes I x 6 - stepsbytes
           0, 0)    				# padding 2 x 4 bytes
         if len(dataheader) != self.DataArrayHeaderLen:
-            raise RuntimeError, 'Invalid header len: %d (expected %d)' % \
-                  (len(dataheader), self.DataArrayHeaderLen)
+            raise RuntimeError('Invalid header len: %d (expected %d)' % \
+                  (len(dataheader), self.DataArrayHeaderLen))
 
         flatData = d.ravel()
         flatData.dtype = numpy.uint8
@@ -1791,7 +1791,7 @@ class LimaCCDs(PyTango.Device_4Impl) :
         if len(frame_seq) > 2:
             step = frame_seq[2]
             if step != 1:
-                raise ValueError, 'Discontiguous sequences not supported yet'
+                raise ValueError('Discontiguous sequences not supported yet')
         nbFrames = end - start
         deb.Param('readImageSeq:start,end,step = %d,%d,%d (%d frames)' % \
 
@@ -2475,7 +2475,7 @@ def declare_camera_n_commun_to_tango_world(util) :
         try:
             m = __import__('Lima.Server.plugins.%s' % (module_name),None,None,'Lima.Server.plugins.%s' % (module_name))
         except ImportError:
-            print "Warning optional plugin %s can't be load, dependency not satisfied." % module_name
+            print ("Warning optional plugin %s can't be load, dependency not satisfied." % module_name)
             warningFlag = True
             if verboseLevel >= 4:
                 import traceback
@@ -2497,7 +2497,7 @@ def declare_camera_n_commun_to_tango_world(util) :
                 specificClass,specificDevice = func()
                 util.add_TgClass(specificClass,specificDevice,specificDevice.__name__)
     if warningFlag and verboseLevel < 4:
-        print "For more pulgins dependency  information start server with -v4"
+        print ("For more pulgins dependency  information start server with -v4")
         
 def export_default_plugins() :
     #Post processing tango export
@@ -2522,7 +2522,7 @@ def export_default_plugins() :
                 if deviceName is None and specificClass and specificDevice:
                     deviceName = '%s/%s/%s' % (beamlineName,
                                                specificDevice.__name__.lower().replace('deviceserver',''),cameraName)
-                    print 'create device',specificDevice.__name__,deviceName
+                    print ('create device',specificDevice.__name__,deviceName)
                     try:
                         util.create_device(specificDevice.__name__,deviceName)
                     except:
@@ -2670,7 +2670,7 @@ def main() :
         try:
             declare_camera_n_commun_to_tango_world(py)
         except:
-            print 'SEB_EXP'
+            print ('SEB_EXP')
             import traceback
             traceback.print_exc()
 
@@ -2708,16 +2708,16 @@ def main() :
         try:
             export_default_plugins()
         except:
-            print 'SEB_EXP'
+            print ('SEB_EXP')
             import traceback
             traceback.print_exc()
 
         U.server_run()
 
-    except PyTango.DevFailed,e:
-        print '-------> Received a DevFailed exception:',e
-    except Exception,e:
-        print '-------> An unforeseen exception occured....',e
+    except PyTango.DevFailed as e:
+        print ('-------> Received a DevFailed exception:',e)
+    except Exception as e:
+        print ('-------> An unforeseen exception occured....',e)
 
 if __name__ == '__main__':
     main()
