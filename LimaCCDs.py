@@ -2485,11 +2485,15 @@ def declare_camera_n_commun_to_tango_world(util) :
         else:
             try:
                 func = getattr(m,'get_tango_specific_class_n_device')
-                specificClass,specificDevice = func()
+                class_info = func()
             except AttributeError:
                 pass
             else:
-                util.add_TgClass(specificClass,specificDevice,specificDevice.__name__)
+                if isinstance(class_info, (list, tuple)):
+                    specificClass, specificDevice = class_info
+                else:
+                    specificClass, specificDevice = class_info.TangoClassClass, class_info
+                util.add_class(specificClass, specificDevice)
             try:
                 func = getattr(m, 'get_taco_specific_cmd_list_n_proxy_cont')
                 cmd_list, proxy_cont = func()
@@ -2521,8 +2525,12 @@ def declare_camera_n_commun_to_tango_world(util) :
             except AttributeError:
                 continue
             else:
-                specificClass,specificDevice = func()
-                util.add_TgClass(specificClass,specificDevice,specificDevice.__name__)
+                class_info = func()
+                if isinstance(class_info, (list, tuple)):
+                    specificClass, specificDevice = class_info
+                else:
+                    specificClass, specificDevice = class_info.TangoClassClass, class_info
+                util.add_class(specificClass, specificDevice)
     if warningFlag and verboseLevel < 4:
         print ("For more plugins dependency information start server with -v4")
 
