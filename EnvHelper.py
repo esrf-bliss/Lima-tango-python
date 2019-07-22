@@ -57,10 +57,7 @@ def get_server_name(argv=None):
     """
     if argv is None:
         argv = sys.argv
-    full_exec_name = argv[0]
-    exec_name = os.path.split(full_exec_name)[-1]
-    exec_name = os.path.splitext(exec_name)[0]
-    return "/".join((exec_name, argv[1]))
+    return 'LimaCCDs/' + argv[1]
 
 def get_device_class_map(server=None, cache=True):
     """

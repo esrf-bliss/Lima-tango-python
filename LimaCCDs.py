@@ -2692,10 +2692,13 @@ def _get_control():
 #
 #==================================================================
 verboseLevel = 0
-def main() :
+def main(args=None) :
+    args = list(args or sys.argv)
+    args[0] = 'LimaCCDs'
+
     global verboseLevel
     verboseLevel = 0
-    for option in sys.argv:
+    for option in args:
         if option.startswith('-v'):
             try:
                 verboseLevel = int(option[2:])
@@ -2704,7 +2707,7 @@ def main() :
     pytango_ver = PyTango.__version_info__[:3]
 
     try:
-        py = PyTango.Util(sys.argv)
+        py = PyTango.Util(args)
         py.add_TgClass(LimaCCDsClass,LimaCCDs,'LimaCCDs')
         try:
             declare_camera_n_commun_to_tango_world(py)
