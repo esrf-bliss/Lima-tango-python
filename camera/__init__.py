@@ -31,5 +31,12 @@ def _init_module() :
                 if subdir:
                     base = '%s.%s' % (subdir,base)
                 __all__.append(base)
+    try:
+        import pkg_resources
+    except ImportError:
+        pass
+    else:
+        __all__ += list(pkg_resources.iter_entry_points('Lima_tango_camera'))
+
 _init_module()
 
