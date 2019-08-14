@@ -37,7 +37,8 @@ def _init_module() :
     except ImportError:
         pass
     else:
-        plugins += list(pkg_resources.iter_entry_points('Lima_tango_plugin'))
+        for ep in pkg_resources.iter_entry_points('Lima_tango_plugin'):
+            plugins.append(ep.name)
 
 __all__ = _init_module()
 

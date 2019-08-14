@@ -37,7 +37,8 @@ def _init_module() :
     except ImportError:
         pass
     else:
-        cameras += list(pkg_resources.iter_entry_points('Lima_tango_camera'))
+        for ep in pkg_resources.iter_entry_points('Lima_tango_camera'):
+            cameras.append(ep.name)
     return cameras
 
 __all__ = _init_module()
