@@ -19,9 +19,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 ############################################################################
-__all__ = []
+
 def _init_module() :
     import os
+    cameras = []
     for root,dirs,files in os.walk(__path__[0]) :
         for file_name in files :
             if file_name.startswith('__') : continue
@@ -30,13 +31,14 @@ def _init_module() :
                 subdir = root[len(__path__[0]) + 1:]
                 if subdir:
                     base = '%s.%s' % (subdir,base)
-                __all__.append(base)
+                cameras.append(base)
     try:
         import pkg_resources
     except ImportError:
         pass
     else:
-        __all__ += list(pkg_resources.iter_entry_points('Lima_tango_camera'))
+        cameras += list(pkg_resources.iter_entry_points('Lima_tango_camera'))
+    return cameras
 
-_init_module()
+__all__ = _init_module()
 
