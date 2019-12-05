@@ -513,13 +513,17 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
                                  'EXTERNAL_TRIGGER' : Core.ExtTrigSingle,
                                  'EXTERNAL_TRIGGER_MULTI' : Core.ExtTrigMult,
                                  'EXTERNAL_GATE' : Core.ExtGate,
-                                 'EXTERNAL_START_STOP' : Core.ExtStartStop}
+                                 'EXTERNAL_START_STOP' : Core.ExtStartStop
+				 }
 
         if SystemHasFeature('Core.IntTrigMult'):
             self.__AcqTriggerMode['INTERNAL_TRIGGER_MULTI'] = Core.IntTrigMult
 
         if SystemHasFeature('Core.ExtTrigReadout'):
             self.__AcqTriggerMode['EXTERNAL_TRIGGER_READOUT'] = Core.ExtTrigReadout
+
+	if SystemHasFeature('Core.ExtTrigSequences'):
+	    self.__AcqTriggerMode['EXTERNAL_TRIGGER_SEQUENCES'] = Core.ExtTrigSequences
 
         if SystemHasFeature('Core.Rotation_0'):
             self.__ImageRotation = {'NONE' : Core.Rotation_0,
@@ -798,6 +802,23 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
         data = attr.get_write_value()
         acquisition = self.__control.acquisition()
         acquisition.setAcqNbFrames(data)
+
+    ## @brief read the number of frame for an acquisition
+    #
+    @Core.DEB_MEMBER_FUNCT
+    def read_acq_nb_sequences(self,attr) :
+        acquisition = self.__control.acquisition()
+        nb_sequences = acquisition.getAcqNbSequences()
+        attr.set_value(nb_sequences)
+
+    ## @brief write the number of frame for an acquisition
+    #
+    @Core.DEB_MEMBER_FUNCT
+    def write_acq_nb_sequences(self,attr) :
+        data = attr.get_write_value()
+        acquisition = self.__control.acquisition()
+        acquisition.setAcqNbSequences(data)
+      
         
     ## @brief read the number of frame for an acquisition
     #
@@ -1183,8 +1204,8 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
     def read_last_image_saved(self,attr) :
         status = self.__control.getStatus()
         img_counters= status.ImageCounters
-
         value = img_counters.LastImageSaved
+
         if value is None: value = -1
 
         attr.set_value(value)
@@ -2208,7 +2229,7 @@ class LimaCCDsClass(PyTango.DeviceClass) :
         'acc_nb_frames':
         [[PyTango.DevLong,
           PyTango.SCALAR,
-          PyTango.READ]],	      	
+          PyTango.READ]],
         'acc_dead_time':
         [[PyTango.DevDouble,
           PyTango.SCALAR,
@@ -2241,6 +2262,10 @@ class LimaCCDsClass(PyTango.DeviceClass) :
         [[PyTango.DevLong,
           PyTango.SCALAR,
           PyTango.READ_WRITE]],
+	'acq_nb_sequences':
+	[[PyTango.DevLong,
+	  PyTango.SCALAR,
+	  PyTango.READ_WRITE]],
         'acq_expo_time':
         [[PyTango.DevDouble,
           PyTango.SCALAR,
