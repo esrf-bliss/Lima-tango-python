@@ -522,8 +522,8 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
         if SystemHasFeature('Core.ExtTrigReadout'):
             self.__AcqTriggerMode['EXTERNAL_TRIGGER_READOUT'] = Core.ExtTrigReadout
 
-	if SystemHasFeature('Core.ExtTrigSequences'):
-	    self.__AcqTriggerMode['EXTERNAL_TRIGGER_SEQUENCES'] = Core.ExtTrigSequences
+        if SystemHasFeature('Core.ExtTrigSequences'):
+            self.__AcqTriggerMode['EXTERNAL_TRIGGER_SEQUENCES'] = Core.ExtTrigSequences
 
         if SystemHasFeature('Core.Rotation_0'):
             self.__ImageRotation = {'NONE' : Core.Rotation_0,
