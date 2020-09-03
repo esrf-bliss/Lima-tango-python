@@ -1,7 +1,7 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2011
+# Copyright (C) : 2009-2020
 # European Synchrotron Radiation Facility
 # BP 220, Grenoble 38043
 # FRANCE
@@ -25,39 +25,50 @@ import PyTango
 from Lima import Core
 from Lima.Server.plugins.Utils import getDataFromFile,BasePostProcess
 
-class BackgroundSubstractionDeviceServer(BasePostProcess) :
+class BackgroundSubstraction2DeviceServer(BasePostProcess) :
     BACKGROUND_TASK_NAME = 'BackGroundTask'
     GET_BACKGROUND_IMAGE = "TMP_GET_BACKGROUND_IMAGE"
-    Core.DEB_CLASS(Core.DebModApplication,'BackgroundSubstraction')
+    Core.DEB_CLASS(Core.DebModApplication,'BackgroundSubstraction2')
     
     def __init__(self,cl,name) :
-        self.__backGroundTask = None
+        self.__background_op = None
         self.__backGroundImage = Core.Processlib.Data()
         self.get_device_properties(self.get_device_class())
         self.__deleteDarkAfterRead = False
         self.__offset = 0
-
+        
         BasePostProcess.__init__(self,cl,name)
-        BackgroundSubstractionDeviceServer.init_device(self)
+        BackgroundSubstraction2DeviceServer.init_device(self)
 
     def set_state(self,state) :
         if(state == PyTango.DevState.OFF) :
-            if(self.__backGroundTask) :
-                self.__backGroundTask = None
+            if(self.__background_op) :
+                self.__background_op = None
+                self.__get_image_op = None
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 extOpt.delOp(self.BACKGROUND_TASK_NAME)
+                extOpt.delOp(self.GET_BACKGROUND_IMAGE)
         elif(state == PyTango.DevState.ON) :
-            if not self.__backGroundTask:
+            if not self.__background_op:
                 try:
                   ctControl = _control_ref()
                   extOpt = ctControl.externalOperation()
-                  self.__backGroundTask = extOpt.addOp(Core.BACKGROUNDSUBSTRACTION,
+
+                  # first create and add the task to update the background_image at level runLevel
+                  # This task update the image only on demand from takeNextAcquisitionAsBackground() command
+                  self.__get_image_op = extOpt.addOp(Core.USER_SINK_TASK,self.GET_BACKGROUND_IMAGE,
+                                           self._runLevel)
+                  self.__get_image_task = GetBackgroundImageTask(self,_control_ref)
+                  self.__get_image_op.setSinkTask(self.__get_image_task)
+
+                  # now add the background correction task at level runLevel+1
+                  self.__background_op = extOpt.addOp(Core.BACKGROUNDSUBSTRACTION,
                                                        self.BACKGROUND_TASK_NAME,
-                                                       self._runLevel)
-                  self.__backGroundTask.setBackgroundImage(self.__backGroundImage)
+                                                       self._runLevel+1)
+                  self.__background_op.setBackgroundImage(self.__backGroundImage)
                   if self.__offset :
-                      self.__backGroundTask.setOffset(self.__offset)
+                      self.__background_op.setOffset(self.__offset)
                 except:
                     self.__offset = 0
                     import traceback
@@ -65,6 +76,7 @@ class BackgroundSubstractionDeviceServer(BasePostProcess) :
                     return
         PyTango.LatestDeviceImpl.set_state(self,state)
 
+        
     def read_delete_dark_after_read(self,attr) :
         attr.set_value(self.__deleteDarkAfterRead)
 
@@ -78,9 +90,9 @@ class BackgroundSubstractionDeviceServer(BasePostProcess) :
     def write_offset(self,attr) :
         offset = attr.get_write_value()
         self.__offset = offset
-        if self.__backGroundTask:
+        if self.__background_op:
             try:
-                self.__backGroundTask.setOffset(offset)
+                self.__background_op.setOffset(offset)
             except AttributeError:
                 self.__offset = 0
                 raise
@@ -95,41 +107,35 @@ class BackgroundSubstractionDeviceServer(BasePostProcess) :
 
     def _setBackgroundImage(self,image):
         self.__backGroundImage = image
-        if(self.__backGroundTask) :
-            self.__backGroundTask.setBackgroundImage(image)
+        if(self.__background_op) :
+            self.__background_op.setBackgroundImage(image)
 
     @Core.DEB_MEMBER_FUNCT
     def takeNextAcquisitionAsBackground(self):
-        class GetBackgroundImage(Core.Processlib.SinkTaskBase):
-            def __init__(self,cnt,control_ref):
-                Core.Processlib.SinkTaskBase.__init__(self)
-                self.__control_ref = control_ref
-                ctControl = _control_ref()
-                saving = ctControl.saving()
-                self.__previous_saving_mode = saving.getSavingMode()
-                saving.setSavingMode(Core.CtSaving.Manual)
-                self.__cnt = cnt
+        self.__get_image_task.updateBackgroundImage()
+        
 
-            def process(self,data):
-                background = Core.Processlib.Data()
-                background.buffer = data.buffer
-                self.__cnt._setBackgroundImage(background)
-                ctControl = _control_ref()
-                extOpt = ctControl.externalOperation()
-                extOpt.delOp(BackgroundSubstractionDeviceServer.GET_BACKGROUND_IMAGE)
-                saving = ctControl.saving()
-                saving.setSavingMode(self.__previous_saving_mode)
-                self.__cnt.Start()
-
-        self.Stop()
+class GetBackgroundImageTask(Core.Processlib.SinkTaskBase):
+    def __init__(self,cnt,control_ref):
+        Core.Processlib.SinkTaskBase.__init__(self)
+        self.__control_ref = control_ref
         ctControl = _control_ref()
-        extOpt = ctControl.externalOperation()
-        self.__getImageTask = extOpt.addOp(Core.USER_SINK_TASK,self.GET_BACKGROUND_IMAGE,
-                                           self._runLevel)
-        self.__background = GetBackgroundImage(self,_control_ref)
-        self.__getImageTask.setSinkTask(self.__background)
-	
-class BackgroundSubstractionDeviceServerClass(PyTango.DeviceClass) :
+        saving = ctControl.saving()
+        self.__cnt = cnt
+        self.__update_background_image = False
+        
+    def updateBackgroundImage(self):
+        self.__update_background_image = True
+        
+    def process(self,data):
+        if self.__update_background_image:
+            background = Core.Processlib.Data()
+            background.buffer = data.buffer
+            self.__cnt._setBackgroundImage(background)
+            self.__update_background_image = False
+        
+        
+class BackgroundSubstraction2DeviceServerClass(PyTango.DeviceClass) :
         #	 Class Properties
     class_property_list = {
 	}
@@ -187,4 +193,4 @@ def set_control_ref(control_class_ref) :
     _control_ref= control_class_ref
 
 def get_tango_specific_class_n_device() :
-   return BackgroundSubstractionDeviceServerClass,BackgroundSubstractionDeviceServer
+   return BackgroundSubstraction2DeviceServerClass,BackgroundSubstraction2DeviceServer
