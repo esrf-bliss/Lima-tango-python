@@ -200,8 +200,13 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
         #Overflow
         if fromImageId >= 0 and startImage != fromImageId :
             raise 'Overrun ask id %d, given id %d (no more in memory' % (fromImageId,startImage)
-        self._data_cache = data         # Tango is not so beautiful
-        return data.buffer.ravel()
+        
+        # Check whether the spectrum is ready
+        if data.buffer is None:
+            return []
+        else
+            self._data_cache = data         # Tango is not so beautiful
+            return data.buffer.ravel()
 
 #==================================================================
 #
