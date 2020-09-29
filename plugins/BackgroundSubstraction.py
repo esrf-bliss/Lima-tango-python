@@ -25,10 +25,10 @@ import PyTango
 from Lima import Core
 from Lima.Server.plugins.Utils import getDataFromFile,BasePostProcess
 
-class BackgroundSubstraction2DeviceServer(BasePostProcess) :
+class BackgroundSubstractionDeviceServer(BasePostProcess) :
     BACKGROUND_TASK_NAME = 'BackGroundTask'
     GET_BACKGROUND_IMAGE = "TMP_GET_BACKGROUND_IMAGE"
-    Core.DEB_CLASS(Core.DebModApplication,'BackgroundSubstraction2')
+    Core.DEB_CLASS(Core.DebModApplication,'BackgroundSubstraction')
     
     def __init__(self,cl,name) :
         self.__background_op = None
@@ -38,7 +38,7 @@ class BackgroundSubstraction2DeviceServer(BasePostProcess) :
         self.__offset = 0
         
         BasePostProcess.__init__(self,cl,name)
-        BackgroundSubstraction2DeviceServer.init_device(self)
+        BackgroundSubstractionDeviceServer.init_device(self)
 
     def set_state(self,state) :
         if(state == PyTango.DevState.OFF) :
@@ -135,7 +135,7 @@ class GetBackgroundImageTask(Core.Processlib.SinkTaskBase):
             self.__update_background_image = False
         
         
-class BackgroundSubstraction2DeviceServerClass(PyTango.DeviceClass) :
+class BackgroundSubstractionDeviceServerClass(PyTango.DeviceClass) :
         #	 Class Properties
     class_property_list = {
 	}
@@ -193,4 +193,4 @@ def set_control_ref(control_class_ref) :
     _control_ref= control_class_ref
 
 def get_tango_specific_class_n_device() :
-   return BackgroundSubstraction2DeviceServerClass,BackgroundSubstraction2DeviceServer
+   return BackgroundSubstractionDeviceServerClass,BackgroundSubstractionDeviceServer
