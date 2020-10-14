@@ -53,8 +53,12 @@ class RoiCounterDeviceServer(BasePostProcess) :
         self.__roiName2ID = {}
         self.__roiID2Name = {}
         self.__currentRoiId = 0
+        self.__maskFile = None
+        self.__maskData = None
         BasePostProcess.__init__(self,cl,name)
         RoiCounterDeviceServer.init_device(self)
+        self.setMaskFile(self.MaskFile)
+
         try:
             ctControl = _control_ref()
             config = ctControl.config()
@@ -89,6 +93,8 @@ class RoiCounterDeviceServer(BasePostProcess) :
                 self.__roiCounterMgr = extOpt.addOp(Core.ROICOUNTERS,self.ROI_COUNTER_TASK_NAME,
                                                     self._runLevel)
                 self.__roiCounterMgr.setBufferSize(int(self.BufferSize))
+                if self.__maskData is not None:
+                    self.__roiCounterMgr.setMask(self.__maskData)
             self.__roiCounterMgr.clearCounterStatus()
 
         PyTango.LatestDeviceImpl.set_state(self,state)
@@ -100,14 +106,30 @@ class RoiCounterDeviceServer(BasePostProcess) :
         value_read = self.__roiCounterMgr.getBufferSize()
         attr.set_value(value_read)
 
-
 #------------------------------------------------------------------
 #    Write BufferSize attribute
 #------------------------------------------------------------------
     def write_BufferSize(self, attr):
         data = attr.get_write_value()
-        self.__roiCounterMgr.setBufferSize(data)
+        self.BufferSize = int(data)
+        if self.__roiCounterMgr is not None:
+            self.__roiCounterMgr.setBufferSize(self.BufferSize)
 
+#------------------------------------------------------------------
+#    Read MaskFile attribute
+#------------------------------------------------------------------
+    def read_MaskFile(self, attr):
+        if self.__maskFile is not None:
+            attr.set_value(self.__maskFile)
+        else:
+            attr.set_value("")
+        
+#------------------------------------------------------------------
+#    Write MaskFile attribute
+#------------------------------------------------------------------
+    def write_MaskFile(self, attr):
+        filename = attr.get_write_value()
+        self.setMaskFile(filename)
 
 #------------------------------------------------------------------
 #    Read CounterStatus attribute
@@ -322,9 +344,26 @@ class RoiCounterDeviceServer(BasePostProcess) :
             self.__roiCounterMgr.clearAllRois()
             self.Stop()
 
-    def setMaskFile(self,argin) :
-        mask = getDataFromFile(*argin)
-        self.__roiCounterMgr.setMask(mask)
+    def setMaskFile(self, argin):
+        if len(argin):
+           try:
+               f = EdfFile.EdfFile(argin)
+               data = f.GetData(0)
+           except:
+               raise ValueError(f"Could read mask from {argin}")
+           self.__maskData = Core.ProcessLib.Data()
+           self.__maskData.buffer = data
+           self.__maskFile = argin
+           if self.__roiCounterMgr is not None:
+               self.__roiCounterMgr.setMask(self.__maskData)
+        else:
+           if self.__maskData is not None:
+               # reset the mask if needed
+               if self.__roiCounterMgr is not None:
+                  emptyData = Core.ProcessLib.Data()
+                  self.__roiCounterMgr.setMask(emptyData)
+           self.__maskData = None
+           self.__maskFile = None
 
     def readCounters(self,argin) :
         roiResultCounterList = self.__roiCounterMgr.readCounters(argin)
@@ -370,6 +409,9 @@ class RoiCounterDeviceServerClass(PyTango.DeviceClass):
         'BufferSize':
         [PyTango.DevShort,
          "Rois buffer size",[256]],
+        'MaskFile':
+        [PyTango.DevString,
+         "Mask file", ""],
         }
 
 
@@ -403,7 +445,7 @@ class RoiCounterDeviceServerClass(PyTango.DeviceClass):
         [[PyTango.DevVoid,""],
          [PyTango.DevVoid,""]],
         'setMaskFile':
-        [[PyTango.DevVarStringArray,"Full path of mask file"],
+        [[PyTango.DevString,"Full path of mask file"],
          [PyTango.DevVoid,""]],
         'readCounters':
         [[PyTango.DevLong,"from which frame"],
@@ -423,6 +465,10 @@ class RoiCounterDeviceServerClass(PyTango.DeviceClass):
             [[PyTango.DevLong,
             PyTango.SCALAR,
             PyTango.READ_WRITE]],
+        'MaskFile':
+            [[PyTango.DevString,
+            PyTango.SCALAR,
+            PyTango.READ_WRITE]],
         'CounterStatus':
             [[PyTango.DevLong,
             PyTango.SCALAR,
@@ -440,7 +486,6 @@ class RoiCounterDeviceServerClass(PyTango.DeviceClass):
     def __init__(self, name):
         PyTango.DeviceClass.__init__(self, name)
         self.set_type(name);
-
 
 
 _control_ref = None
