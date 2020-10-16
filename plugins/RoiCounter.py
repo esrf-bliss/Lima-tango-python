@@ -104,8 +104,7 @@ class RoiCounterDeviceServer(BasePostProcess) :
 #    Read BufferSize attribute
 #------------------------------------------------------------------
     def read_BufferSize(self, attr):
-        value_read = self.__roiCounterMgr.getBufferSize()
-        attr.set_value(value_read)
+        attr.set_value(self.BufferSize)
 
 #------------------------------------------------------------------
 #    Write BufferSize attribute
@@ -115,6 +114,9 @@ class RoiCounterDeviceServer(BasePostProcess) :
         self.BufferSize = int(data)
         if self.__roiCounterMgr is not None:
             self.__roiCounterMgr.setBufferSize(self.BufferSize)
+
+    def is_BufferSize_allowed(self,mode):
+        return True
 
 #------------------------------------------------------------------
 #    Read MaskFile attribute
@@ -131,6 +133,9 @@ class RoiCounterDeviceServer(BasePostProcess) :
     def write_MaskFile(self, attr):
         filename = attr.get_write_value()
         self.setMaskFile(filename)
+
+    def is_MaskFile_allowed(self,mode):
+        return True
 
 #------------------------------------------------------------------
 #    Read CounterStatus attribute
