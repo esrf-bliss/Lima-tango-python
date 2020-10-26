@@ -365,7 +365,7 @@ class BpmDeviceServer(BasePostProcess):
 
         else:
             PyTango.Except.throw_exception('WrongData',\
-                                           f'Wrong value lut_method: {data}, use log or linear instead',
+                                           'Wrong value lut_method: {data}, use log or linear instead'.format(data=data),
                                            'LimaCCD Class')
 
 
@@ -448,12 +448,12 @@ class BpmDeviceServer(BasePostProcess):
 
         if data[0] > data[1]:
             PyTango.Except.throw_exception('WrongData',\
-                                           f'Wrong values min_max: {data}, max < min',
+                                           'Wrong values min_max: {data}, max < min'.format(data=data),
                                            'LimaCCD Class')
 
         if data[0] > max or data[1] > max:
             PyTango.Except.throw_exception('WrongData',\
-                                           f'Wrong value min_max: {data}, out of range {range}',
+                                           'Wrong value min_max: {data}, out of range {range}'.format(data=data, range=range),
                                            'LimaCCD Class'
                                            )
         self.min_max[0] = data[0]
