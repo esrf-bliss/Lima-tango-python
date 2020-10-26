@@ -582,7 +582,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
                           "last_counter_ready", "last_image_acquired",
                           "last_image_ready", "last_image_saved",
                           "video_last_image", "video_last_image_counter",
-                          "acq_status"]:
+                          "video_live", "acq_status"]:
             attr = attr_list.get_attr_by_name(attr_name)
             attr.set_change_event(True, False)
         
@@ -1565,6 +1565,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
             video.startLive()
         else:
             video.stopLive()
+        self.push_change_event("video_live", video.getLive())
 
     def read_video_exposure(self,attr) :
         video = self.__control.video()
