@@ -50,8 +50,9 @@ def getDatasFromFile(filepath,fromIndex = 0,toIndex = -1) :
             rData.buffer = a
             try:
                 rData.header = header
-            except TypeError:
-                pass
+            except TypeError as e:
+                import traceback
+                traceback.print_exc()
             returnDatas.append(rData)
     except:
         import traceback
