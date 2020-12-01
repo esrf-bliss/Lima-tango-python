@@ -49,7 +49,7 @@ def getDatasFromFile(filepath,fromIndex = 0,toIndex = -1) :
             rData = Core.Processlib.Data()
             rData.buffer = a
             try:
-                rData.header = header
+                rData.header.update(header)
             except TypeError as e:
                 import traceback
                 traceback.print_exc()
