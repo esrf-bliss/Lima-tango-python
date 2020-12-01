@@ -56,8 +56,36 @@ class MaskDeviceServer(BasePostProcess) :
         PyTango.LatestDeviceImpl.set_state(self,state)
 
     def setMaskImage(self,filepath) :
-        self.__maskImage = getDataFromFile(filepath)
-        if(self.__maskTask) :
+        """Set a mask image from a EDF filename.
+
+        By default a mask data set to 0 will set the Lima data to 0.
+
+        If the file header contains `masked_value` this convention can be
+        chosen. This key can contain one of:
+
+        - `zero`: Mask the data when the mask value is 0
+                  (default Lima convention)
+        - `nonzero`: Mask the data when the mask value is something else than 0
+                     (default silx convention)
+        """
+        maskImage = getDataFromFile(filepath)
+
+        # Check masking convention
+        masked_value = maskImage.header.get("masked_value")
+        if masked_value not in [None, "zero", "nonzero"]:
+            # Sanitize
+            msg = "Header 'masked_value=%s' from file %s is unknown. Header skipped."
+            print(msg % (masked_value, filepath))
+            masked_value = None
+
+        # Normalize the mask if needed
+        if masked_value == "nonzero":
+            # nexus and silx convention: mask != 0 means the data is masked (set to 0)
+            maskImage.buffer = (maskImage.buffer == 0).astype("uint8")
+
+        self.__maskImage = maskImage
+
+        if self.__maskTask:
             self.__maskTask.setMaskImage(self.__maskImage)
 
 #------------------------------------------------------------------
