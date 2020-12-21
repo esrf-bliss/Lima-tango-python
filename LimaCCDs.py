@@ -323,7 +323,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
                     self.__last_image_acquired = last_image_acquired
                 if self.__last_image_ready != last_image_ready:
                     device.push_change_event("last_image_ready", last_image_ready)
-                    print('PUSH', last_image_ready)
                     self.__last_image_ready = last_image_ready
                     if (last_image_ready >= 0) and self.__image_events_push_data:
                         control = self.__control()
