@@ -302,9 +302,9 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
             # that the last events before the acquisition finishes
             # can be lost
             last_image_acquired = image_status.LastImageAcquired
-            last_image_ready = image_status.LastImageReady
             if self.__events and (tn >= te or last_image_acquired < 0 or stat_change):
                 last_base_image_ready = image_status.LastBaseImageReady
+                last_image_ready = image_status.LastImageReady
                 last_counter_ready = image_status.LastCounterReady
                 last_image_ready = image_status.LastImageReady
                 last_image_saved = image_status.LastImageSaved
@@ -323,6 +323,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
                     self.__last_image_acquired = last_image_acquired
                 if self.__last_image_ready != last_image_ready:
                     device.push_change_event("last_image_ready", last_image_ready)
+                    print('PUSH', last_image_ready)
                     self.__last_image_ready = last_image_ready
                     if (last_image_ready >= 0) and self.__image_events_push_data:
                         control = self.__control()
