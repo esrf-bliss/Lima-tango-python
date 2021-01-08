@@ -286,18 +286,26 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
 
         def imageStatusChanged(self, image_status):
             tn = time.time()
+            # time before which no event will be sent.
+            # Event will be sent regardless of time if (or):
+            # - last_acquired < 0
+            # - acq_status changed to ready, so that clients
+            #   dont miss the last image
             te = self.__last_event_time + 1.0 / self.__image_events_max_rate
 
+            status = self.__control().getStatus().AcquisitionStatus
+            stat_change = status != self.__last_acq_status
             # if the TangoEvent property is not set, the counters/image
             # are not pushed
             # if the property is set, we only send if 
             # WARNING : this needs to be reworked as this means
             # that the last events before the acquisition finishes
             # can be lost
-            if self.__events and tn < te:
+            last_image_acquired = image_status.LastImageAcquired
+            if self.__events and (tn >= te or last_image_acquired < 0 or stat_change):
                 last_base_image_ready = image_status.LastBaseImageReady
+                last_image_ready = image_status.LastImageReady
                 last_counter_ready = image_status.LastCounterReady
-                last_image_acquired = image_status.LastImageAcquired
                 last_image_ready = image_status.LastImageReady
                 last_image_saved = image_status.LastImageSaved
 
@@ -327,6 +335,8 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
                                              last_image_saved)
                     self.__last_image_saved = last_image_saved
 
+                self.__last_event_time = time.time()
+
             # pushing the status if:
             # - it has changed since the last callback call
             # - the counters are < 0 (e.g : prepare acq)
@@ -338,16 +348,13 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
             #       is "AcqRead" after the prepare, and already back to
             #       "AcqReady" when the first and only frame comes in,
             #       so we never see the change of status.
-            status = self.__control().getStatus().AcquisitionStatus
-            if status != self.__last_acq_status or image_status.LastImageAcquired < 0:
+            if stat_change or image_status.LastImageAcquired < 0:
                 if image_status.LastImageAcquired < 0:
                     self.__last_acq_status = None
                 else:
                     self.__last_acq_status = status
                 self.__device().push_change_event("acq_status",
                                                   _acqstate2string(status))
-
-            self.__last_event_time = time.time()
 
         def getImageEventsPushData(self):
             return self.__image_events_push_data
