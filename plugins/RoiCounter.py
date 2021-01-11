@@ -27,7 +27,7 @@ import sys
 import numpy
 import processlib
 from Lima import Core
-from Lima.Server.plugins.Utils import getDataFromFile,BasePostProcess
+from Lima.Server.plugins.Utils import getDataFromFile,getMaskFromFile,BasePostProcess
 from Lima.Server import EdfFile
 
 def grouper(n, iterable, padvalue=None):
@@ -353,13 +353,10 @@ class RoiCounterDeviceServer(BasePostProcess) :
     def setMaskFile(self, argin):
         if len(argin):
            try:
-               f = EdfFile.EdfFile(argin)
-               data = f.GetData(0)
+               data = getMaskFromFile(argin)
            except:
                raise ValueError(f"Could read mask from {argin}")
-           self.__maskData = Core.Processlib.Data()
-           self.__maskData.buffer = data
-           self.__maskFile = argin
+           self.__maskData = data
            if self.__roiCounterMgr is not None:
                self.__roiCounterMgr.setMask(self.__maskData)
         else:
