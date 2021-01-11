@@ -22,7 +22,7 @@
 import PyTango
 
 from Lima import Core
-from Lima.Server.plugins.Utils import getDataFromFile,BasePostProcess
+from Lima.Server.plugins.Utils import getMaskFromFile,BasePostProcess
 from Lima.Server import AttrHelper
 
 class MaskDeviceServer(BasePostProcess) :
@@ -68,23 +68,8 @@ class MaskDeviceServer(BasePostProcess) :
         - `nonzero`: Mask the data when the mask value is something else than 0
                      (default silx convention)
         """
-        maskImage = getDataFromFile(filepath)
-
-        # Check masking convention
-        masked_value = maskImage.header.get("masked_value")
-        if masked_value not in [None, "zero", "nonzero"]:
-            # Sanitize
-            msg = "Header 'masked_value=%s' from file %s is unknown. Header skipped."
-            print(msg % (masked_value, filepath))
-            masked_value = None
-
-        # Normalize the mask if needed
-        if masked_value == "nonzero":
-            # nexus and silx convention: mask != 0 means the data is masked (set to 0)
-            maskImage.buffer = (maskImage.buffer == 0).astype("uint8")
-
+        maskImage = getMaskFromFile(filepath)
         self.__maskImage = maskImage
-
         if self.__maskTask:
             self.__maskTask.setMaskImage(self.__maskImage)
 
