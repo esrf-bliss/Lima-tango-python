@@ -27,7 +27,7 @@ import sys
 import numpy
 import processlib
 from Lima import Core
-from Lima.Server.plugins.Utils import getDataFromFile,BasePostProcess
+from Lima.Server.plugins.Utils import getMaskFromFile,BasePostProcess
 
 def grouper(n, iterable, padvalue=None):
     return zip(*[itertools.chain(iterable, itertools.repeat(padvalue, n-1))]*n)
@@ -189,7 +189,7 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
         self.__roi2spectrumMgr.clearAllRois()
 
     def setMaskFile(self,argin) :
-        mask = getDataFromFile(*argin)
+        mask = [getMaskFromFile(f) for f in argin]
         self.__roi2spectrumMgr.setMask(mask)
 
     def readImage(self,argin) :
