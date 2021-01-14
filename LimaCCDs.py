@@ -958,7 +958,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
         else:
             msg = "Accumulation threshold plugins not loaded"
             deb.Error(msg)
-            raise Exception(msg)
 
 
     ## @brief Read latency time 
