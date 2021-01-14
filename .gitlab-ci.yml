@@ -1,5 +1,6 @@
 stages:
   - build
+  - test
   - deploy
 
 build-noarch:
@@ -11,6 +12,27 @@ build-noarch:
       - dist/
   tags:
     - conda
+
+
+test-pytest:
+  stage: test
+  image: continuumio/miniconda3:latest
+  before_script:
+    - echo ${CI_PROJECT_DIR}
+    - /opt/conda/bin/conda init && source /root/.bashrc
+    - conda config --env --add channels esrf-bcu
+    - conda config --env --append channels conda-forge
+    - conda config --env --append channels tango-controls
+    - conda install --yes pytest fabio pytango lima-core python==3.7
+    - conda install dist/noarch/lima-tango-server-*.tar.bz2
+  script:
+    - pytest tests
+  artifacts:
+    paths:
+      - dist/
+  tags:
+    - conda
+
 
 deploy_devel:
   stage: deploy
