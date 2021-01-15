@@ -1,17 +1,7 @@
 stages:
-  - build
   - test
+  - package
   - deploy
-
-build-noarch:
-  stage: build
-  script:
-    - conda build ./conda --prefix-length=80 --output-folder=dist/ -c tango-controls --channel=http://bcu-ci.esrf.fr/stable -c conda-forge
-  artifacts:
-    paths:
-      - dist/
-  tags:
-    - conda
 
 
 test-pytest:
@@ -19,6 +9,7 @@ test-pytest:
   image: continuumio/miniconda3:latest
   before_script:
     - echo ${CI_PROJECT_DIR}
+    - export PIP_CACHE_DIR="/opt/cache/pip"
     - /opt/conda/bin/conda init && source /root/.bashrc
     - conda config --env --add channels esrf-bcu
     - conda config --env --append channels conda-forge
@@ -26,9 +17,21 @@ test-pytest:
     - conda install --yes python=3.7
     - conda install --yes lima-core pytango
     - conda install --yes pytest fabio
-    - conda install dist/noarch/lima-tango-server-*.tar.bz2
+    - conda install --yes pip
+    - pip install . -vv
   script:
     - pytest tests
+  artifacts:
+    paths:
+      - dist/
+  tags:
+    - conda
+
+
+package-noarch:
+  stage: package
+  script:
+    - conda build ./conda --prefix-length=80 --output-folder=dist/ -c tango-controls --channel=http://bcu-ci.esrf.fr/stable -c conda-forge
   artifacts:
     paths:
       - dist/
@@ -42,7 +45,7 @@ deploy_devel:
     name: devel/$CI_COMMIT_REF_NAME
     url: http://bcu-ci.esrf.fr/devel
   dependencies:
-    - build-noarch
+    - package-noarch
   script:
     - cp -Rf dist/* /conda-devel/
     - conda index /conda-devel/
@@ -61,7 +64,7 @@ deploy_stable:
     name: production
     url: http://bcu-ci.esrf.fr/stable
   dependencies:
-    - build-noarch
+    - package-noarch
   script:
     - cp -Rf dist/* /conda/
     - conda index /conda/
