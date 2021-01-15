@@ -1650,8 +1650,11 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
 
     def write_shared_memory_names(self,attr) :
         self.__shared_memory_names = attr.get_write_value()
-        shared_memory = self.__control.display()
-        shared_memory.setNames(*self.__shared_memory_names)
+        try:
+            shared_memory = self.__control.display()
+            shared_memory.setNames(*self.__shared_memory_names)
+        except:
+            pass
 
     def read_shared_memory_active(self,attr):
         try:
@@ -1662,7 +1665,10 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
 
     def write_shared_memory_active(self,attr):
         data = attr.get_write_value()
-        self.__control.display().setActive(data)
+        try:
+            self.__control.display().setActive(data)
+        except:
+            pass
 
     def read_config_available_module(self,attr) :
         config = self.__control.config()
