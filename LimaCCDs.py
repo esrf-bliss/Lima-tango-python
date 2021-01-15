@@ -2817,7 +2817,6 @@ def main(args=None) :
         try:
             declare_camera_n_commun_to_tango_world(py)
         except:
-            print ('SEB_EXP')
             import traceback
             traceback.print_exc()
 
@@ -2853,7 +2852,6 @@ def main(args=None) :
         try:
             export_default_plugins()
         except:
-            print ('SEB_EXP')
             import traceback
             traceback.print_exc()
 
