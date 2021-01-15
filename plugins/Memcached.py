@@ -20,7 +20,6 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 ############################################################################
 
-import itertools
 import weakref
 import PyTango
 import sys
@@ -34,9 +33,6 @@ from pymemcache.client.base import Client
 from Lima import Core
 from Lima.Server.plugins.Utils import getDataFromFile, BasePostProcess
 from Lima.Server import AttrHelper
-
-# def grouper(n, iterable, padvalue=None):
-#     return itertools.izip(*[itertools.chain(iterable, itertools.repeat(padvalue, n-1))]*n)
 
 #==================================================================
 #   MemcachedSinkTask SinkTask

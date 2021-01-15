@@ -20,7 +20,6 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 ############################################################################
 
-import itertools
 import PyTango
 import numpy
 import processlib
@@ -54,10 +53,6 @@ except ImportError:
 
 import base64
 import math
-
-
-def grouper(n, iterable, padvalue=None):
-    return itertools.izip(*[itertools.chain(iterable, itertools.repeat(padvalue, n-1))]*n)
 
 
 
@@ -365,7 +360,7 @@ class BpmDeviceServer(BasePostProcess):
 
         else:
             PyTango.Except.throw_exception('WrongData',\
-                                           f'Wrong value lut_method: {data}, use log or linear instead',
+                                           'Wrong value lut_method: {0}, use log or linear instead'.format(data),
                                            'LimaCCD Class')
 
 
@@ -448,13 +443,13 @@ class BpmDeviceServer(BasePostProcess):
 
         if data[0] > data[1]:
             PyTango.Except.throw_exception('WrongData',\
-                                           f'Wrong values min_max: {data}, max < min',
+                                           'Wrong values min_max: {0}, max < min'.format(data),
                                            'LimaCCD Class')
 
         if data[0] > max or data[1] > max:
             PyTango.Except.throw_exception('WrongData',\
-                                           f'Wrong value min_max: {data}, out of range {range}',
-                                           'LimaCCD Class'
+                                           'Wrong value min_max: {0}, out of range {1}',
+                                           'LimaCCD Class'.format(data, range)
                                            )
         self.min_max[0] = data[0]
         self.min_max[1] = data[1]
