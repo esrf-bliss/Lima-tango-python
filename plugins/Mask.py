@@ -22,7 +22,7 @@
 import PyTango
 
 from Lima import Core
-from Lima.Server.plugins.Utils import getDataFromFile,BasePostProcess
+from Lima.Server.plugins.Utils import getMaskFromFile,BasePostProcess
 from Lima.Server import AttrHelper
 
 class MaskDeviceServer(BasePostProcess) :
@@ -31,7 +31,7 @@ class MaskDeviceServer(BasePostProcess) :
     def __init__(self,cl,name) :
         self.__maskTask = None
         self.__maskImage = Core.Processlib.Data()
-        
+
         self.__Type = {'STANDARD' : 0,
                        'DUMMY' : 1}
 
@@ -56,8 +56,21 @@ class MaskDeviceServer(BasePostProcess) :
         PyTango.LatestDeviceImpl.set_state(self,state)
 
     def setMaskImage(self,filepath) :
-        self.__maskImage = getDataFromFile(filepath)
-        if(self.__maskTask) :
+        """Set a mask image from a EDF filename.
+
+        By default a mask data set to 0 will set the Lima data to 0.
+
+        If the file header contains `masked_value` this convention can be
+        chosen. This key can contain one of:
+
+        - `zero`: Mask the data when the mask value is 0
+                  (default Lima convention)
+        - `nonzero`: Mask the data when the mask value is something else than 0
+                     (default silx convention)
+        """
+        maskImage = getMaskFromFile(filepath)
+        self.__maskImage = maskImage
+        if self.__maskTask:
             self.__maskTask.setMaskImage(self.__maskImage)
 
 #------------------------------------------------------------------

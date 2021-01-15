@@ -32,3 +32,8 @@ Lima is a C++ library which can be used with many different cameras. The library
 
 The documentation is available [here](https://lima.blissgarden.org)
 
+## Tests
+
+```
+python -m pytest
+```

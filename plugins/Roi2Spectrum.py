@@ -27,7 +27,7 @@ import sys
 import numpy
 import processlib
 from Lima import Core
-from Lima.Server.plugins.Utils import getDataFromFile,BasePostProcess
+from Lima.Server.plugins.Utils import getMaskFromFile,BasePostProcess
 
 def grouper(n, iterable, padvalue=None):
     return zip(*[itertools.chain(iterable, itertools.repeat(padvalue, n-1))]*n)
@@ -189,8 +189,17 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
         self.__roi2spectrumMgr.clearAllRois()
 
     def setMaskFile(self,argin) :
-        mask = getDataFromFile(*argin)
-        self.__roi2spectrumMgr.setMask(mask)
+        if len(argin):
+            try:
+                mask = getMaskFromFile(argin)
+            except:
+                raise ValueError(f"Could read mask from {argin}")
+            if self.__roiCounterMgr is not None:
+                self.__roi2spectrumMgr.setMask(mask)
+        else:
+            if self.__roiCounterMgr is not None:
+                emptyData = Core.Processlib.Data()
+                self.__roiCounterMgr.setMask(emptyData)
 
     def readImage(self,argin) :
         roiId,fromImageId = argin
@@ -248,9 +257,9 @@ class Roi2spectrumDeviceServerClass(PyTango.DeviceClass):
         'setRoiModes':
         [[PyTango.DevVarStringArray,"roi mode vector [alias0,mode0,alias1,mode1,...]"],
          [PyTango.DevVoid,""]],
-##        'setMaskFile':
-##        [[PyTango.DevVarStringArray,"Full path of mask file"],
-##         [PyTango.DevVoid,""]],
+        'setMaskFile':
+        [[PyTango.DevString,"Full path of mask file"],
+         [PyTango.DevVoid,""]],
         'clearAllRois':
         [[PyTango.DevVoid,""],
          [PyTango.DevVoid,""]],

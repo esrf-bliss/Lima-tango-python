@@ -49,15 +49,52 @@ def getDatasFromFile(filepath,fromIndex = 0,toIndex = -1) :
             rData = Core.Processlib.Data()
             rData.buffer = a
             try:
-                rData.header = header
-            except TypeError:
-                pass
+                rData.header.update(header)
+            except TypeError as e:
+                import traceback
+                traceback.print_exc()
             returnDatas.append(rData)
     except:
         import traceback
         traceback.print_exc()
     finally:
         return returnDatas
+
+
+def getMaskFromFile(filepath):
+    """Returns a data object from filename.
+
+    By default a mask data set to 0 will set the Lima data to 0.
+
+    If the file header contains `masked_value` this convention can be
+    chosen. This key can contain one of:
+
+    - `zero`: Mask the data when the mask value is 0
+              (default Lima convention)
+    - `nonzero`: Mask the data when the mask value is something else than 0
+                 (default silx convention)
+
+    Arguments:
+        filename: File name
+
+    Returns:
+        A Core.Processlib.Data object
+    """
+    maskImage = getDataFromFile(filepath)
+    # Check masking convention
+    masked_value = maskImage.header.get("masked_value")
+    if masked_value not in [None, "zero", "nonzero"]:
+        # Sanitize
+        msg = "Header 'masked_value=%s' from file %s is unknown. Header skipped."
+        print(msg % (masked_value, filepath))
+        masked_value = None
+
+    # Normalize the mask if needed
+    if masked_value == "nonzero":
+        # nexus and silx convention: mask != 0 means the data is masked (set to 0)
+        maskImage.buffer = (maskImage.buffer == 0).astype("uint8")
+
+    return maskImage
 
 
 class BasePostProcess(PyTango.LatestDeviceImpl) :
