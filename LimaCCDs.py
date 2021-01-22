@@ -1894,7 +1894,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
     @Core.DEB_MEMBER_FUNCT
     def readImageSeq(self, frame_seq):
         deb.Param('frame_seq=%s' % frame_seq)
-        frame_seq = map(int, frame_seq)
+        frame_seq = [int(frame_id) for frame_id in frame_seq]
         start, end = frame_seq[:2]
         step = 1
         if len(frame_seq) > 2:
