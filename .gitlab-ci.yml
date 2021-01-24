@@ -23,7 +23,9 @@ test-pytest:
     - conda config --env --add channels esrf-bcu
     - conda config --env --append channels conda-forge
     - conda config --env --append channels tango-controls
-    - conda install --yes pytest fabio pytango lima-core python==3.7
+    - conda install --yes python=3.7
+    - conda install --yes lima-core pytango
+    - conda install --yes pytest fabio
     - conda install dist/noarch/lima-tango-server-*.tar.bz2
   script:
     - pytest tests
