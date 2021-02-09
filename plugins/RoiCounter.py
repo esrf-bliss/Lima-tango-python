@@ -357,6 +357,7 @@ class RoiCounterDeviceServer(BasePostProcess) :
            except:
                raise ValueError(f"Could read mask from {argin}")
            self.__maskData = data
+           self.__maskFile = argin
            if self.__roiCounterMgr is not None:
                self.__roiCounterMgr.setMask(self.__maskData)
         else:
