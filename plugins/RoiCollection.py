@@ -161,6 +161,9 @@ class RoiCollectionDeviceServer(BasePostProcess) :
            self._maskData = None
            self._maskFile = None
 
+    def clearAllRois(self):
+        self._roiCollectionMgr.clearRois()
+        
     def setRois(self,argin):
         if not len(argin) % 4:
             roi_list = ((x,y,width,height) for x,y,width,height in grouper(4,argin))
@@ -211,20 +214,23 @@ class RoiCollectionDeviceServerClass(PyTango.DeviceClass):
     #	 Command definitions
     cmd_list = {
         'setMaskFile':
-            [[PyTango.DevVarStringArray,"Full path of mask file"],
-             [PyTango.DevVoid,""]],
+        [[PyTango.DevVarStringArray,"Full path of mask file"],
+         [PyTango.DevVoid,""]],
+        'clearAllRois':
+        [[PyTango.DevVoid,""],
+         [PyTango.DevVoid,""]],
         'setRois':
         [[PyTango.DevVarLongArray,"roi vector [x0,y0,width0,height0,x1,y1,width1,heigh1,...]"],
          [PyTango.DevVoid,""]],
          'readSpectrum':
-            [[PyTango.DevLong,"from which frame"],
-             [PyTango.DevVarLongArray,"number of spectrum,spectrum size,first frame id,spectrum0,spectrum1..."]],
+        [[PyTango.DevLong,"from which frame"],
+         [PyTango.DevVarLongArray,"number of spectrum,spectrum size,first frame id,spectrum0,spectrum1..."]],
 	'Start':
-            [[PyTango.DevVoid,""],
-             [PyTango.DevVoid,""]],
+        [[PyTango.DevVoid,""],
+         [PyTango.DevVoid,""]],
 	'Stop':
-            [[PyTango.DevVoid,""],
-             [PyTango.DevVoid,""]],
+        [[PyTango.DevVoid,""],
+         [PyTango.DevVoid,""]],
 	}
 
     #	 Attribute definitions
