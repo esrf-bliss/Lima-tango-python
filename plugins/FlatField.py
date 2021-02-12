@@ -1,10 +1,12 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2011
+# Copyright (C) : 2009-2021
 # European Synchrotron Radiation Facility
-# BP 220, Grenoble 38043
+# CS40220 38043 Grenoble Cedex 9 
 # FRANCE
+#
+# Contact: lima@esrf.fr
 #
 # This is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,16 +28,20 @@ from Lima.Server.plugins.Utils import getDataFromFile,BasePostProcess
 
 class FlatfieldDeviceServer(BasePostProcess) :
     FLATFIELD_TASK_NAME = 'FlatField'
+    Core.DEB_CLASS(Core.DebModApplication, 'FlatfieldDeviceServer')
 
+    @Core.DEB_MEMBER_FUNCT
     def __init__(self,cl,name) :
         self.__flatFieldTask = None
         self.__normalize = True
+        self.__flatFieldFile = None
 
         self.__flatFieldImage = Core.Processlib.Data()
 
         BasePostProcess.__init__(self,cl,name)
         FlatfieldDeviceServer.init_device(self)
 
+    @Core.DEB_MEMBER_FUNCT
     def set_state(self,state) :
         if(state == PyTango.DevState.OFF) :
             if(self.__flatFieldTask) :
@@ -53,22 +59,20 @@ class FlatfieldDeviceServer(BasePostProcess) :
                 self.__flatFieldTask.setFlatFieldImage(self.__flatFieldImage, self.__normalize)
         PyTango.LatestDeviceImpl.set_state(self,state)
 
-    def setFlatFieldImage(self,filepath) :
-        self.__flatFieldImage = getDataFromFile(filepath)
-        if(self.__flatFieldTask) :
-            self.__flatFieldTask.setFlatFieldImage(self.__flatFieldImage)
-
-
 #==================================================================
 #
 #    FlatfieldDeviceServer read/write attribute methods
 #
 #==================================================================
 #------------------------------------------------------------------
+#  normalize attribute
+#------------------------------------------------------------------
 
+    @Core.DEB_MEMBER_FUNCT
     def read_normalize(self,attr) :
         attr.set_value(self.__normalize)
 
+    @Core.DEB_MEMBER_FUNCT
     def write_normalize(self,attr) :
         data = attr.get_write_value()
         self.__normalize = data
@@ -80,6 +84,52 @@ class FlatfieldDeviceServer(BasePostProcess) :
         else:
             return self.get_state() == PyTango.DevState.OFF
 
+#------------------------------------------------------------------
+#    Read MaskFile attribute
+#------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
+    def read_FlatFieldFile(self, attr):
+        if self.__flatFieldFile is not None:
+            attr.set_value(self.__flatFieldFile)
+        else:
+            attr.set_value("")
+        
+#------------------------------------------------------------------
+#    Write MaskFile attribute
+#------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
+    def write_FlatFieldFile(self, attr):
+        filename = attr.get_write_value()
+        self.setFlatFieldFile(filename)
+
+    def is_FlatFieldFile_allowed(self,mode):
+        return True
+    
+#==================================================================
+#
+#    Mask command methods
+#
+#==================================================================
+
+    @Core.DEB_MEMBER_FUNCT
+    def setFlatFieldImage(self,filepath) :
+        self.__flatFieldImage = getDataFromFile(filepath)
+        self.__flatFieldFile = filepath
+        if(self.__flatFieldTask) :
+            self.__flatFieldTask.setFlatFieldImage(self.__flatFieldImage)
+
+
+    @Core.DEB_MEMBER_FUNCT
+    def setFlatFieldFile(self, filepath):
+        """ new command to fit with other correction plugin api
+        """
+        self.setFlatFieldImage(filepath)
+
+#==================================================================
+#
+#    FlatfieldDeviceServerClass class definition
+#
+#==================================================================
 class FlatfieldDeviceServerClass(PyTango.DeviceClass) :
         #	 Class Properties
     class_property_list = {
@@ -94,6 +144,9 @@ class FlatfieldDeviceServerClass(PyTango.DeviceClass) :
     #	 Command definitions
     cmd_list = {
         'setFlatFieldImage':
+        [[PyTango.DevString,"Full path of flatfield image file"],
+         [PyTango.DevVoid,""]],
+        'setFlatFieldFile':
         [[PyTango.DevString,"Full path of flatfield image file"],
          [PyTango.DevVoid,""]],
         'Start':
@@ -115,7 +168,11 @@ class FlatfieldDeviceServerClass(PyTango.DeviceClass) :
             [[PyTango.DevBoolean,
             PyTango.SCALAR,
             PyTango.READ_WRITE]],
-        }
+         'FlatFieldFile':
+            [[PyTango.DevString,
+            PyTango.SCALAR,
+            PyTango.READ_WRITE]],
+    }
 
 
 #------------------------------------------------------------------
