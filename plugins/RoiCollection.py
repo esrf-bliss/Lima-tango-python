@@ -97,6 +97,7 @@ class RoiCollectionDeviceServer(BasePostProcess) :
 #------------------------------------------------------------------
 #    Read BufferSize attribute
 #------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def read_BufferSize(self, attr):
         value_read = self._roiCollectionMgr.historySize()
         attr.set_value(value_read)
@@ -105,6 +106,7 @@ class RoiCollectionDeviceServer(BasePostProcess) :
 #------------------------------------------------------------------
 #    Write BufferSize attribute
 #------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def write_BufferSize(self, attr):
         data = attr.get_write_value()
         self._roiCollectionMgr.resizeHistory(data)
@@ -114,6 +116,7 @@ class RoiCollectionDeviceServer(BasePostProcess) :
 #------------------------------------------------------------------
 #    Read CounterStatus attribute
 #------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def read_CounterStatus(self, attr):
         value_read = self._roiCollectionMgr.lastFrameNumber()
         attr.set_value(value_read)
@@ -121,6 +124,7 @@ class RoiCollectionDeviceServer(BasePostProcess) :
 #------------------------------------------------------------------
 #    Read MaskFile attribute
 #------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def read_MaskFile(self, attr):
         if self._maskFile is not None:
             attr.set_value(self._maskFile)
@@ -130,6 +134,7 @@ class RoiCollectionDeviceServer(BasePostProcess) :
 #------------------------------------------------------------------
 #    Write MaskFile attribute
 #------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def write_MaskFile(self, attr):
         filename = attr.get_write_value()
         self.setMaskFile(filename)
@@ -143,6 +148,7 @@ class RoiCollectionDeviceServer(BasePostProcess) :
 #
 #==================================================================
 
+    @Core.DEB_MEMBER_FUNCT
     def setMaskFile(self,argin) :
         if len(argin):
            try:
@@ -161,9 +167,11 @@ class RoiCollectionDeviceServer(BasePostProcess) :
            self._maskData = None
            self._maskFile = None
 
+    @Core.DEB_MEMBER_FUNCT
     def clearAllRois(self):
         self._roiCollectionMgr.clearRois()
         
+    @Core.DEB_MEMBER_FUNCT
     def setRois(self,argin):
         if not len(argin) % 4:
             roi_list = ((x,y,width,height) for x,y,width,height in grouper(4,argin))
@@ -171,11 +179,12 @@ class RoiCollectionDeviceServer(BasePostProcess) :
         else:
             raise AttributeError('should be a vector as follow [x0,y0,width0,height0,...')
         
+    @Core.DEB_MEMBER_FUNCT
     def readSpectrum(self,argin) :
         result_counters = self._roiCollectionMgr.getHistory(argin)
         if result_counters:
             list_size = len(result_counters)
-            if list_size :
+            if list_size and result_counters[0].spectrum is not None:
                 spectrum_size = len(result_counters[0].spectrum)
                 first_frame_id = result_counters[0].frameNumber
                 
@@ -190,7 +199,7 @@ class RoiCollectionDeviceServer(BasePostProcess) :
 
 #==================================================================
 #
-#    RoiCollectionClass class definition
+#    RoiCollectionDeviceServerClass class definition
 #
 #==================================================================
 class RoiCollectionDeviceServerClass(PyTango.DeviceClass):
