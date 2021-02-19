@@ -10,11 +10,16 @@ source:
 build:
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
   noarch: python
+  script: "pip install . -vv"
   entry_points:
     - LimaCCDs = Lima.Server.LimaCCDs:main
     - LimaViewer = Lima.Server.LimaViewer:main
 
 requirements:
+  host:
+    - pip
+    - python
+    - setuptools
   run:
     - pytango
     - pillow # Required by the Bpm plugin
@@ -22,8 +27,12 @@ requirements:
     - pymemcache # Required by the Memcached plugin
     - bloscpack # Required by the Memcached plugin
 
+test:
+  imports:
+    - Lima.Server
+
 about:
   home: https://github.com/esrf-bliss/Lima
   license: GPL
   license_file: COPYING
-  summary: a library for the unified control of 2D detectors
+  summary: A library for the unified control of 2D detectors
