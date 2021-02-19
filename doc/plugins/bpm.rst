@@ -12,6 +12,7 @@ Properties
 ====================    ====== ====================  ================================================================================================================
 Propertie name          RW     Type                  Description
 ====================    ====== ====================  ================================================================================================================
+enable_bpm_calc         RW     DevBoolean            Enable or disable the bpm calculation algorithm.
 enable_tango_event      RW     DevBoolean            if set to false, Bpm won't push bvdata or other attributes through Tango.
 calibration             RW     DevVarDoubleArray     Contains the calibration in X and Y ([X,Y]), value in unit/pixel.                                                                  |
 beammark                RW     DevVarLongArray       Contains coordinates (X,Y) in pixels of a beam mark set by the user.
@@ -21,9 +22,9 @@ beammark                RW     DevVarLongArray       Contains coordinates (X,Y) 
 Attributes
 ----------
 
-====================   ====== ==========     ================================================================================================================
-Attribute name		   RW	  Type			 Description
-====================   ====== ==========     ================================================================================================================
+====================   ====== ==========      ================================================================================================================
+Attribute name         RW     Type            Description
+====================   ====== ==========      ================================================================================================================
 buffersize             RW     DevLong         Size of the buffer where a certain amount of images will be store before re-writing on the first one.
 x                      RO     DevDouble       coordinate on the x axis of the beam return by the BPM task. If the algorithm couldn't find a X value then it
                                               is set at -1.
@@ -46,6 +47,7 @@ bvdata                 RO     DevEncoded      Attribute regrouping the image (jp
                                               Bpm, currently here : https://gitlab.esrf.fr/limagroup/bpm-web )
 calibration            RW     DevDouble       Attribute version of the calibration property.
 beammark               RW     DevLong         Attribute version of the beammark property.
+enable_bpm_calc        RW     DevBoolean      Enable or disable the bpm calculation algorithm.
 ====================   ====== ==========     ================================================================================================================
 
 
