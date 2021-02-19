@@ -125,17 +125,18 @@ class BpmDeviceServer(BasePostProcess):
                 self._bpmManager = None
                 self._BVDataTask = None
         elif(state == PyTango.DevState.ON) :
-            if not self._bpmManager:
-                ctControl = _control_ref()
-                extOpt = ctControl.externalOperation()
+            ctControl = _control_ref()
+            extOpt = ctControl.externalOperation()
+            if not self._bpmManager and self.enable_bpm_calc:
                 self._softOp = extOpt.addOp(Core.BPM,self.BPM_TASK_NAME,
                                                     self._runLevel+1)
                 self._bpmManager = self._softOp.getManager()
-                if self.enable_tango_event:
-                    self._BVDataTask = BVDataTask(self)
-                    handler = extOpt.addOp(Core.USER_SINK_TASK,
-                                        self.BVDATA_TASK_NAME,self._runLevel+2)
-                    handler.setSinkTask(self._BVDataTask)
+
+            if self.enable_tango_event:
+                self._BVDataTask = BVDataTask(self)
+                handler = extOpt.addOp(Core.USER_SINK_TASK,
+                                       self.BVDATA_TASK_NAME,self._runLevel+2)
+                handler.setSinkTask(self._BVDataTask)
 
 
         PyTango.LatestDeviceImpl.set_state(self,state)
@@ -248,40 +249,52 @@ class BpmDeviceServer(BasePostProcess):
 #==================================================================
     #
     def get_bpm_result(self, frameNumber=None, timestamp=None):
-        if frameNumber==None:
+        if self.enable_bpm_calc:
+            if frameNumber==None:
+                t = time.time()
+                result = self._bpmManager.getResult()
+            else:
+                t = timestamp
+                result = self._bpmManager.getResult(0,frameNumber)
+
+            dim = _control_ref().image().getImageDim().getSize()
+            max_width = dim.getWidth()
+            max_height = dim.getHeight()
+            if result.errorCode != self._bpmManager.OK:
+                x = -1
+                y = -1
+                intensity = -1
+                fwhm_x = 0
+                fwhm_y = 0
+                max_intensity = 0
+            else:
+                x  = self.validate_number(result.beam_center_x, max_value=max_width)
+                x *= self.calibration[0]
+                y  = self.validate_number(result.beam_center_y, max_value=max_height)
+                y *= self.calibration[1]
+                intensity = self.validate_number(result.beam_intensity)
+                fwhm_x = self.validate_number(result.beam_fwhm_x, fallback_value=0)
+                fwhm_x *= self.calibration[0]
+                fwhm_y = self.validate_number(result.beam_fwhm_y, fallback_value=0)
+                fwhm_y *= self.calibration[1]
+                max_intensity = self.validate_number(result.max_pixel_value, fallback_value=0)
+            try:
+                profile_x = result.profile_x.buffer.astype(numpy.int)
+            except:
+                profile_x = numpy.array([],dtype=numpy.int)
+            try:
+                profile_y = result.profile_y.buffer.astype(numpy.int)
+            except:
+                profile_y = numpy.array([],dtype=numpy.int)
+        else:
             t = time.time()
-            result = self._bpmManager.getResult()
-        else:
-            t = timestamp
-            result = self._bpmManager.getResult(0,frameNumber)
-        dim = _control_ref().image().getImageDim().getSize()
-        max_width = dim.getWidth()
-        max_height = dim.getHeight()
-        if result.errorCode != self._bpmManager.OK:
-           x = -1
-           y = -1
-           intensity = -1
-           fwhm_x = 0
-           fwhm_y = 0
-           max_intensity = 0
-        else:
-            x  = self.validate_number(result.beam_center_x, max_value=max_width)
-            x *= self.calibration[0]
-            y  = self.validate_number(result.beam_center_y, max_value=max_height)
-            y *= self.calibration[1]
-            intensity = self.validate_number(result.beam_intensity)
-            fwhm_x = self.validate_number(result.beam_fwhm_x, fallback_value=0)
-            fwhm_x *= self.calibration[0]
-            fwhm_y = self.validate_number(result.beam_fwhm_y, fallback_value=0)
-            fwhm_y *= self.calibration[1]
-            max_intensity = self.validate_number(result.max_pixel_value, fallback_value=0)
-        try:
-            profile_x = result.profile_x.buffer.astype(numpy.int)
-        except:
+            x = -1
+            y = -1
+            intensity = -1
+            fwhm_x = 0
+            fwhm_y = 0
+            max_intensity = 0
             profile_x = numpy.array([],dtype=numpy.int)
-        try:
-            profile_y = result.profile_y.buffer.astype(numpy.int)
-        except:
             profile_y = numpy.array([],dtype=numpy.int)
 
         acq_time=t
@@ -473,6 +486,17 @@ class BpmDeviceServer(BasePostProcess):
     def is_return_bpm_profiles_allowed(self,mode) :
         return True
 
+    def read_enable_bpm_calc(self, attr):
+        attr.set_value(self.enable_bpm_calc)
+
+    def write_enable_bpm_calc(self, attr):
+        flag = attr.get_write_value()
+        self.enable_bpm_calc = bool(flag)
+
+    def is_enable_bpm_calc_allowed(self,mode) :
+        return True
+
+
 #==================================================================
 #
 #    BpmClass class definition
@@ -523,6 +547,10 @@ class BpmDeviceServerClass(PyTango.DeviceClass):
         [PyTango.DevVarLongArray,
          "min/max value for manual scaling",
          [0,65535] ],
+        'enable_bpm_calc':
+        [PyTango.DevBoolean,
+         "Enable/Disable bpm calculation",
+         True],
 	}
 
 
@@ -575,6 +603,7 @@ class BpmDeviceServerClass(PyTango.DeviceClass):
         'jpeg_quality': [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
         'min_max': [[PyTango.DevULong64, PyTango.SPECTRUM, PyTango.READ_WRITE, 2 ]],
         'return_bpm_profiles': [[PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]],
+        'enable_bpm_calc': [[PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]],
     }
 
 
