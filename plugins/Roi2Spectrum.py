@@ -1,10 +1,12 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2011
+# Copyright (C) : 2009-2021
 # European Synchrotron Radiation Facility
-# BP 220, Grenoble 38043
+# CS40220 38043 Grenoble Cedex 9 
 # FRANCE
+#
+# Contact: lima@esrf.fr
 #
 # This is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -45,17 +47,24 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
 
 #--------- Add you global variables here --------------------------
     ROI_SPECTRUM_TASK_NAME = "Roi2SpectrumTask"
+    Core.DEB_CLASS(Core.DebModApplication,'Roi2spectrumDeviceServer')
+        
 #------------------------------------------------------------------
 #    Device constructor
 #------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def __init__(self,cl, name):
         self.__roi2spectrumMgr = None
         self.__roiName2ID = {}
         self.__roiID2Name = {}
         self.__currentRoiId = 0
+        self.__maskFile = None
+        self.__maskData = None
         BasePostProcess.__init__(self,cl,name)
         Roi2spectrumDeviceServer.init_device(self)
+        self.setMaskFile(self.MaskFile)
 
+    @Core.DEB_MEMBER_FUNCT
     def set_state(self,state) :
         if(state == PyTango.DevState.OFF) :
             if(self.__roi2spectrumMgr) :
@@ -70,6 +79,9 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
                 self.__roi2spectrumMgr = extOpt.addOp(Core.ROI2SPECTRUM,
                                                       self.ROI_SPECTRUM_TASK_NAME,
                                                       self._runLevel)
+                self.__roi2spectrumMgr.setBufferSize(int(self.BufferSize))
+                if self._maskData is not None:
+                    self.__roi2spectrumMgr.setMask(self.__maskData)
             self.__roi2spectrumMgr.clearCounterStatus()
 
         PyTango.LatestDeviceImpl.set_state(self,state)
@@ -77,32 +89,77 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
 #------------------------------------------------------------------
 #    Read BufferSize attribute
 #------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def read_BufferSize(self, attr):
-        value_read = self.__roi2spectrumMgr.getBufferSize()
-        attr.set_value(value_read)
+        attr.set_value(self.BufferSize)
 
 
 #------------------------------------------------------------------
 #    Write BufferSize attribute
 #------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def write_BufferSize(self, attr):
         data = attr.get_write_value()
-        self.__roi2spectrumMgr.setBufferSize(data)
+        self.BufferSize = int(data)
+        if self.__roi2spectrumMgr is not None:
+            self.__roi2spectrumMgr.setBufferSize(data)
 
+    def is_BufferSize_allowed(self,mode):
+        return True
+#------------------------------------------------------------------
+#    Read MaskFile attribute
+#------------------------------------------------------------------
+    def read_MaskFile(self, attr):
+        if self.__maskFile is not None:
+            attr.set_value(self.__maskFile)
+        else:
+            attr.set_value("")
+        
+#------------------------------------------------------------------
+#    Write MaskFile attribute
+#------------------------------------------------------------------
+    def write_MaskFile(self, attr):
+        filename = attr.get_write_value()
+        self.setMaskFile(filename)
+
+    def is_MaskFile_allowed(self,mode):
+        return True
 
 #------------------------------------------------------------------
 #    Read CounterStatus attribute
 #------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def read_CounterStatus(self, attr):
         value_read = self.__roi2spectrumMgr.getCounterStatus()
         attr.set_value(value_read)
 
+#------------------------------------------------------------------
+#    Read MaskFile attribute
+#------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
+    def read_MaskFile(self, attr):
+        if self._maskFile is not None:
+            attr.set_value(self._maskFile)
+        else:
+            attr.set_value("")
+        
+#------------------------------------------------------------------
+#    Write MaskFile attribute
+#------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
+    def write_MaskFile(self, attr):
+        filename = attr.get_write_value()
+        self.setMaskFile(filename)
+
+    def is_MaskFile_allowed(self,mode):
+        return True
 
 #==================================================================
 #
 #    Roi2spectrum command methods
 #
 #==================================================================
+    @Core.DEB_MEMBER_FUNCT
     def addNames(self,argin):
         roi_id = []
         for roi_name in argin:
@@ -115,6 +172,7 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
                 roi_id.append(self.__roiName2ID[roi_name])
         return roi_id
 
+    @Core.DEB_MEMBER_FUNCT
     def removeRois(self,argin):
         if self.__roi2spectrumMgr :
             self.__roi2spectrumMgr.removeRois(argin)
@@ -122,6 +180,7 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
             roi_id = self.__roiName2ID.pop(roi_name,None)
             self.__roiID2Name.pop(roi_id,None)
 
+    @Core.DEB_MEMBER_FUNCT
     def setRois(self,argin) :
         if self.__roi2spectrumMgr is None:
             raise RuntimeError('should start the device first')
@@ -137,11 +196,13 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
         else:
             raise AttributeError('should be a vector as follow [roi_id0,x0,y0,width0,height0,...')
 
+    @Core.DEB_MEMBER_FUNCT
     def getNames(self):
         if self.__roi2spectrumMgr is None:
             raise RuntimeError('should start the device first')
         return self.__roi2spectrumMgr.getNames()       
 
+    @Core.DEB_MEMBER_FUNCT
     def getRois(self,argin):
         if self.__roi2spectrumMgr is None:
             raise RuntimeError('should start the device first')
@@ -159,6 +220,7 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
             roi_list.append((roi_id, x, y, w, h))
         return list(itertools.chain(*roi_list))
 
+    @Core.DEB_MEMBER_FUNCT
     def getRoiModes(self,argin) :
         if self.__roi2spectrumMgr is None:
             raise RuntimeError('should start the device first')
@@ -177,6 +239,7 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
             roi_mode_list.append(roi_mode_map[roi_mode])
         return roi_mode_list
 
+    @Core.DEB_MEMBER_FUNCT
     def setRoiModes(self,argin) :
         roi_mode_map = {
             'COLUMN_SUM': Roi2SpectrumTask.COLUMN_SUM,
@@ -185,22 +248,31 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
         rois_modes = [(n, roi_mode_map[m]) for n,m in  grouper(2, argin)]
         self.__roi2spectrumMgr.setRoiModes(rois_modes)
 
+    @Core.DEB_MEMBER_FUNCT
     def clearAllRois(self):
         self.__roi2spectrumMgr.clearAllRois()
 
+    @Core.DEB_MEMBER_FUNCT
     def setMaskFile(self,argin) :
         if len(argin):
             try:
-                mask = getMaskFromFile(argin)
+                data = getMaskFromFile(argin)
             except:
                 raise ValueError(f"Could read mask from {argin}")
+            self.__maskData = data
+            self.__maskFile = argin
             if self.__roiCounterMgr is not None:
-                self.__roi2spectrumMgr.setMask(mask)
+                self.__roi2spectrumMgr.setMask(self.__maskData)
         else:
-            if self.__roiCounterMgr is not None:
-                emptyData = Core.Processlib.Data()
-                self.__roiCounterMgr.setMask(emptyData)
+            if self.__maskData is not None:
+                # reset the mask if needed
+                if self.__roiCounterMgr is not None:
+                    emptyData = Core.Processlib.Data()
+                    self.__roiCounterMgr.setMask(emptyData)
+            self.__maskData = None
+            self.__maskFile = None
 
+    @Core.DEB_MEMBER_FUNCT
     def readImage(self,argin) :
         roiId,fromImageId = argin
         roi_name = self.__roiID2Name.get(roiId,None)
@@ -231,7 +303,13 @@ class Roi2spectrumDeviceServerClass(PyTango.DeviceClass):
 
     #	 Device Properties
     device_property_list = {
-        }
+        'BufferSize':
+        [PyTango.DevShort,
+         "Rois buffer size",[256]],
+        'MaskFile':
+        [PyTango.DevString,
+         "Mask file", ""],
+    }
 
 
     #	 Command definitions
@@ -279,6 +357,10 @@ class Roi2spectrumDeviceServerClass(PyTango.DeviceClass):
     attr_list = {
         'BufferSize':
             [[PyTango.DevLong,
+            PyTango.SCALAR,
+            PyTango.READ_WRITE]],
+        'MaskFile':
+            [[PyTango.DevString,
             PyTango.SCALAR,
             PyTango.READ_WRITE]],
         'CounterStatus':

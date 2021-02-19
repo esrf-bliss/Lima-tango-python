@@ -1,10 +1,12 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2020
+# Copyright (C) : 2009-2021
 # European Synchrotron Radiation Facility
-# BP 220, Grenoble 38043
+# CS40220 38043 Grenoble Cedex 9 
 # FRANCE
+#
+# Contact: lima@esrf.fr
 #
 # This is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,11 +30,13 @@ from Lima.Server.plugins.Utils import getDataFromFile,BasePostProcess
 class BackgroundSubstractionDeviceServer(BasePostProcess) :
     BACKGROUND_TASK_NAME = 'BackGroundTask'
     GET_BACKGROUND_IMAGE = "TMP_GET_BACKGROUND_IMAGE"
-    Core.DEB_CLASS(Core.DebModApplication,'BackgroundSubstraction')
+    Core.DEB_CLASS(Core.DebModApplication,'BackgroundSubstractionDeviceServer')
     
+    @Core.DEB_MEMBER_FUNCT
     def __init__(self,cl,name) :
         self.__background_op = None
-        self.__backGroundImage = Core.Processlib.Data()
+        self.__backgroundFile = None
+        self.__backgroundImage = Core.Processlib.Data()
         self.get_device_properties(self.get_device_class())
         self.__deleteDarkAfterRead = False
         self.__offset = 0
@@ -40,6 +44,7 @@ class BackgroundSubstractionDeviceServer(BasePostProcess) :
         BasePostProcess.__init__(self,cl,name)
         BackgroundSubstractionDeviceServer.init_device(self)
 
+    @Core.DEB_MEMBER_FUNCT
     def set_state(self,state) :
         if(state == PyTango.DevState.OFF) :
             if(self.__background_op) :
@@ -66,7 +71,7 @@ class BackgroundSubstractionDeviceServer(BasePostProcess) :
                   self.__background_op = extOpt.addOp(Core.BACKGROUNDSUBSTRACTION,
                                                        self.BACKGROUND_TASK_NAME,
                                                        self._runLevel+1)
-                  self.__background_op.setBackgroundImage(self.__backGroundImage)
+                  self.__background_op.setBackgroundImage(self.__backgroundImage)
                   if self.__offset :
                       self.__background_op.setOffset(self.__offset)
                 except:
@@ -77,16 +82,23 @@ class BackgroundSubstractionDeviceServer(BasePostProcess) :
         PyTango.LatestDeviceImpl.set_state(self,state)
 
         
+    @Core.DEB_MEMBER_FUNCT
     def read_delete_dark_after_read(self,attr) :
         attr.set_value(self.__deleteDarkAfterRead)
 
+    @Core.DEB_MEMBER_FUNCT
     def write_delete_dark_after_read(self,attr) :
         data = attr.get_write_value()
         self.__deleteDarkAfterRead = data
 
+    def is_delete_dark_after_read_allowed(self,mode):
+        return True
+
+    @Core.DEB_MEMBER_FUNCT
     def read_offset(self,attr) :
         attr.set_value(self.__offset)
 
+    @Core.DEB_MEMBER_FUNCT
     def write_offset(self,attr) :
         offset = attr.get_write_value()
         self.__offset = offset
@@ -96,19 +108,56 @@ class BackgroundSubstractionDeviceServer(BasePostProcess) :
             except AttributeError:
                 self.__offset = 0
                 raise
+            
+    def is_offset_allowed(self,mode):
+        return True
+
+#------------------------------------------------------------------
+#    Read MaskFile attribute
+#------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
+    def read_BackgroundFile(self, attr):
+        if self.__backgroundFile is not None:
+            attr.set_value(self.__backgroundFile)
+        else:
+            attr.set_value("")
+        
+#------------------------------------------------------------------
+#    Write MaskFile attribute
+#------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
+    def write_BackgroundFile(self, attr):
+        filename = attr.get_write_value()
+        self.setBackgroundImageFile(filename)
+
+    def is_BackgroundFile_allowed(self,mode):
+        return True
+
+#==================================================================
+#
+#    Background command methods
+#
+#==================================================================
 
     @Core.DEB_MEMBER_FUNCT
     def setBackgroundImage(self,filepath) :
         deb.Param('filepath=%s' % filepath)
         image = getDataFromFile(filepath)
+        self.__backgroundFile = filepath
         if self.__deleteDarkAfterRead:
             os.unlink(filepath)
         self._setBackgroundImage(image)
 
     def _setBackgroundImage(self,image):
-        self.__backGroundImage = image
+        self.__backgroundImage = image
         if(self.__background_op) :
             self.__background_op.setBackgroundImage(image)
+
+    @Core.DEB_MEMBER_FUNCT
+    def setBackgroundFile(self,filepath) :
+        """ new command to fit with other correction plugin api
+        """
+        self.setBackgroundImage(filepath)
 
     @Core.DEB_MEMBER_FUNCT
     def takeNextAcquisitionAsBackground(self):
@@ -151,6 +200,9 @@ class BackgroundSubstractionDeviceServerClass(PyTango.DeviceClass) :
         'setBackgroundImage':
         [[PyTango.DevString,"Full path of background image file"],
          [PyTango.DevVoid,""]],
+        'setBackgroundFile':
+        [[PyTango.DevString,"Full path of background image file"],
+         [PyTango.DevVoid,""]],
         'takeNextAcquisitionAsBackground':
         [[PyTango.DevVoid,""],
          [PyTango.DevVoid,""]],
@@ -160,21 +212,25 @@ class BackgroundSubstractionDeviceServerClass(PyTango.DeviceClass) :
 	'Stop':
 	[[PyTango.DevVoid,""],
 	 [PyTango.DevVoid,""]],
-	}
+    }
 
 
     #	 Attribute definitions
     attr_list = {
 	'RunLevel':
-	    [[PyTango.DevLong,
-	    PyTango.SCALAR,
-	    PyTango.READ_WRITE]],
+	[[PyTango.DevLong,
+	  PyTango.SCALAR,
+	  PyTango.READ_WRITE]],
 	'delete_dark_after_read':
 	[[PyTango.DevBoolean,
 	  PyTango.SCALAR,
 	  PyTango.READ_WRITE]],
         'offset':
         [[PyTango.DevLong,
+          PyTango.SCALAR,
+          PyTango.READ_WRITE]],
+        'BackgroundFile':
+        [[PyTango.DevString,
           PyTango.SCALAR,
           PyTango.READ_WRITE]],
 	}

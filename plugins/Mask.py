@@ -1,10 +1,12 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2011
+# Copyright (C) : 2009-2021
 # European Synchrotron Radiation Facility
-# BP 220, Grenoble 38043
+# CS40220 38043 Grenoble Cedex 9 
 # FRANCE
+#
+# Contact: lima@esrf.fr
 #
 # This is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,9 +29,12 @@ from Lima.Server import AttrHelper
 
 class MaskDeviceServer(BasePostProcess) :
     MASK_TASK_NAME = 'MaskTask'
+    Core.DEB_CLASS(Core.DebModApplication,'MaskDeviceServer')
 
+    @Core.DEB_MEMBER_FUNCT
     def __init__(self,cl,name) :
         self.__maskTask = None
+        self.__maskFile = None
         self.__maskImage = Core.Processlib.Data()
 
         self.__Type = {'STANDARD' : 0,
@@ -38,6 +43,7 @@ class MaskDeviceServer(BasePostProcess) :
         BasePostProcess.__init__(self,cl,name)
         MaskDeviceServer.init_device(self)
 
+    @Core.DEB_MEMBER_FUNCT
     def set_state(self,state) :
         if(state == PyTango.DevState.OFF) :
             if(self.__maskTask) :
@@ -55,6 +61,33 @@ class MaskDeviceServer(BasePostProcess) :
                 self.__maskTask.setMaskImage(self.__maskImage)
         PyTango.LatestDeviceImpl.set_state(self,state)
 
+#------------------------------------------------------------------
+#    Read MaskFile attribute
+#------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
+    def read_MaskFile(self, attr):
+        if self.__maskFile is not None:
+            attr.set_value(self.__maskFile)
+        else:
+            attr.set_value("")
+        
+#------------------------------------------------------------------
+#    Write MaskFile attribute
+#------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
+    def write_MaskFile(self, attr):
+        filename = attr.get_write_value()
+        self.setMaskFile(filename)
+
+    def is_MaskFile_allowed(self,mode):
+        return True
+
+#==================================================================
+#
+#    Mask command methods
+#
+#==================================================================
+    @Core.DEB_MEMBER_FUNCT
     def setMaskImage(self,filepath) :
         """Set a mask image from a EDF filename.
 
@@ -70,9 +103,16 @@ class MaskDeviceServer(BasePostProcess) :
         """
         maskImage = getMaskFromFile(filepath)
         self.__maskImage = maskImage
+        self.__maskFile = filepath
         if self.__maskTask:
             self.__maskTask.setMaskImage(self.__maskImage)
 
+    @Core.DEB_MEMBER_FUNCT
+    def setMaskFile(self, filepath):
+        """ new command to fit with other correction plugin api
+        """
+        self.setMaskImage(filepath)
+        
 #------------------------------------------------------------------
 #    getAttrStringValueList command:
 #
@@ -107,6 +147,9 @@ class MaskDeviceServerClass(PyTango.DeviceClass) :
         'setMaskImage':
         [[PyTango.DevString,"Full path of mask image file"],
          [PyTango.DevVoid,""]],
+        'setMaskFile':
+        [[PyTango.DevString,"Full path of mask image file"],
+         [PyTango.DevVoid,""]],
         'getAttrStringValueList':
         [[PyTango.DevString, "Attribute name"],
          [PyTango.DevVarStringArray, "Authorized String value list"]],
@@ -129,7 +172,11 @@ class MaskDeviceServerClass(PyTango.DeviceClass) :
         [[PyTango.DevString,
           PyTango.SCALAR,
           PyTango.READ_WRITE]],
-        }
+         'MaskFile':
+            [[PyTango.DevString,
+            PyTango.SCALAR,
+            PyTango.READ_WRITE]],
+    }
 
 
 #------------------------------------------------------------------
