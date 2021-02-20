@@ -14,7 +14,7 @@ console_scripts_entry_points = [
 ]
 
 setup(name='Lima.Server',
-    version='1.9.6',
+    version='1.9.10',
     description='Python server for Lima cameras',
     url='https://gitlab.esrf.fr/limagroup/Lima-tango-python',
     packages=packages,
