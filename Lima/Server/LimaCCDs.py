@@ -242,7 +242,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         Core.Bpp32S: 6,
     }
 
-    # The DATA_ARRAY definition v2
+    # The DATA_ARRAY definition v3
     # struct {
     # unsigned int Magic= 0x44544159;
     # unsigned short Version;
@@ -253,11 +253,11 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     # unsigned short NbDim;
     # unsigned short Dim[6]
     # unsigned int DimStepBytes[6]
-    # unsigned int Unused[2]
+    # unsigned long ImageNumber;
     # } DataArrayHeaderStruct;
 
-    DataArrayVersion = 2
-    DataArrayPackStr = "<IHHIIHHHHHHHHIIIIIIII"
+    DataArrayVersion = 3
+    DataArrayPackStr = "<IHHIIHHHHHHHHIIIIIIQ"
     DataArrayMagic = struct.unpack(">I", b"DTAY")[0]  # 0x44544159
     DataArrayMinHeaderLen = 64
     DataArrayMaxNbDim = 6
@@ -1958,6 +1958,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         imageType = image.getImageType()
         dataType = self.ImageType2DataArrayType.get(imageType, -1)
         bigEndian = numpy.dtype(d.dtype.byteorder + "i4") == numpy.dtype(">i4")
+        imageNumber = data.frameNumber
 
         def steps_gen(s):
             size = self.ImageType2NbBytes.get(imageType, (1, 0))[0]
@@ -2000,8 +2001,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             t[3],
             t[4],
             t[5],  # 24 bytes I x 6 - stepsbytes
-            0,
-            0,  # padding 2 x 4 bytes
+            imageNumber,  # 8 bytes Q x 1 - imageNumber
         )
 
         flatData = d.ravel()
