@@ -80,7 +80,7 @@ class Roi2spectrumDeviceServer(BasePostProcess) :
                                                       self.ROI_SPECTRUM_TASK_NAME,
                                                       self._runLevel)
                 self.__roi2spectrumMgr.setBufferSize(int(self.BufferSize))
-                if self._maskData is not None:
+                if self.__maskData is not None:
                     self.__roi2spectrumMgr.setMask(self.__maskData)
             self.__roi2spectrumMgr.clearCounterStatus()
 
