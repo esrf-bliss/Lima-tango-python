@@ -105,12 +105,12 @@ class BasePostProcess(PyTango.LatestDeviceImpl) :
 
     def __getattr__(self,name) :
         if name.startswith('is_') and name.endswith('_allowed') :
-            self.__dict__[name] = self.__global_allowed
-            return self.__global_allowed
+            self.__dict__[name] = self._global_allowed
+            return self._global_allowed
         raise AttributeError('%s has no attribute %s' %
                              (self.__class__.__name__,name))
 
-    def __global_allowed(self,*args) :
+    def _global_allowed(self,*args) :
         return self.get_state() == PyTango.DevState.ON
 
     def is_RunLevel_allowed(self,mode) :
