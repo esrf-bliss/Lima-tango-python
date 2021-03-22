@@ -23,7 +23,7 @@ requirements:
   run:
     - pytango
     - pillow # Required by the Bpm plugin
-    - libjpeg-turbo # Required by the Bpm plugin
+    - pyturbojpeg # Required by the Bpm plugin
     - pymemcache # Required by the Memcached plugin
     - bloscpack # Required by the Memcached plugin
 
