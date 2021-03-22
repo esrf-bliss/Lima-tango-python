@@ -368,8 +368,10 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         da_type = self.ImageType2DataArrayType.get(image_type, "?")
         image_size = frame_dim.getSize()
         da_size = [image_size.getWidth(), image_size.getHeight() * nb_frames]
+        da_steps = [frame_dim.getDepth()]
+        da_steps += [da_steps[0] * da_size[0]]
 
-        # The DATA_ARRAY definition v1
+        # The DATA_ARRAY definition v2
         # struct {
         # unsigned int Magic= 0x44544159;
         # unsigned short Version;
@@ -378,8 +380,9 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         # DataArrayType DataType;
         # unsigned short DataEndianness;
         # unsigned short NbDim;
-        # unsigned short Dim[8]
-        # unsigned int DimStep[8]
+        # unsigned short Dim[6]
+        # unsigned int DimStepBytes[6]
+        # unsigned int Unused[2]
         # } DataArrayHeaderStruct;
 
         # enum DataArrayCategory {
@@ -403,45 +406,45 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         # DARRAY_FLOAT64;
         # };
 
+        # verify (future) backward compatibility
+        min_header_len = 64
+        header_fmt = "<IHHIIHHHHHHHHIIIIIIII"
+        header_len = struct.calcsize(header_fmt)
+        if header_len < min_header_len:
+            raise RuntimeError(
+                "Invalid header len: %d (min. expected %d)"
+                % (header_len, min_header_len)
+            )
+
+        concat_frames = control.ReadImage(0, nb_frames)
+        dtype = concat_frames.buffer.dtype
+        big_endian = numpy.dtype(dtype.byteorder + "i4") == numpy.dtype(">i4")
+
         # prepare the structure
-        #  '>IHHHHHHHHHHHHHHIIIIIIII',
-        header_len = 64
         data_header = struct.pack(
-            "IHHIIHHHHHHHHHHHHHHHHHHIII",
-            0x44544159,  # 4bytes I  - magic number
-            1,  # 2bytes H  - version
+            header_fmt,
+            0x44544159,  # 4 bytes I - magic number
+            2,  # 2 bytes H - version
             header_len,  # 2 bytes H - this header size
             2,  # 4 bytes I - category (enum)
             da_type,  # 4 bytes I - data type (enum)
-            0,  # 2 bytes H - endianness
+            big_endian,  # 2 bytes H - endianness
             2,  # 2 bytes H - nb of dims
             da_size[0],
             da_size[1],
             0,
             0,
             0,
-            0,
-            0,
-            0,  # 16 bytes Hx8 - dims
-            1,
-            da_size[1],
-            0,
+            0,  # 12 bytes H x 6 - dims
+            da_steps[0],
+            da_steps[1],
             0,
             0,
             0,
+            0,  # 24 bytes I x 6 - stepsbytes
             0,
-            0,  # 16 bytes H x 8 - dimsteps
-            0,
-            0,
-            0,  # padding 3 x 4 bytes
+            0,  # padding 2 x 4 bytes
         )
-        if len(data_header) != header_len:
-            msg = "Invalid DevEncoded DATA_ARRAY len: %d (expected %d)" % (
-                len(data_header),
-                header_len,
-            )
-            raise Core.Exception(msg)
-        concat_frames = control.ReadImage(0, nb_frames)
         self._concat_data_cache = data_header + concat_frames.buffer.tostring()
         da_len = len(self._concat_data_cache) - header_len
         release = getattr(concat_frames, "releaseBuffer", None)
