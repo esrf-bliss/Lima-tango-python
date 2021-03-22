@@ -239,7 +239,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
     DataArrayVersion = 2
     DataArrayPackStr = '<IHHIIHHHHHHHHIIIIIIII'
     DataArrayMagic = struct.unpack('>I', b'DTAY')[0]	# 0x44544159
-    DataArrayHeaderLen = 64
+    DataArrayMinHeaderLen = 64
     DataArrayMaxNbDim = 6
 
     def DataArrayUser(klass, DataArrayCategory=DataArrayCategory):
@@ -1851,12 +1851,18 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
         s += [0] * (maxNbDim - nbDim)
         t += [0] * (maxNbDim - nbDim)
 
+        #verify backward compatibility
+        headerlen = struct.calcsize(self.DataArrayPackStr)
+        if headerlen < self.DataArrayMinHeaderLen:
+            raise RuntimeError('Invalid header len: %d (min. expected %d)' % \
+                  (headerlen, self.DataArrayMinHeaderLen))
+
         #prepare the structure
         dataheader = struct.pack(
           self.DataArrayPackStr,
           self.DataArrayMagic,			# 4 bytes I - magic number
           self.DataArrayVersion,		# 2 bytes H - version
-          self.DataArrayHeaderLen,		# 2 bytes H - this header length
+          headerlen,				# 2 bytes H - this header length
           category,				# 4 bytes I - category (enum)
           dataType,   				# 4 bytes I - data type (enum)
           bigEndian,   				# 2 bytes H - endianness
@@ -1864,9 +1870,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
           s[0],s[1],s[2],s[3],s[4],s[5],        # 12 bytes H x 6 - dims
           t[0],t[1],t[2],t[3],t[4],t[5],        # 24 bytes I x 6 - stepsbytes
           0, 0)    				# padding 2 x 4 bytes
-        if len(dataheader) != self.DataArrayHeaderLen:
-            raise RuntimeError('Invalid header len: %d (expected %d)' % \
-                  (len(dataheader), self.DataArrayHeaderLen))
 
         flatData = d.ravel()
         flatData.dtype = numpy.uint8

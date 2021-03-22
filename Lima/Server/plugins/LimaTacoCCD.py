@@ -399,26 +399,32 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
           #DARRAY_FLOAT64;
         #};
 
+        #verify (future) backward compatibility
+        min_header_len = 64
+        header_fmt = '<IHHIIHHHHHHHHHHHHHHHHHHIII'
+        header_len = struct.calcsize(header_fmt)
+        if header_len < min_header_len:
+            raise RuntimeError('Invalid header len: %d (min. expected %d)' % \
+                  (header_len, min_header_len))
+
+        concat_frames = control.ReadImage(0, nb_frames)
+        dtype = concat_frames.buffer.dtype
+        big_endian = numpy.dtype(dtype.byteorder + 'i4') == numpy.dtype('>i4')
+
         #prepare the structure
-        #  '>IHHHHHHHHHHHHHHIIIIIIII',
-        header_len = 64
         data_header = struct.pack(
-          'IHHIIHHHHHHHHHHHHHHHHHHIII',
-          0x44544159,  				# 4bytes I  - magic number
-          1,           				# 2bytes H  - version
+          header_fmt,
+          0x44544159,  				# 4 bytes I - magic number
+          1,           				# 2 bytes H - version
           header_len,  				# 2 bytes H - this header size
           2,           				# 4 bytes I - category (enum)
           da_type,				# 4 bytes I - data type (enum)
-          0,           				# 2 bytes H - endianness
+          big_endian,				# 2 bytes H - endianness
           2,           				# 2 bytes H - nb of dims
-          da_size[0],da_size[1],0,0,0,0,0,0,	# 16 bytes Hx8 - dims
+          da_size[0],da_size[1],0,0,0,0,0,0,	# 16 bytes H x 8 - dims
           1,da_size[1],0,0,0,0,0,0,    		# 16 bytes H x 8 - dimsteps
           0,0,0)    				# padding 3 x 4 bytes
-        if len(data_header) != header_len:
-            msg = ('Invalid DevEncoded DATA_ARRAY len: %d (expected %d)' %
-                   (len(data_header), header_len))
-            raise Core.Exception(msg)
-        concat_frames = control.ReadImage(0, nb_frames)
+
         self._concat_data_cache = data_header + concat_frames.buffer.tostring()
         da_len = len(self._concat_data_cache) - header_len
         release = getattr(concat_frames, 'releaseBuffer', None)
