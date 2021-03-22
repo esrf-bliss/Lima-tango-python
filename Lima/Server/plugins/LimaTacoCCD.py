@@ -357,7 +357,7 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
     def DevCcdReadAll(self, frame_size):
         deb.Param('frame_size=%s' % frame_size)
         frame_dim = self.__getFrameDim()
-        nb_frames = frame_size / frame_dim.getMemSize()
+        nb_frames = frame_size // frame_dim.getMemSize()
         control = _control_ref()
         image = control.image()
         image_type = image.getImageType()
