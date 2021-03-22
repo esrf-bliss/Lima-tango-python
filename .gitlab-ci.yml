@@ -1,35 +1,9 @@
 stages:
-  - test
-  - package
+  - build
   - deploy
 
-
-test-pytest:
-  stage: test
-  image: continuumio/miniconda3:latest
-  before_script:
-    - echo ${CI_PROJECT_DIR}
-    - export PIP_CACHE_DIR="/opt/cache/pip"
-    - /opt/conda/bin/conda init && source /root/.bashrc
-    - conda config --env --add channels esrf-bcu
-    - conda config --env --append channels conda-forge
-    - conda config --env --append channels tango-controls
-    - conda install --yes python=3.7
-    - conda install --yes lima-core pytango
-    - conda install --yes pytest fabio
-    - conda install --yes pip
-    - pip install . -vv
-  script:
-    - pytest tests
-  artifacts:
-    paths:
-      - dist/
-  tags:
-    - conda
-
-
-package-noarch:
-  stage: package
+build-noarch:
+  stage: build
   script:
     - conda build ./conda --prefix-length=80 --output-folder=dist/ -c tango-controls --channel=http://bcu-ci.esrf.fr/stable -c conda-forge
   artifacts:
@@ -38,14 +12,13 @@ package-noarch:
   tags:
     - conda
 
-
-deploy_devel:
+deploy-devel:
   stage: deploy
   environment:
     name: devel/$CI_COMMIT_REF_NAME
     url: http://bcu-ci.esrf.fr/devel
   dependencies:
-    - package-noarch
+    - build-noarch
   script:
     - cp -Rf dist/* /conda-devel/
     - conda index /conda-devel/
@@ -58,13 +31,13 @@ deploy_devel:
     - stable
   when: manual
 
-deploy_stable:
+deploy-stable:
   stage: deploy
   environment:
     name: production
     url: http://bcu-ci.esrf.fr/stable
   dependencies:
-    - package-noarch
+    - build-noarch
   script:
     - cp -Rf dist/* /conda/
     - conda index /conda/
