@@ -596,7 +596,7 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         index_format = '%04d'
         arr = [pars.directory, pars.prefix, pars.suffix, pars.nextNumber,
                index_format, over_str]
-        par_arr = list(map(str, arr))
+        par_arr = [str(s) for s in arr]
         deb.Return('File pars: %s' % par_arr)
         return par_arr
 
