@@ -616,7 +616,7 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         saving = control.saving()
         pars = saving.getParameters()
         overwrite = pars.overwritePolicy == Core.CtSaving.Overwrite
-        over_str = (overwrite and "yes") or "no"
+        over_str = "yes" if overwrite else "no"
         index_format = "%04d"
         arr = [
             pars.directory,
@@ -626,7 +626,7 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
             index_format,
             over_str,
         ]
-        par_arr = list(map(str, arr))
+        par_arr = [str(s) for s in arr]
         deb.Return("File pars: %s" % par_arr)
         return par_arr
 
