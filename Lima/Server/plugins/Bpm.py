@@ -125,19 +125,22 @@ class BpmDeviceServer(BasePostProcess):
                 self._bpmManager = None
                 self._BVDataTask = None
         elif(state == PyTango.DevState.ON) :
+            # 'set_state' is called many times, even with same state
+            # so, we need to ensure tasks are not re-created for nothing
+            # /!\ caution: in case of BVDataTask, a separate thread is
+            # started and a weakref references the task from the thread,
+            # the task cannot be re-created without stopping the thread
+            # first, otherwise the weakref resolves to 'None' in the thread
+            # causing exceptions.
             ctControl = _control_ref()
             extOpt = ctControl.externalOperation()
-            if not self._bpmManager and self.enable_bpm_calc:
-                self._softOp = extOpt.addOp(Core.BPM,self.BPM_TASK_NAME,
-                                                    self._runLevel+1)
+            if self.enable_bpm_calc and not self._bpmManager:
+                self._softOp = extOpt.addOp(Core.BPM,self.BPM_TASK_NAME, self._runLevel+1)
                 self._bpmManager = self._softOp.getManager()
-
-            if self.enable_tango_event:
+            if self.enable_tango_event and not self._BVDataTask:
                 self._BVDataTask = BVDataTask(self)
-                handler = extOpt.addOp(Core.USER_SINK_TASK,
-                                       self.BVDATA_TASK_NAME,self._runLevel+2)
+                handler = extOpt.addOp(Core.USER_SINK_TASK, self.BVDATA_TASK_NAME,self._runLevel+2)
                 handler.setSinkTask(self._BVDataTask)
-
 
         PyTango.LatestDeviceImpl.set_state(self,state)
 
