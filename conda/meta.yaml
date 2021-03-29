@@ -10,7 +10,7 @@ source:
 build:
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
   noarch: python
-  script: "pip install . -vv"
+  script: "{{ PYTHON }} -m pip install . -vv"
   entry_points:
     - LimaCCDs = Lima.Server.LimaCCDs:main
     - LimaViewer = Lima.Server.LimaViewer:main
@@ -21,15 +21,23 @@ requirements:
     - python
     - setuptools
   run:
+    - lima-core
     - pytango
     - pillow # Required by the Bpm plugin
-    - libjpeg-turbo # Required by the Bpm plugin
+    - pyturbojpeg # Required by the Bpm plugin
     - pymemcache # Required by the Memcached plugin
     - bloscpack # Required by the Memcached plugin
 
 test:
+  source_files:
+    - tests
+  requires:
+    - pytest
+    - fabio
   imports:
     - Lima.Server
+  commands:
+    - pytest tests
 
 about:
   home: https://github.com/esrf-bliss/Lima
