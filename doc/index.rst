@@ -518,7 +518,7 @@ For more details about the camera device interface, please have a look on the fo
   :maxdepth: 1
 
   Andor <../../../../camera/andor/doc/tango>
-  Andor3 <../../../../camera/andor3doc/tango>
+  Andor3 <../../../../camera/andor3/doc/tango>
   Basler <../../../../camera/basler/doc/tango>
   Dexela <../../../../camera/dexela/doc/tango>
   Frelon <../../../../camera/frelon/doc/tango>
