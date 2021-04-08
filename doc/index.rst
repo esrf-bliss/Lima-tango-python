@@ -116,7 +116,7 @@ Attributes
 ''''''''''
 
 You will here a long list of attributes, this reflects the richness of the LIMA library. We organized them in
-modules which correspond to specific functions. A function module is identified by an attribute name prefix (excepted for informationnal attributes),
+modules which correspond to specific functions. A function module is identified by an attribute name prefix (excepted for informational attributes),
 for instance the **Acquisition** module attributes  are always named **acq_<attr-name>**. The available modules are :
 
  * General Information
@@ -133,24 +133,30 @@ for instance the **Acquisition** module attributes  are always named **acq_<attr
  * Buffer (prefix *buffer_*)
  * Plugin (prefix *plugin_*)
 
-Many attributes are of type DevString and they have a fixed list of possible values. you can get the list by calling the special command
+Many attributes are of type DevString and they have a fixed list of possible values. You can get the list by calling the special command
 **getAttrStringValueList**. Because a camera cannot support some attribute values , the command getAttrStringValueList will give you the
 the value list for the camera. For instance the attribute *video_mode* supports up to 14 different video formats, but a camera can only supports
 few of them.
 
 
+General Information
+```````````````````
 =========================== ======= ======================= =======================================================================================
 Attribute name		    RW	    Type		    Description
 =========================== ======= ======================= =======================================================================================
-\                           \       **GENERAL INFORMATION** \
 lima_version                ro      DevString               The lima core library version number
 lima_type		    ro	    DevString		    LImA camera type:
 							    Maxipix,Pilatus,Frelon,Pco, Basler ...
 camera_type                 ro      DevString		    Like lima_type but in upper-case  !!
 camera_pixelsize            ro      DevDouble[x,y]          The camera pixel size in x and y dimension
 camera_model		    ro	    DevString		    Camera model return by the detector layer:.e.g. 5x1- TPX1
-\                           \       \                       \
-\                           \       **STATUS**              \
+=========================== ======= ======================= =======================================================================================
+
+Status
+``````
+=========================== ======= ======================= =======================================================================================
+Attribute name		    RW	    Type		    Description
+=========================== ======= ======================= =======================================================================================
 last_base_image_ready       ro      DevLong                 The last base (before treatment) ready
 last_image_ready	    ro	    DevLong		    The last acquired image number, ready for reading
 last_image_saved	    ro	    DevLong		    The last saved image number
@@ -162,8 +168,13 @@ ready_for_next_image	    ro	    DevBoolean		    True after a camera readout, oth
 ready_for_next_acq	    ro	    DevBoolean		    True after end of acquisition, otherwise false.
 user_detector_name	    rw	    DevString		    User detector name
 instrument_name		    rw	    DevString		    Intrument/beamline name
-\                           \       \                       \
-\                           \       **ACQUISITION**         \
+=========================== ======= ======================= =======================================================================================
+
+Acquisition
+```````````
+=========================== ======= ======================= =======================================================================================
+Attribute name		    RW	    Type		    Description
+=========================== ======= ======================= =======================================================================================
 acq_status		    ro	    DevString		    Acquisition status: Ready, Running, Fault or Configuration
 acq_status_fault_error	    ro	    DevString		    In case of Fault state, return the error message
 acq_mode		    rw	    DevString		    Acquisition mode:
@@ -196,8 +207,13 @@ latency_time		    rw	    DevDouble		    Latency time in second between two frame
 valid_ranges                ro      DevDouble[4]            min exposure, max exposure, min latency, max latency
 concat_nb_frames            rw      DevLong                 The nb of frames to concatenate in one image
 acq_expo_time		    rw	    DevDouble		    The exposure time of the image, Default is 1 second
-\                           \       \                       \
-\                           \       **ACCUMULATION**        \
+=========================== ======= ======================= =======================================================================================
+
+Accumulation
+````````````
+=========================== ======= ======================= =======================================================================================
+Attribute name		    RW	    Type		    Description
+=========================== ======= ======================= =======================================================================================
 acc_expotime		    ro	    DevDouble		    The effective accumulation total exposure time.
 acc_nb_frames		    ro	    DevLong		    The calculated accumulation number of frames per image.
 acc_max_expotime	    rw	    DevDouble		    The maximum exposure time per frame for accumulation
@@ -213,8 +229,13 @@ acc_saturated_active        rw      DevBoolean              To activate the satu
 acc_saturated_cblevel       rw      DevLong                 Set at which level of total saturated pixels the callback plugin (if set with the AccThresholdCallbackModule property) will be called
 acc_saturated_threshold     rw      DevLong                 The threshold for counting saturated pixels
 acc_threshold_before        rw      DevLong                 Set a threshold value to be substract to each pixel value
-\                           \       \                       \
-\                           \       **SAVING**              \
+=========================== ======= ======================= =======================================================================================
+
+Saving
+``````
+=========================== ======= ======================= =======================================================================================
+Attribute name		    RW	    Type		    Description
+=========================== ======= ======================= =======================================================================================
 saving_mode		    rw	    DevString		    Saving mode:
 							     - **Manual**, no automatic saving, a command will
 							       be implemented in a next release to be able to
@@ -257,8 +278,13 @@ saving_max_writing_task     rw      DevShort                Set the max. tasks f
 saving_statistics           ro	    DevDouble[]		    Return stats: saving speed, compression ratio,
                                                             compression speed and incoming speed (speed in byte/s)
 saving_statistics_history   rw	    DevLong		    Set size of history for stats calculation, default is 16 frames
-\                           \       \                       \
-\                           \       **IMAGE**               \
+=========================== ======= ======================= =======================================================================================
+
+Image
+`````
+=========================== ======= ======================= =======================================================================================
+Attribute name		    RW	    Type		    Description
+=========================== ======= ======================= =======================================================================================
 image_type		    ro	    DevString		    Return the current image data type, bit per pixel signed or unsigned:
 							     - Bpp8, Bpp8S, Bpp10, Bpp10S, Bpp12, Bpp12S, Bpp14,
 							     - Bpp14S, Bpp16, Bpp16S, Bpp32, Bpp32S , Bpp32F.
@@ -273,8 +299,13 @@ image_bin		    rw	    DevLong[2]		    Binning on image, [0] = Binning factor on 
 image_flip		    rw	    DevBoolean[2]	    Flip on the image, [0] = flip over X axis, [1] flip over Y
 				           		    axis. Default flip is False x False
 image_rotation              rw      DevString               Rotate the image: "0", "90", "180" or "270"
-\                           \       \                       \
-\                           \       **SHUTTER**             \
+=========================== ======= ======================= =======================================================================================
+
+Shutter
+```````
+=========================== ======= ======================= =======================================================================================
+Attribute name		    RW	    Type		    Description
+=========================== ======= ======================= =======================================================================================
 shutter_ctrl_is_available   ro      DevBoolean              Return true if the camera has a shutter control
 shutter_mode		    rw	    DevString		    Synchronization for shutter,  modes are available:
 							     - **Manual**
@@ -288,8 +319,13 @@ shutter_close_time	    rw	    DevDouble		    Delay (sec.) between the shutter tr
 							    the acquisition, if not null the shutter signal is set on
 							    before the end of the acquisition.
 shutter_manual_state        rw      DevString               To open/close manually the shutter (if Manual mode is supported, see shutter_mode)
-\                           \       \                       \
-\                           \       **DEBUG**               \
+=========================== ======= ======================= =======================================================================================
+
+Debug
+`````
+=========================== ======= ======================= =======================================================================================
+Attribute name		    RW	    Type		    Description
+=========================== ======= ======================= =======================================================================================
 debug_module_possible       ro      DevString[]             Return the list of possible debug modules
 debug_modules		    rw	    DevString[]		    Set the debug module level of LImA:
 							     - "None"
@@ -314,8 +350,13 @@ debug_types		    rw	    DevString[]		    Set the debug type level of LImA:
 							     - "Param"
 							     - "Return"
 							     - "Always"
-\                           \       \                       \
-\                           \       **VIDEO**               \
+=========================== ======= ======================= =======================================================================================
+
+Video
+`````
+=========================== ======= ======================= =======================================================================================
+Attribute name		    RW	    Type		    Description
+=========================== ======= ======================= =======================================================================================
 video_active                rw      DevBoolean              Start the video mode (or not)
 video_live                  rw      DevBoolean              Start the video streaming (or not)
 video_exposure              rw      DevDouble               The video exposure time (can be different to the acq_expo_time)
@@ -348,18 +389,40 @@ video_source                rw      DevString               The source for video
                                                             Only valid with monochrome or scientific cameras
 
 video_last_image_counter    rw      DevLong64               The image counter
-\                           \       \                       \
-\                           \       **SHARED MEMORY**       \
+=========================== ======= ======================= =======================================================================================
+
+Shared Memory
+`````````````
+=========================== ======= ======================= =======================================================================================
+Attribute name		    RW	    Type		    Description
+=========================== ======= ======================= =======================================================================================
 shared_memory_names         rw      DevString[2]            Firstname and surname of the SPS typed shared memory (default is LimaCCDs,<camera_type>)
 shared_memory_active        rw                              Activate or not the shared memory. The shared memory is for image display
-\                           \       \                       \
-\                           \       **CONFIG**              \
+=========================== ======= ======================= =======================================================================================
+
+Config
+``````
+=========================== ======= ======================= =======================================================================================
+Attribute name		    RW	    Type		    Description
+=========================== ======= ======================= =======================================================================================
 config_available_module     ro      DevString[]             List of possible config modules,
 config_available_name       ro      DevString[]             List of existing config names
-\                           \       **BUFFER**              \
+=========================== ======= ======================= =======================================================================================
+
+Buffers
+```````
+=========================== ======= ======================= =======================================================================================
+Attribute name		    RW	    Type		    Description
+=========================== ======= ======================= =======================================================================================
 buffer_max_memory	    rw	    DevShort		    The maximum among of memory in percent of the available RAM
 			   		   		    that Lima is using to allocate frame buffer.
-\                           \       **PLUGIN**              \
+=========================== ======= ======================= =======================================================================================
+
+Plugin
+```````
+=========================== ======= ======================= =======================================================================================
+Attribute name		    RW	    Type		    Description
+=========================== ======= ======================= =======================================================================================
 plugin_type_list	    ro	    DevString[]		    List of the available plugin type, to get one device name
                                                             use instead the **getPluginDeviceNameFromType** command
 plugin_list                 ro      DevString[]             List of the available plugin as couple of type, device name
@@ -368,8 +431,11 @@ plugin_list                 ro      DevString[]             List of the availabl
 
 .. _data_array_encoded:
 
-DevEncoded DATA_ARRAY
-``````````````````````
+DevEncoded
+''''''''''
+
+DATA_ARRAY
+``````````
 
 The DATA_ARRAY DevEncoded has been invented for special Tango client like SPEC. It is used by the **readImage** command.
 It can only embed raw data (no video data). The supported image format can be retrieve with the **image_type** attribute (Bpp8,Bpp8S, ..., Bpp16,..)
@@ -416,8 +482,8 @@ with **little-endian** byte order and no alignment::
 
 .. _video_image_encoded:
 
-DevEncoded VIDEO_IMAGE
-``````````````````````
+VIDEO_IMAGE
+```````````
 The VIDEO_IMAGE DevEncoded has been implemented for the **video_last_image** attribute to return the last image. It can
 embed any of the supported video format depending of the **video_mode** attribute value.
 
