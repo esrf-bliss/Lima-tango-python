@@ -48,7 +48,7 @@ bvdata                 RO     DevEncoded      Attribute regrouping the image (jp
 calibration            RW     DevDouble       Attribute version of the calibration property.
 beammark               RW     DevLong         Attribute version of the beammark property.
 enable_bpm_calc        RW     DevBoolean      Enable or disable the bpm calculation algorithm.
-====================   ====== ==========     ================================================================================================================
+====================   ====== ==========      ================================================================================================================
 
 
 Commands
