@@ -232,12 +232,15 @@ saving_next_number	    rw	    DevLong		    The image next number
 							    The full image file name is:
 							    /saving_directory/saving_prefix+sprintf("%04d",saving_next_number)+saving_suffix
 saving_format		    rw	    DevString		    The data format for saving:
-							     - **Raw**, save in binary format
-							     - **Edf**, save in ESRF Data Format
-							     - **edfgz** (or edf.gz), EDF with gz compression
-							     - **Tiff**, The famous TIFF format
-							     - **Cbf**, save in CBF format (a compressed format
-							       for crystallography)
+							     - :code:`RAW`, save in binary format
+							     - :code:`EDF`, save in ESRF Data Format
+							     - :code:`EDFGZ` (or edf.gz), EDF with Deflate filter compression
+							     - :code:`EDFLZ4` (or edf.lz4), EDF with BS/LZ4 filter compression
+							     - :code:`TIFF`, The famous TIFF format
+							     - :code:`CBF`, save in CBF format (a compressed format for crystallography)
+							     - :code:`HDF5` save in Nexus HDF5 format
+							     - :code:`HDF5GZ` save in Nexus HDF5 format with Deflate filter compression
+							     - :code:`HDF5BS` save in Nexus HDF5 format with BS/LZ4 filter compression
 
 saving_overwrite_policy	    rw	    DevString		    In case of existing files an overwite policy is mandatory:
 							     - **Abort**, if the file exists the saving is aborted
