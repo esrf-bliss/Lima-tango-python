@@ -637,7 +637,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
             self.add_attribute(
                 PyTango.Attr('shutter_manual_state', PyTango.DevString, PyTango.READ_WRITE),
                              self.read_shutter_manual_state, self.write_shutter_manual_state)
-            print(self.read_shutter_manual_state.__name__)
             self.add_attribute(
                 PyTango.Attr('shutter_mode', PyTango.DevString, PyTango.READ_WRITE),
                              self.read_shutter_mode, self.write_shutter_mode)
