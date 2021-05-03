@@ -146,7 +146,20 @@ class RoiCounterDeviceServer(BasePostProcess) :
         value_read = self.__roiCounterMgr.getCounterStatus()
         attr.set_value(value_read)
 
+#------------------------------------------------------------------
+#    Read OverflowThreshold attribute
+#------------------------------------------------------------------
 
+    def read_OverflowThreshold(self,attr):
+        value_read = self.__roiCounterMgr.getOverflowThreshold()
+        
+#------------------------------------------------------------------
+#    Write MaskFile attribute
+#------------------------------------------------------------------
+    def write_OverflowThreshold(self,attr):
+        overflowthreshold = attr.get_write_value()
+        self.__roiCounterMgr.setOverflowThreshold(overflowthreshold)
+        
 #==================================================================
 #
 #    RoiCounter command methods
@@ -473,6 +486,10 @@ class RoiCounterDeviceServerClass(PyTango.DeviceClass):
             PyTango.READ_WRITE]],
         'MaskFile':
             [[PyTango.DevString,
+            PyTango.SCALAR,
+            PyTango.READ_WRITE]],
+        'Overflowthreshold':
+            [[PyTango.DevLong,
             PyTango.SCALAR,
             PyTango.READ_WRITE]],
         'CounterStatus':
