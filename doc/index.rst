@@ -521,10 +521,12 @@ For more details about the camera device interface, please have a look on the fo
   Andor3 <../../../../camera/andor3/doc/tango>
   Basler <../../../../camera/basler/doc/tango>
   Dexela <../../../../camera/dexela/doc/tango>
+  Dhyana <../../../../camera/dhyana/doc/tango>
   Frelon <../../../../camera/frelon/doc/tango>
   ImXPAD <../../../../camera/imxpad/doc/tango>
   Marccd <../../../../camera/marccd/doc/tango>
   Maxipix <../../../../camera/maxipix/doc/tango>
+  Lambda <../../../../camera/lambda/doc/tango>
   Merlin <../../../../camera/merlin/doc/tango>
   Dectris Eiger <../../../../camera/eiger/doc/tango>
   Dectris Mythen3 <../../../../camera/mythen3/doc/tango>
@@ -542,6 +544,7 @@ For more details about the camera device interface, please have a look on the fo
   Ueye <../../../../camera/ueye/doc/tango>
   Ultra <../../../../camera/ultra/doc/tango>
   V4l2 <../../../../camera/v4l2/doc/tango>
+  Ximea <../../../../camera/ximea/doc/tango>
   XH <../../../../camera/xh/doc/tango>
   Xpad <../../../../camera/xpad/doc/tango>
   Xspress3 <../../../../camera/xspress3/doc/tango>
