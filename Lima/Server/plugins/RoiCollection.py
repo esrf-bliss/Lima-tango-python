@@ -147,15 +147,18 @@ class RoiCollectionDeviceServer(BasePostProcess) :
 #------------------------------------------------------------------
 
     def read_OverflowThreshold(self,attr):
-        value_read = self.__roiCounterMgr.getOverflowThreshold()
+        value_read = self._roiCollectionMgr.getOverflowThreshold()
+        attr.set_value(value_read)
         
 #------------------------------------------------------------------
-#    Write MaskFile attribute
+#    Write OverflowThreshold attribute
 #------------------------------------------------------------------
     def write_OverflowThreshold(self,attr):
-        overflowthreshold = attr.get_write_value()
-        self.__roiCounterMgr.setOverflowThreshold(overflowthreshold)
+        overflowThl = attr.get_write_value()
+        self._roiCollectionMgr.setOverflowThreshold(overflowThl)
         
+    def is_OverflowThreshold_allowed(self,mode):
+        return True
 
 #==================================================================
 #
@@ -267,7 +270,7 @@ class RoiCollectionDeviceServerClass(PyTango.DeviceClass):
             [[PyTango.DevString,
             PyTango.SCALAR,
             PyTango.READ_WRITE]],
-        'Overflowthreshold':
+        'OverflowThreshold':
             [[PyTango.DevLong,
             PyTango.SCALAR,
             PyTango.READ_WRITE]],
