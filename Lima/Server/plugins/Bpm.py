@@ -732,9 +732,16 @@ def construct_bvdata(bpm):
         profile_x = last_proj_x.tobytes()
         profile_y = last_proj_y.tobytes()
     else:
-        profile_y = image.buffer[:,bpm.beammark[0]].astype(numpy.uint64)
+        if bpm.beammark[0] >= image.buffer.shape[1]:
+            profile_y = numpy.zeros(image.buffer.shape[0], dtype=numpy.uint64)
+        else:
+            profile_y = image.buffer[:,bpm.beammark[0]].astype(numpy.uint64)
         profile_y = profile_y.tobytes()
-        profile_x = image.buffer[bpm.beammark[1],:].astype(numpy.uint64)
+
+        if bpm.beammark[1] >= image.buffer.shape[0]:
+            profile_x = numpy.zeros(image.buffer.shape[1], dtype=numpy.uint64)
+        else:
+            profile_x = image.buffer[bpm.beammark[1],:].astype(numpy.uint64)
         profile_x = profile_x.tobytes()
 
     bvdata_format='dldddliiiidd%ds%ds%ds' %(len(profile_x),len(profile_y),len(image_jpeg))
