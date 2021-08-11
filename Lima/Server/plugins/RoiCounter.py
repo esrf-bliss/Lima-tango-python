@@ -58,6 +58,7 @@ class RoiCounterDeviceServer(BasePostProcess) :
         self.__currentRoiId = 0
         self.__maskFile = None
         self.__maskData = None
+        self.__overflowThl = 0
         BasePostProcess.__init__(self,cl,name)
         RoiCounterDeviceServer.init_device(self)
         self.setMaskFile(self.MaskFile)
@@ -98,6 +99,8 @@ class RoiCounterDeviceServer(BasePostProcess) :
                 self.__roiCounterMgr.setBufferSize(int(self.BufferSize))
                 if self.__maskData is not None:
                     self.__roiCounterMgr.setMask(self.__maskData)
+                self.__roiCounterMgr.setOverflowThreshold(self.__overflowThl)
+
             self.__roiCounterMgr.clearCounterStatus()
 
         PyTango.LatestDeviceImpl.set_state(self,state)
@@ -146,7 +149,25 @@ class RoiCounterDeviceServer(BasePostProcess) :
         value_read = self.__roiCounterMgr.getCounterStatus()
         attr.set_value(value_read)
 
+#------------------------------------------------------------------
+#    Read OverflowThreshold attribute
+#------------------------------------------------------------------
 
+    def read_OverflowThreshold(self,attr):
+        value_read = self.__overflowThl
+        attr.set_value(value_read)
+        
+    def is_OverflowThreshold_allowed(self,mode):
+        return True
+        
+#------------------------------------------------------------------
+#    Write MaskFile attribute
+#------------------------------------------------------------------
+    def write_OverflowThreshold(self,attr):
+        self.__overflowThl = attr.get_write_value()
+        if self.__roiCounterMgr is not None:
+            self.__roiCounterMgr.setOverflowThreshold(self.__overflowThl)
+        
 #==================================================================
 #
 #    RoiCounter command methods
@@ -473,6 +494,10 @@ class RoiCounterDeviceServerClass(PyTango.DeviceClass):
             PyTango.READ_WRITE]],
         'MaskFile':
             [[PyTango.DevString,
+            PyTango.SCALAR,
+            PyTango.READ_WRITE]],
+        'OverflowThreshold':
+            [[PyTango.DevLong,
             PyTango.SCALAR,
             PyTango.READ_WRITE]],
         'CounterStatus':
