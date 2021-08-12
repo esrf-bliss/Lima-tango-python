@@ -571,10 +571,11 @@ Today there are about  8 standard plugin devices:
 * BackgroundSubstraction : link operation, to correct the frames with a background image (substraction)
 * FlatField:               link operation to correct the frames with a flatfield image (divide + option normalisation)
 * Mask:                    link operation to mask pixels. Very useful if some pixel are not working properly and if you want to set then to a fix value or to zero.
+* MemCached:               sink operation to publish images to a memcached server.
 * PeakFinder:              thanks to Teresa Numez from DESY, a sink operation which can detect diffraction peaks.
 * Roi2Spectrum:            sink operation to apply ROI spectrum on the frames. You can define more than one spectra with ROI coordinates and by specifying in which direction you need to bin the values, vertical or horizontal.
 * RoiCounter:              sink operation to get calculating statistics on image regions.
-
+* RoiCollection:           sink operation to generate a spectrum of Roi integration counters.
 
 * LimaTacoCCD: extra interface for TACO clients, it only provides commands (TACO does not have attribute !), it is still used at ESRF for SPEC.
 * LiveViewer:  extra interface  to provide a live view of the last acquired image, can be used from atkpanel.
@@ -589,8 +590,10 @@ If you need to implement your own plugin device we can provide you some example 
   plugins/bpm
   plugins/flatfield
   plugins/mask
+  plugins/memcached
   plugins/peakfinder
   plugins/roi2spectrum
   plugins/roicounter
+  plugins/roicollection
   plugins/limatacoccd
   plugins/liveviewer
