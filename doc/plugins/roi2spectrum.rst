@@ -7,9 +7,17 @@ You must create first the Rois by providing unique names (**addNames** command) 
 Once the configuration is ok you can start the task using **Start** command and stop the task calling the **Stop** command.
 The spectrum data can be retrieved by calling the **readImage** command, the command returns the spectrums as a stack stored into an image.
 
+In addition to the statistics calculation you can provide a mask file (**setMask** command or **MaskFile** property/attribute) 
+where null pixel will not be taken into account.
+
 Properties
 ----------
-This device has no property.
+========================== =============== ====================== =====================================================
+Property name		   Mandatory       Default value          Description
+========================== =============== ====================== =====================================================
+BufferSize                  No              128                   Circular buffer size in image
+MaskFile                    No              ""                    A mask file
+========================== =============== ====================== =====================================================
 
 Attributes
 ----------
@@ -19,6 +27,7 @@ Attribute name		RW	Type			Description
 ======================= ======= ============= ======================================================================
 BufferSize		rw	DevLong	      Circular buffer size in image, default is 128
 CounterStatus		ro	DevLong	      Counter related to the current number of proceeded images
+MaskFile                rw      DevString     The mask file
 RunLevel		rw	DevLong	      Run level in the processing chain, from 0 to N		
 State		 	ro 	State	      OFF or ON (stopped or started)
 Status		 	ro	DevString     "OFF" "ON" (stopped or started)
