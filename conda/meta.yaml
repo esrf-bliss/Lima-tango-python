@@ -33,6 +33,7 @@ test:
     - tests
   requires:
     - pytest
+    - pytest-mock
     - fabio
   imports:
     - Lima.Server
