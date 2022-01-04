@@ -131,6 +131,13 @@ def RequiresSystemFeature(feature):
 class LimaCCDs(PyTango.LatestDeviceImpl) :
 
     Core.DEB_CLASS(Core.DebModApplication, 'LimaCCDs')
+
+    _ImageOpModes = {
+        'HardOnly': Core.CtImage.HardOnly,
+        'SoftOnly': Core.CtImage.SoftOnly,
+        'HardAndSoft': Core.CtImage.HardAndSoft,
+    }
+
     _debugModuleList = ["None",
                         "Common",
                         "Hardware",
@@ -622,6 +629,14 @@ class LimaCCDs(PyTango.LatestDeviceImpl) :
         unsupported_feature = 'Core.Never.Unsupported.Feature'
         if SystemHasFeature(unsupported_feature):
             deb.Error('System reports having %s' % unsupported_feature)
+
+        if self.ImageOpMode:
+            mode = self._ImageOpModes.get(self.ImageOpMode)
+            if mode:
+                image = self.__control.image()
+                image.setMode(mode)
+            else:
+                deb.Error("ImageOpMode='%s' is not allowed. Property ignored." % self.ImageOpMode)
 
         for feature in SystemFeatures:
             is_not = (SystemHasFeature(feature) and 'is') or 'is not'
@@ -2062,7 +2077,10 @@ class LimaCCDsClass(PyTango.DeviceClass) :
          "Configuration file path",[os.path.join(os.path.expanduser('~'),'lima_%s.cfg' % instance_name)]],
         'ConfigurationDefaultName' :
         [PyTango.DevString,
-         "Default configuration name",["default"]],
+         "Configure the image op mode. One of 'HardOnly', 'SoftOnly', 'HardAndSoft'.",[]],
+        'ImageOpMode' :
+        [PyTango.DevString,
+         "The instrument name, e.g ESRF-ID02",[]],
         'MaxVideoFPS' :
         [PyTango.DevDouble,
          "Maximum number of FPS for video",[30.0]],
