@@ -2861,13 +2861,17 @@ def main(args=None) :
             traceback.print_exc()
 
         U.server_run()
+        return 0
 
     except PyTango.DevFailed as e:
         print ('-------> Received a DevFailed exception:',e)
+        return -1
     except Exception as e:
         print ('-------> An unforeseen exception occurred....',e)
         #import traceback
         #traceback.print_exc()
+        return -1
 
 if __name__ == '__main__':
-    main()
+    res = main()
+    sys.exit(res)
