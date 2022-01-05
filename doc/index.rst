@@ -14,8 +14,8 @@ Main device: LimaCCDs
 **LimaCCDs** is the generic device and it provides a unique interface to control any supported cameras. One can find below the
 commands, the attributes and the properties.
 
-To run a LimaCCDs server you will need at least to configure the **LimaCameraType** property. This property is used by  the LimaCCDs server to create
-the proper camera device. Pleas refer a specific camera (e.g Basler) device chapter for further information.
+To run a LimaCCDs server you will need at least to configure the **LimaCameraType** property. This property is used by the LimaCCDs server to create
+the proper camera device. Please refers to any camera (e.g Basler) section for further information.
 
 Property
 ''''''''
@@ -35,6 +35,7 @@ NbProcessingThread         No              1                      The max number
                                                                   when more than 1 task (plugin device) is activated
 TangoEvent		   No              False		  Activate Tango Event for counters and new images
 UserDetectorName	   No		   ""			  A user detector identifier, e.g frelon-saxs, (**\***)
+ImageOpMode 	   No		   "HardAndSoft"			  Configure the image op mode. One of 'HardOnly', 'SoftOnly', 'HardAndSoft'
 ========================== =============== ====================== =====================================================
 
 (**\***) Properties only used to set meta-data in HDF5 saving format.
