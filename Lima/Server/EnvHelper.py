@@ -23,7 +23,7 @@
 import sys
 import time
 import types
-import os, tempfile, re, imp
+import os, tempfile, re
 from subprocess import Popen, PIPE
 import inspect
 import logging
