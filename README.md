@@ -10,17 +10,29 @@ This is the LImA TANGO python server. It has to be installed with a camera plugi
 
 ## Install
 
+### In develop
+
+```
+pip install .
+```
+
 ### Camera python
 
+```
 conda install -c esrf-bcu lima-camera-basler
+```
 
 ### Tango device server
 
+```
 conda install -c tango-controls -c esrf-bcu lima-tango-server
+```
 
 ### Camera tango device server
 
+```
 conda install -c tango-controls -c esrf-bcu lima-basler-tango
+```
 
 # LImA
 
