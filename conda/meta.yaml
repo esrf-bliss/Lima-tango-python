@@ -16,6 +16,8 @@ build:
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
   noarch: python
   script: "{{ PYTHON }} -m pip install . -vv"
+  script_env:
+     - SETUPTOOLS_SCM_PRETEND_VERSION={{ version }}
   entry_points:
     - LimaCCDs = Lima.Server.LimaCCDs:main
     - LimaViewer = Lima.Server.LimaViewer:main
@@ -25,6 +27,7 @@ requirements:
     - pip
     - python
     - setuptools
+    - setuptools_scm
   run:
     - lima-core
     - pytango
