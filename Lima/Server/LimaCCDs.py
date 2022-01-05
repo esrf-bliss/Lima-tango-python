@@ -2802,7 +2802,20 @@ def _get_control():
 #
 #==================================================================
 verboseLevel = 0
-def main(args=None) :
+def main(args=None, event_loop=None):
+    """
+    Run LimaCCDs server
+
+    Arguments:
+        args: Command line arguments
+        event_loop:
+            Registers an event loop function in a Tango server.
+            This function will be called by the process main thread in an infinite loop
+            The process will not use the classical ORB blocking event loop.
+            It is the user responsibility to code this function in a way that it implements
+            some kind of blocking in order not to load the computer CPU. The following
+            piece of code is an example of how you can use this feature::
+    """
     args = list(args or sys.argv)
     args[0] = 'LimaCCDs'
 
@@ -2849,6 +2862,9 @@ def main(args=None) :
         else:
             U.server_init()
 
+        if event_loop is not None:
+            U.server_set_event_loop(event_loop)
+
         # Configurations management (load default or custom config)
         dev = U.get_device_list_by_class("LimaCCDs")
         if dev:
@@ -2861,13 +2877,17 @@ def main(args=None) :
             traceback.print_exc()
 
         U.server_run()
+        return 0
 
     except PyTango.DevFailed as e:
         print ('-------> Received a DevFailed exception:',e)
+        return -1
     except Exception as e:
         print ('-------> An unforeseen exception occurred....',e)
         #import traceback
         #traceback.print_exc()
+        return -1
 
 if __name__ == '__main__':
-    main()
+    res = main()
+    sys.exit(res)
