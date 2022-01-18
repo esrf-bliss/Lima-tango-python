@@ -2077,10 +2077,10 @@ class LimaCCDsClass(PyTango.DeviceClass) :
          "Configuration file path",[os.path.join(os.path.expanduser('~'),'lima_%s.cfg' % instance_name)]],
         'ConfigurationDefaultName' :
         [PyTango.DevString,
-         "Configure the image op mode. One of 'HardOnly', 'SoftOnly', 'HardAndSoft'.",[]],
-        'ImageOpMode' :
+         "Default configuration name",["default"]],
+         'ImageOpMode' :
         [PyTango.DevString,
-         "The instrument name, e.g ESRF-ID02",[]],
+         "Configure the image op mode. One of 'HardOnly', 'SoftOnly', 'HardAndSoft'.",[]],
         'MaxVideoFPS' :
         [PyTango.DevDouble,
          "Maximum number of FPS for video",[30.0]],
