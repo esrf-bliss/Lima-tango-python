@@ -20,26 +20,29 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 ############################################################################
 
-def _init_module() :
+
+def _init_module():
     import os
+
     cameras = []
-    for root,dirs,files in os.walk(__path__[0]) :
-        for file_name in files :
-            if file_name.startswith('__') : continue
-            base,ext = os.path.splitext(file_name)
-            if ext == '.py' :
-                subdir = root[len(__path__[0]) + 1:]
+    for root, dirs, files in os.walk(__path__[0]):
+        for file_name in files:
+            if file_name.startswith("__"):
+                continue
+            base, ext = os.path.splitext(file_name)
+            if ext == ".py":
+                subdir = root[len(__path__[0]) + 1 :]
                 if subdir:
-                    base = '%s.%s' % (subdir,base)
+                    base = "%s.%s" % (subdir, base)
                 cameras.append(base)
     try:
         import pkg_resources
     except ImportError:
         pass
     else:
-        for ep in pkg_resources.iter_entry_points('Lima_tango_camera'):
+        for ep in pkg_resources.iter_entry_points("Lima_tango_camera"):
             cameras.append(ep.name)
     return cameras
 
-__all__ = _init_module()
 
+__all__ = _init_module()
