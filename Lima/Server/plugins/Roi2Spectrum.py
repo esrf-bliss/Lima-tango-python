@@ -1,11 +1,10 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2021
+# Copyright (C) : 2009-2022
 # European Synchrotron Radiation Facility
 # CS40220 38043 Grenoble Cedex 9
 # FRANCE
-#
 # Contact: lima@esrf.fr
 #
 # This is free software; you can redistribute it and/or modify
