@@ -35,7 +35,7 @@ NbProcessingThread         No              1                      The max number
                                                                   when more than 1 task (plugin device) is activated
 TangoEvent		   No              False		  Activate Tango Event for counters and new images
 UserDetectorName	   No		   ""			  A user detector identifier, e.g frelon-saxs, (**\***)
-ImageOpMode 	   No		   "HardAndSoft"			  Configure the image op mode. One of 'HardOnly', 'SoftOnly', 'HardAndSoft'
+ImageOpMode                No              "HardAndSoft"          Configure the image op mode. One of 'HardOnly', 'SoftOnly', 'HardAndSoft'
 ========================== =============== ====================== =====================================================
 
 (**\***) Properties only used to set meta-data in HDF5 saving format.
@@ -279,6 +279,10 @@ saving_max_writing_task     rw      DevShort                Set the max. tasks f
 saving_statistics           ro	    DevDouble[]		    Return stats: saving speed, compression ratio,
                                                             compression speed and incoming speed (speed in byte/s)
 saving_statistics_history   rw	    DevLong		    Set size of history for stats calculation, default is 16 frames
+saving_managed_mode         rw      DevString               On some detectors, saving can be managed by the hardware (sdk), you can switch
+                                                            the mode using these attribute values:
+                                                             - HARDWARE, lima will not manage the saving but set the camera to do the job
+                                                             - SOFTWARE (default) Lima is managing the saving
 =========================== ======= ======================= =======================================================================================
 
 Image
