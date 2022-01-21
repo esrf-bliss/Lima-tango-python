@@ -1,9 +1,9 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2017
+# Copyright (C) : 2009-2022
 # European Synchrotron Radiation Facility
-# CS40220 38043 Grenoble Cedex 9 
+# CS40220 38043 Grenoble Cedex 9
 # FRANCE
 # Contact: lima@esrf.fr
 #
@@ -21,16 +21,21 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 ############################################################################
 __all__ = []
-def _init_module() :
-    import os
-    for root,dirs,files in os.walk(__path__[0]) :
-        for file_name in files :
-            if file_name.startswith('__') : continue
-            base,ext = os.path.splitext(file_name)
-            if ext == '.py' :
-                subdir = root[len(__path__[0]) + 1:]
-                if subdir:
-                    base = '%s.%s' % (subdir,base)
-                __all__.append(base)
-_init_module()
 
+
+def _init_module():
+    import os
+
+    for root, dirs, files in os.walk(__path__[0]):
+        for file_name in files:
+            if file_name.startswith("__"):
+                continue
+            base, ext = os.path.splitext(file_name)
+            if ext == ".py":
+                subdir = root[len(__path__[0]) + 1 :]
+                if subdir:
+                    base = "%s.%s" % (subdir, base)
+                __all__.append(base)
+
+
+_init_module()

@@ -1,10 +1,11 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2011
+# Copyright (C) : 2009-2022
 # European Synchrotron Radiation Facility
-# BP 220, Grenoble 38043
+# CS40220 38043 Grenoble Cedex 9
 # FRANCE
+# Contact: lima@esrf.fr
 #
 # This is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,29 +22,32 @@
 ############################################################################
 import PyTango
 
-    
+
 from Lima import Core
 from Lima.Server import EdfFile
 
-def getDataFromFile(filepath,index = 0) :
+
+def getDataFromFile(filepath, index=0):
     try:
-        datas = getDatasFromFile(filepath,index,index+1)
+        datas = getDatasFromFile(filepath, index, index + 1)
         return datas[0]
     except:
         import traceback
+
         traceback.print_exc()
-        return Core.Processlib.Data()   # empty
+        return Core.Processlib.Data()  # empty
+
 
 ##@brief the function read all known data file
 #
-#@todo add more file format
-def getDatasFromFile(filepath,fromIndex = 0,toIndex = -1) :
+# @todo add more file format
+def getDatasFromFile(filepath, fromIndex=0, toIndex=-1):
     returnDatas = []
     try:
         f = EdfFile.EdfFile(filepath)
-        if toIndex < 0 :
+        if toIndex < 0:
             toIndex = f.GetNumImages()
-        for i in range(fromIndex,toIndex) :
+        for i in range(fromIndex, toIndex):
             a = f.GetData(i)
             header = f.GetHeader(i)
             rData = Core.Processlib.Data()
@@ -52,10 +56,12 @@ def getDatasFromFile(filepath,fromIndex = 0,toIndex = -1) :
                 rData.header.update(header)
             except TypeError as e:
                 import traceback
+
                 traceback.print_exc()
             returnDatas.append(rData)
     except:
         import traceback
+
         traceback.print_exc()
     finally:
         return returnDatas
@@ -97,50 +103,48 @@ def getMaskFromFile(filepath):
     return maskImage
 
 
-class BasePostProcess(PyTango.LatestDeviceImpl) :
-
-    def __init__(self,*args) :
+class BasePostProcess(PyTango.LatestDeviceImpl):
+    def __init__(self, *args):
         self._runLevel = 0
-        PyTango.LatestDeviceImpl.__init__(self,*args)
+        PyTango.LatestDeviceImpl.__init__(self, *args)
 
-    def __getattr__(self,name) :
-        if name.startswith('is_') and name.endswith('_allowed') :
+    def __getattr__(self, name):
+        if name.startswith("is_") and name.endswith("_allowed"):
             self.__dict__[name] = self.__global_allowed
             return self.__global_allowed
-        raise AttributeError('%s has no attribute %s' %
-                             (self.__class__.__name__,name))
+        raise AttributeError("%s has no attribute %s" % (self.__class__.__name__, name))
 
-    def __global_allowed(self,*args) :
+    def __global_allowed(self, *args):
         return self.get_state() == PyTango.DevState.ON
 
-    def is_RunLevel_allowed(self,mode) :
-        if(PyTango.AttReqType.READ_REQ == mode) :
+    def is_RunLevel_allowed(self, mode):
+        if PyTango.AttReqType.READ_REQ == mode:
             return True
         else:
             return self.get_state() == PyTango.DevState.OFF
-    
-    def is_set_state_allowed(self) :
+
+    def is_set_state_allowed(self):
         return True
 
     def init_device(self):
         self.set_state(PyTango.DevState.OFF)
         self.get_device_properties(self.get_device_class())
 
-    def Start(self) :
+    def Start(self):
         self.set_state(PyTango.DevState.ON)
 
-    def Stop(self) :
+    def Stop(self):
         self.set_state(PyTango.DevState.OFF)
 
-#------------------------------------------------------------------
-#    Read RunLevel attribute
-#------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    #    Read RunLevel attribute
+    # ------------------------------------------------------------------
     def read_RunLevel(self, attr):
         attr.set_value(self._runLevel)
 
-#------------------------------------------------------------------
-#    Write RunLevel attribute
-#------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    #    Write RunLevel attribute
+    # ------------------------------------------------------------------
     def write_RunLevel(self, attr):
         data = attr.get_write_value()
         self._runLevel = data

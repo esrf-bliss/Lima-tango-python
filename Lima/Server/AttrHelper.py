@@ -1,11 +1,11 @@
-
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2012
+# Copyright (C) : 2009-2022
 # European Synchrotron Radiation Facility
-# BP 220, Grenoble 38043
+# CS40220 38043 Grenoble Cedex 9
 # FRANCE
+# Contact: lima@esrf.fr
 #
 # This is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,9 +22,9 @@
 ############################################################################
 
 
-#============================================================================
-#                              HELPERS  
-#============================================================================
+# ============================================================================
+#                              HELPERS
+# ============================================================================
 #
 # These helpers allows any one to map attributes with the LIMA interfaces commands without having
 # to write any extra code for the read_ / write_ methods.
@@ -36,7 +36,7 @@
 #        self.__Cooler = {'ON': True,
 #                             'OFF': False}
 #        self.__ShutterLevel = {'LOW':0,
-#                                   'HIGH':1}       
+#                                   'HIGH':1}
 #        self.__Attribute2FunctionBase = {'fast_trigger': 'FastExtTrigger',
 #                                         'shutter_level': 'ShutterLevel',
 #                                         'temperature': 'Temperature',
@@ -58,12 +58,14 @@ import six
 
 import PyTango
 
+
 def getDictKey(dict, value):
     try:
         ind = list(dict.values()).index(value)
     except ValueError:
         return None
     return list(dict.keys())[ind]
+
 
 def getDictValue(dict, key):
     try:
@@ -72,7 +74,8 @@ def getDictValue(dict, key):
         return None
     return value
 
-#preserve the case of key
+
+# preserve the case of key
 def getDictCaseValue(dict, key):
     try:
         value = dict[key]
@@ -80,56 +83,65 @@ def getDictCaseValue(dict, key):
         return None
     return value
 
+
 ## @brief Class for genenic read_<attribute> with enum value
 class CallableReadEnum:
-    def __init__(self,dictionnary,func2Call) :
+    def __init__(self, dictionnary, func2Call):
         self.__dict = dictionnary
         self.__func2Call = func2Call
 
-    def __call__(self,attr) :
-        value = getDictKey(self.__dict,self.__func2Call())
+    def __call__(self, attr):
+        value = getDictKey(self.__dict, self.__func2Call())
         attr.set_value(value)
+
 
 ## @brief Class for genenic write_<attribute> with enum value
 class CallableWriteEnum:
-    def __init__(self,attr_name,dictionnary,func2Call) :
+    def __init__(self, attr_name, dictionnary, func2Call):
         self.__attr_name = attr_name
         self.__dict = dictionnary
         self.__func2Call = func2Call
-        
-    def __call__(self,attr) :
+
+    def __call__(self, attr):
         data = attr.get_write_value()
-        value = getDictValue(self.__dict,data.upper())
+        value = getDictValue(self.__dict, data.upper())
         if value is None:
-            PyTango.Except.throw_exception('WrongData',\
-                                           'Wrong value %s: %s'%(self.__attr_name,data.upper()),\
-                                           'LimaCCD Class')
+            PyTango.Except.throw_exception(
+                "WrongData",
+                "Wrong value %s: %s" % (self.__attr_name, data.upper()),
+                "LimaCCD Class",
+            )
         else:
             self.__func2Call(value)
-   
+
+
 ## @brief Class for genenic read_<attribute> with simple value
 class CallableRead:
-    def __init__(self,func2Call) :        
+    def __init__(self, func2Call):
         self.__func2Call = func2Call
 
-    def __call__(self,attr) :
+    def __call__(self, attr):
         value = self.__func2Call()
         attr.set_value(value)
 
+
 ## @brief Class for genenic write_<attribute> with simple value
 class CallableWrite:
-    def __init__(self,attr_name,func2Call) :
+    def __init__(self, attr_name, func2Call):
         self.__attr_name = attr_name
         self.__func2Call = func2Call
-        
-    def __call__(self,attr) :
+
+    def __call__(self, attr):
         value = attr.get_write_value()
         if value is None:
-            PyTango.Except.throw_exception('WrongData',\
-                                           'Wrong value %s: %s'%(self.__attr_name,data.upper()),\
-                                           'LimaCCD Class')
+            PyTango.Except.throw_exception(
+                "WrongData",
+                "Wrong value %s: %s" % (self.__attr_name, data.upper()),
+                "LimaCCD Class",
+            )
         else:
             self.__func2Call(value)
+
 
 ## @brief helper for automatic attribute to command mapping
 # To be called from __getattr__
@@ -137,51 +149,56 @@ class CallableWrite:
 # means for next call to the attr will not pass through this helper but will get
 # the callable object from the __dict_ object dictionnary.
 # set update_dict to False to avoid keep reference of some objects you want to delete
-def get_attr_4u(obj,name,interface,update_dict=True) :
+def get_attr_4u(obj, name, interface, update_dict=True):
 
-    if name.startswith('read_') or name.startswith('write_') :
-        split_name = name.split('_')[1:]
-        attr_name = ''.join([x.title() for x in split_name])
-        dict_name = '_' + obj.__class__.__name__ + '__' + attr_name
-        d = getattr(obj,dict_name,None)
-        dict_name = '_' + obj.__class__.__name__ + '__Attribute2FunctionBase'
-        dict_name = getattr(obj,dict_name,None)
+    if name.startswith("read_") or name.startswith("write_"):
+        split_name = name.split("_")[1:]
+        attr_name = "".join([x.title() for x in split_name])
+        dict_name = "_" + obj.__class__.__name__ + "__" + attr_name
+        d = getattr(obj, dict_name, None)
+        dict_name = "_" + obj.__class__.__name__ + "__Attribute2FunctionBase"
+        dict_name = getattr(obj, dict_name, None)
         if dict_name:
-            attr_name = dict_name.get('_'.join(split_name),attr_name)
-        
+            attr_name = dict_name.get("_".join(split_name), attr_name)
+
         if d:
-            if name.startswith('read_') :
-                functionName = 'get' + attr_name
-                function2Call = getattr(interface,functionName)
-                callable_obj = CallableReadEnum(d,function2Call)
+            if name.startswith("read_"):
+                functionName = "get" + attr_name
+                function2Call = getattr(interface, functionName)
+                callable_obj = CallableReadEnum(d, function2Call)
             else:
-                functionName = 'set' + attr_name
-                function2Call = getattr(interface,functionName)
-                callable_obj = CallableWriteEnum('_'.join(split_name),
-                                                     d,function2Call)
+                functionName = "set" + attr_name
+                function2Call = getattr(interface, functionName)
+                callable_obj = CallableWriteEnum("_".join(split_name), d, function2Call)
 
         else:
-            if name.startswith('read_') :
-                functionName = 'get' + attr_name
-                function2Call = getattr(interface,functionName)
+            if name.startswith("read_"):
+                functionName = "get" + attr_name
+                function2Call = getattr(interface, functionName)
                 callable_obj = CallableRead(function2Call)
             else:
-                functionName = 'set' + attr_name
-                function2Call = getattr(interface,functionName)
-                callable_obj = CallableWrite('_'.join(split_name),
-                                                     function2Call)
-                
-        if update_dict: obj.__dict__[name] = callable_obj
+                functionName = "set" + attr_name
+                function2Call = getattr(interface, functionName)
+                callable_obj = CallableWrite("_".join(split_name), function2Call)
+
+        if update_dict:
+            obj.__dict__[name] = callable_obj
         callable_obj.__name__ = name
         return callable_obj
 
-    raise AttributeError('%s has no attribute %s' % (obj.__class__.__name__,name))
+    raise AttributeError("%s has no attribute %s" % (obj.__class__.__name__, name))
+
 
 ## @brief return list of posible value for attribute name
 def get_attr_string_value_list(obj, attr_name):
     valueList = []
-    dict_name = '_' + obj.__class__.__name__ + '__' + ''.join([x.title() for x in attr_name.split('_')])
-    d = getattr(obj,dict_name,None)
+    dict_name = (
+        "_"
+        + obj.__class__.__name__
+        + "__"
+        + "".join([x.title() for x in attr_name.split("_")])
+    )
+    d = getattr(obj, dict_name, None)
     if d:
         valueList = list(d.keys())
     return valueList

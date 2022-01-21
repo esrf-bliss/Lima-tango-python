@@ -1,10 +1,11 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2011
+# Copyright (C) : 2009-2022
 # European Synchrotron Radiation Facility
-# BP 220, Grenoble 38043
+# CS40220 38043 Grenoble Cedex 9
 # FRANCE
+# Contact: lima@esrf.fr
 #
 # This is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,27 +21,30 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 ############################################################################
 
-def _init_module() :
+
+def _init_module():
     import os
+
     plugins = []
-    for root,dirs,files in os.walk(__path__[0],followlinks=True) :
-        for file_name in files :
-            if file_name.startswith('__') : continue
-            base,ext = os.path.splitext(file_name)
-            if ext == '.py' :
-                subdir = root[len(__path__[0]) + 1:]
+    for root, dirs, files in os.walk(__path__[0], followlinks=True):
+        for file_name in files:
+            if file_name.startswith("__"):
+                continue
+            base, ext = os.path.splitext(file_name)
+            if ext == ".py":
+                subdir = root[len(__path__[0]) + 1 :]
                 if subdir:
-                    base = '%s.%s' % (subdir,base)
+                    base = "%s.%s" % (subdir, base)
                 plugins.append(base)
     try:
         import pkg_resources
     except ImportError:
         pass
     else:
-        for ep in pkg_resources.iter_entry_points('Lima_tango_plugin'):
+        for ep in pkg_resources.iter_entry_points("Lima_tango_plugin"):
             plugins.append(ep.name)
 
     return plugins
 
-__all__ = _init_module()
 
+__all__ = _init_module()
