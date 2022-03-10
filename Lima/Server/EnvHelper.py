@@ -425,52 +425,6 @@ def to_tango_object(ct, name_id):
     return kl
 
 
-def create_tango_objects(ct_control, name_template):
-    import PyTango
-    import PyTango.server
-
-    # create a server just to store objects
-    server = PyTango.server.Server("dummy", server_type="LimaCCDs")
-
-    tango_ct_map = {}
-
-    tango_ct_control_class_name = "CtControl"
-    tango_ct_control_name = name_template.format(type=tango_ct_control_class_name)
-
-    # tango device will communicate with this object.
-    # tango stores a weakref to it so we must keep track of it
-    tango_ct_control = to_tango_object(ct_control, tango_ct_control_name)
-    for ct_name in __get_ct_classes():
-        # "CtImage" becomes "image()"
-        ct_func_name = ct_name[2:].lower()
-        ct_func = getattr(ct_control, ct_func_name, None)
-        if ct_func is None:
-            continue
-        ct = ct_func()
-        tango_ct_name = name_template.format(type=ct_name)
-        tango_ct = to_tango_object(ct, tango_ct_name)
-        # patch tango_ct_control
-        getter = functools.partial(lambda obj, ct: ct, tango_ct)
-        # getter = types.MethodType(getter, tango_ct, tango_ct.__class__)
-        getter = types.MethodType(getter, tango_ct)
-        setattr(tango_ct_control, ct_func_name, getter)
-        tango_object = server.register_object(
-            tango_ct, tango_ct_name, ct_name, member_filter=__filter
-        )
-        tango_ct_map[tango_ct_name] = tango_ct, tango_object
-        # print("ctcontrol.{0}() = {1}".format(ct_func_name, getattr(tango_ct_control, ct_func_name)()))
-
-    tango_object = server.register_object(
-        tango_ct_control,
-        tango_ct_control_name,
-        tango_ct_control_class_name,
-        member_filter=__filter,
-    )
-    tango_ct_map[tango_ct_control_name] = tango_ct_control, tango_object
-
-    return server, tango_ct_map
-
-
 def _import(name):
     __import__(name)
     return sys.modules[name]

@@ -63,7 +63,6 @@ LimaCameraType = None
 
 from .EnvHelper import get_sub_devices
 from .EnvHelper import get_lima_camera_type, get_lima_device_name
-from .EnvHelper import create_tango_objects
 from .EnvHelper import get_camera_module, get_plugin_module
 from .AttrHelper import get_attr_4u
 from Lima.Server.AttrHelper import getDictKey, getDictValue
@@ -2640,24 +2639,6 @@ def export_default_plugins():
                         traceback.print_exc()
 
 
-def export_ct_control(ct_map):
-    util = PyTango.Util.instance()
-    tango_dev_map = get_sub_devices()
-    for name, (tango_ct, tango_object) in six.iteritems(ct_map):
-        tango_class_name = tango_object.tango_class_name
-        # device already created.
-        if tango_class_name in tango_dev_map:
-            continue
-        try:
-            # print("Creating device {0}({1})...".format(tango_class_name, name))
-            util.create_device(tango_class_name, name)
-            # print("Done")
-        except:
-            import traceback
-
-            traceback.print_exc()
-
-
 def _set_control_ref(ctrl_ref):
     for module_name in plugins.__all__:
         try:
@@ -2832,27 +2813,7 @@ def main(args=None, event_loop=None):
 
         U = PyTango.Util.instance()
 
-        # create ct control
-        control = _get_control()
-        if pytango_ver >= (8, 1, 7) and control is not None:
-            master_dev_name = get_lima_device_name()
-            beamline_name, _, camera_name = master_dev_name.split("/")
-            name_template = "{0}/{{type}}/{1}".format(beamline_name, camera_name)
-            # register Tango classes corresponding to CtControl, CtImage, ...
-            server, ct_map = create_tango_objects(control, name_template)
-            tango_classes = set()
-            for name, (tango_ct_object, tango_object) in six.iteritems(ct_map):
-                tango_class = server.get_tango_class(tango_object.class_name)
-                tango_classes.add(tango_class)
-            for tango_class in tango_classes:
-                py.add_class(tango_class.TangoClassClass, tango_class)
-
-            U.server_init()
-
-            export_ct_control(ct_map)
-
-        else:
-            U.server_init()
+        U.server_init()
 
         if event_loop is not None:
             U.server_set_event_loop(event_loop)
