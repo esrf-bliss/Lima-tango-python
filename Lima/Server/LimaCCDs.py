@@ -1992,8 +1992,8 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             t[4],
             t[5],  # 24 bytes I x 6 - stepsbytes
             0,
-            0,
-        )  # padding 2 x 4 bytes
+            0,  # padding 2 x 4 bytes
+        )
         if len(dataheader) != self.DataArrayHeaderLen:
             raise RuntimeError(
                 "Invalid header len: %d (expected %d)"
@@ -2616,9 +2616,10 @@ def export_default_plugins():
                 continue
             else:
                 try:
-                    specificClass, specificDevice = (
-                        m.get_tango_specific_class_n_device()
-                    )
+                    (
+                        specificClass,
+                        specificDevice,
+                    ) = m.get_tango_specific_class_n_device()
                 except AttributeError:
                     continue
 
@@ -2686,7 +2687,7 @@ def _video_image_2_struct(image):
     VIDEO_HEADER_FORMAT = "!IHHqiiHHHH"
     videoheader = struct.pack(
         VIDEO_HEADER_FORMAT,
-        0x5644454f,  # Magic
+        0x5644454F,  # Magic
         1,  # header version
         image.mode(),  # image mode (Y8,Y16...)
         image.frameNumber(),  # frame number

@@ -52,7 +52,7 @@ import processlib
 
 import numpy
 
-DevCcdBase = 0xc180000
+DevCcdBase = 0xC180000
 
 # CCD States
 DevCcdReady = DevCcdBase + 1
@@ -433,8 +433,8 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
             0,  # 16 bytes H x 8 - dimsteps
             0,
             0,
-            0,
-        )  # padding 3 x 4 bytes
+            0,  # padding 3 x 4 bytes
+        )
         if len(data_header) != header_len:
             msg = "Invalid DevEncoded DATA_ARRAY len: %d (expected %d)" % (
                 len(data_header),
@@ -491,7 +491,7 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
             acq.setTriggerMode(Core.ExtGate)
         elif exp_time > 0 and trig_mode == Core.ExtGate:
             acq.setTriggerMode(Core.ExtTrigSingle)
-        if exp_time > 0.:
+        if exp_time > 0.0:
             acq.setAcqExpoTime(exp_time)
 
         self.__last_exp_time = exp_time
@@ -1127,10 +1127,10 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
     # ------------------------------------------------------------------
     @Core.DEB_MEMBER_FUNCT
     def DevSetDebugFlags(self, deb_flags):
-        deb_flags &= 0xffffffff
+        deb_flags &= 0xFFFFFFFF
         deb.Param("Setting debug flags: 0x%08x" % deb_flags)
-        Core.DebParams.setTypeFlags((deb_flags >> 16) & 0xff)
-        Core.DebParams.setModuleFlags((deb_flags >> 0) & 0xffff)
+        Core.DebParams.setTypeFlags((deb_flags >> 16) & 0xFF)
+        Core.DebParams.setModuleFlags((deb_flags >> 0) & 0xFFFF)
 
         deb.Trace("FormatFlags: %s" % Core.DebParams.getFormatFlagsNameList())
         deb.Trace("TypeFlags:   %s" % Core.DebParams.getTypeFlagsNameList())
@@ -1148,10 +1148,10 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         deb.Trace("TypeFlags:   %s" % Core.DebParams.getTypeFlagsNameList())
         deb.Trace("ModuleFlags: %s" % Core.DebParams.getModuleFlagsNameList())
 
-        deb_flags = ((Core.DebParams.getTypeFlags() & 0xff) << 16) | (
-            (Core.DebParams.getModuleFlags() & 0xffff) << 0
+        deb_flags = ((Core.DebParams.getTypeFlags() & 0xFF) << 16) | (
+            (Core.DebParams.getModuleFlags() & 0xFFFF) << 0
         )
-        deb_flags &= 0xffffffff
+        deb_flags &= 0xFFFFFFFF
         deb.Return("Getting debug flags: 0x%08x" % deb_flags)
         return deb_flags
 
