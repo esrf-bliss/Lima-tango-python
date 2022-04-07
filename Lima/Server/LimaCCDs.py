@@ -242,7 +242,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         Core.Bpp32S: 6,
     }
 
-    # The DATA_ARRAY definition
+    # The DATA_ARRAY definition v2
     # struct {
     # unsigned int Magic= 0x44544159;
     # unsigned short Version;
@@ -251,8 +251,9 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     # DataArrayType DataType;
     # unsigned short DataEndianness;
     # unsigned short NbDim;
-    # unsigned short Dim[8]
-    # unsigned int DimStep[8]
+    # unsigned short Dim[6]
+    # unsigned int DimStepBytes[6]
+    # unsigned int Unused[2]
     # } DataArrayHeaderStruct;
 
     DataArrayVersion = 2

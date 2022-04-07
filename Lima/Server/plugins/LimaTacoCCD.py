@@ -369,7 +369,7 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         image_size = frame_dim.getSize()
         da_size = [image_size.getWidth(), image_size.getHeight() * nb_frames]
 
-        # The DATA_ARRAY definition
+        # The DATA_ARRAY definition v1
         # struct {
         # unsigned int Magic= 0x44544159;
         # unsigned short Version;
