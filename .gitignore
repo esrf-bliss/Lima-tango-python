@@ -1,12 +1,16 @@
-*~
-*.pyc
-*.o
-*.P
-*.d
-*.so
 \#*\#
 *target*
 *.bck
 *.bak
 build/
 /.*
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+*.egg-info/
+*.egg
