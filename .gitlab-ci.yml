@@ -5,7 +5,7 @@ stages:
 build-noarch:
   stage: build
   script:
-    - conda build ./conda --prefix-length=80 --output-folder=dist/ -c tango-controls --channel=http://bcu-ci.esrf.fr/stable -c conda-forge
+    - conda mambabuild --output-folder=dist -c http://bcu-ci.esrf.fr/stable conda
   artifacts:
     paths:
       - dist/
