@@ -10,7 +10,7 @@ build-noarch:
     paths:
       - dist/
   tags:
-    - conda
+    - win
 
 deploy-devel:
   stage: deploy
@@ -23,7 +23,6 @@ deploy-devel:
     - cp -Rf dist/* /conda-devel/
     - conda index /conda-devel/
   tags:
-    - conda
     - linux
   only:
     - branches
@@ -42,7 +41,6 @@ deploy-stable:
     - cp -Rf dist/* /conda/
     - conda index /conda/
   tags:
-    - conda
     - linux
   only:
     - tags
