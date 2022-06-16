@@ -78,6 +78,9 @@ Commands
 +----------------------------+-------------------------------------------+-------------------------------------+-----------------------------------------------------------------------------------------------------+
 |readImage                   |DevLong: Image number(0-N)                 |DevEncoded: Encoded image            |Return the image in encoded format of type "**DATA_ARRAY**" (see :ref:`data_array_encoded`)          |
 +----------------------------+-------------------------------------------+-------------------------------------+-----------------------------------------------------------------------------------------------------+
+|readLastImage               |DevLong: Last image number(0-N)            |DevEncoded: Encoded image            |Return the last image acquired after the image number given in parameter in encoded format of type   |
+|                            |                                           |                                     |"**DATA_ARRAY**" (see :ref:`data_array_encoded`)                                                     |
++----------------------------+-------------------------------------------+-------------------------------------+-----------------------------------------------------------------------------------------------------+
 |readImageSeq                |DevLongArray: Image number(0-N) list       |DevEncoded: Encoded image(S)         |Return a stack of images in encoded format of type "**DATA_ARRAY**" (see :ref:`data_array_encoded`)  |
 +----------------------------+-------------------------------------------+-------------------------------------+-----------------------------------------------------------------------------------------------------+
 |writeImage                  |DevLong: Image number(0-N)                 |DevVoid                              |Save manually an image                                                                               |

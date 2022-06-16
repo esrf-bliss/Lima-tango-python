@@ -2019,6 +2019,27 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         category = self.DataArrayCategory.Image
         self._datacache = self._image_2_data_array(image, category)
         return ("DATA_ARRAY", self._datacache)
+        
+    ##@brief get last image data (if new image since last_frame_number)
+    #
+    # @returns Image if new image available since last_frame_number else None
+    @Core.DEB_MEMBER_FUNCT
+    def readLastImage(self, last_frame_number=0):
+        deb.Param("readLastImage: last_frame_number=%d" % last_frame_number)
+        status = self.__control.getStatus()
+        last_img_ready = status.ImageCounters.LastImageReady
+        if last_img_ready <= last_frame_number:
+            deb.Trace(f"No newer image available")
+            PyTango.Except.throw_exception(PyTango.DevError(
+                desc="Frame(s) not available yet",
+                #tango.ErrSeverity.ERR,
+                #"readLastImage()",
+            ))
+        else:
+            image = self.__control.ReadImage(-1)
+            category = self.DataArrayCategory.Image
+            self._datacache = self._image_2_data_array(image, category)
+            return ("DATA_ARRAY", self._datacache)
 
     ##@brief get the data for an image sequence
     #
@@ -2289,6 +2310,10 @@ class LimaCCDsClass(PyTango.DeviceClass):
         "writeImage": [[PyTango.DevLong, "Image id"], [PyTango.DevVoid, ""]],
         "readImage": [
             [PyTango.DevLong, "Image id"],
+            [PyTango.DevEncoded, "DATA_ARRAY with requested image"],
+        ],
+        "readLastImage": [
+            [PyTango.DevLong, "Last image id"],
             [PyTango.DevEncoded, "DATA_ARRAY with requested image"],
         ],
         "readImageSeq": [
