@@ -242,7 +242,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         Core.Bpp32S: 6,
     }
 
-    # The DATA_ARRAY definition
+    # The DATA_ARRAY definition v3
     # struct {
     # unsigned int Magic= 0x44544159;
     # unsigned short Version;
@@ -251,14 +251,15 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     # DataArrayType DataType;
     # unsigned short DataEndianness;
     # unsigned short NbDim;
-    # unsigned short Dim[8]
-    # unsigned int DimStep[8]
+    # unsigned short Dim[6]
+    # unsigned int DimStepBytes[6]
+    # unsigned long ImageNumber;
     # } DataArrayHeaderStruct;
 
-    DataArrayVersion = 2
-    DataArrayPackStr = "<IHHIIHHHHHHHHIIIIIIII"
+    DataArrayVersion = 3
+    DataArrayPackStr = "<IHHIIHHHHHHHHIIIIIIQ"
     DataArrayMagic = struct.unpack(">I", b"DTAY")[0]  # 0x44544159
-    DataArrayHeaderLen = 64
+    DataArrayMinHeaderLen = 64
     DataArrayMaxNbDim = 6
 
     def DataArrayUser(klass, DataArrayCategory=DataArrayCategory):
@@ -1957,6 +1958,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         imageType = image.getImageType()
         dataType = self.ImageType2DataArrayType.get(imageType, -1)
         bigEndian = numpy.dtype(d.dtype.byteorder + "i4") == numpy.dtype(">i4")
+        imageNumber = data.frameNumber
 
         def steps_gen(s):
             size = self.ImageType2NbBytes.get(imageType, (1, 0))[0]
@@ -1969,12 +1971,20 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         s += [0] * (maxNbDim - nbDim)
         t += [0] * (maxNbDim - nbDim)
 
+        # verify backward compatibility
+        headerlen = struct.calcsize(self.DataArrayPackStr)
+        if headerlen < self.DataArrayMinHeaderLen:
+            raise RuntimeError(
+                "Invalid header len: %d (min. expected %d)"
+                % (headerlen, self.DataArrayMinHeaderLen)
+            )
+
         # prepare the structure
         dataheader = struct.pack(
             self.DataArrayPackStr,
             self.DataArrayMagic,  # 4 bytes I - magic number
             self.DataArrayVersion,  # 2 bytes H - version
-            self.DataArrayHeaderLen,  # 2 bytes H - this header length
+            headerlen,  # 2 bytes H - this header length
             category,  # 4 bytes I - category (enum)
             dataType,  # 4 bytes I - data type (enum)
             bigEndian,  # 2 bytes H - endianness
@@ -1991,14 +2001,8 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             t[3],
             t[4],
             t[5],  # 24 bytes I x 6 - stepsbytes
-            0,
-            0,
-        )  # padding 2 x 4 bytes
-        if len(dataheader) != self.DataArrayHeaderLen:
-            raise RuntimeError(
-                "Invalid header len: %d (expected %d)"
-                % (len(dataheader), self.DataArrayHeaderLen)
-            )
+            imageNumber,  # 8 bytes Q x 1 - imageNumber
+        )
 
         flatData = d.ravel()
         flatData.dtype = numpy.uint8
@@ -2025,7 +2029,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     @Core.DEB_MEMBER_FUNCT
     def readImageSeq(self, frame_seq):
         deb.Param("frame_seq=%s" % frame_seq)
-        frame_seq = list(map(int, frame_seq))
+        frame_seq = [int(f) for f in frame_seq]
         start, end = frame_seq[:2]
         step = 1
         if len(frame_seq) > 2:
@@ -2616,9 +2620,10 @@ def export_default_plugins():
                 continue
             else:
                 try:
-                    specificClass, specificDevice = (
-                        m.get_tango_specific_class_n_device()
-                    )
+                    (
+                        specificClass,
+                        specificDevice,
+                    ) = m.get_tango_specific_class_n_device()
                 except AttributeError:
                     continue
 
@@ -2686,7 +2691,7 @@ def _video_image_2_struct(image):
     VIDEO_HEADER_FORMAT = "!IHHqiiHHHH"
     videoheader = struct.pack(
         VIDEO_HEADER_FORMAT,
-        0x5644454f,  # Magic
+        0x5644454F,  # Magic
         1,  # header version
         image.mode(),  # image mode (Y8,Y16...)
         image.frameNumber(),  # frame number
