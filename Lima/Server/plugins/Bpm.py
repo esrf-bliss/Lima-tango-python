@@ -614,6 +614,7 @@ class BpmDeviceServerClass(PyTango.DeviceClass):
 
     # 	 Attribute definitions
     attr_list = {
+        "RunLevel": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
         "buffersize": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
         "txy": [[PyTango.DevDouble, PyTango.SPECTRUM, PyTango.READ, 3]],
         "x": [[PyTango.DevDouble, PyTango.SCALAR, PyTango.READ]],
