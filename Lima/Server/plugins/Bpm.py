@@ -105,7 +105,7 @@ class BpmDeviceServer(BasePostProcess):
 
     @Core.DEB_MEMBER_FUNCT
     def init_device(self):
-        self.get_device_properties(self.get_device_class())
+        BasePostProcess.init_device(self)
         if self.enable_tango_event:
             # enable event push for bvdata attribute
             self.set_change_event("bvdata", True, False)
