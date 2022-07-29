@@ -2536,12 +2536,23 @@ class LimaCCDsClass(PyTango.DeviceClass):
 
 
 def declare_camera_n_commun_to_tango_world(util):
+    warningFlag = False
     for module_name in camera.__all__:
         try:
             if LimaCameraType and (module_name != LimaCameraType):
                 continue
             m = get_camera_module(module_name)
-        except ImportError:
+        except Exception:
+            print(
+                "Warning optional camera %s can't be load, dependency not satisfied."
+                % module_name
+            )
+            warningFlag = True
+            if verboseLevel >= 4:
+                import traceback
+
+                traceback.print_exc()
+                print()
             continue
         else:
             try:
@@ -2564,12 +2575,14 @@ def declare_camera_n_commun_to_tango_world(util):
                 TacoSpecificDict[module_name] = cmd_list, proxy_cont
             except AttributeError:
                 pass
+    if warningFlag and verboseLevel < 4:
+        print("For more camera dependency information start server with -v4")
 
     warningFlag = False
     for module_name in plugins.__all__:
         try:
             m = get_plugin_module(module_name)
-        except ImportError:
+        except Exception:
             print(
                 "Warning optional plugin %s can't be load, dependency not satisfied."
                 % module_name
