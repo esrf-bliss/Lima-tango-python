@@ -118,23 +118,27 @@ Attributes
 
 You will here a long list of attributes, this reflects the richness of the LIMA library. We organized them in
 modules which correspond to specific functions. A function module is identified by an attribute name prefix (excepted for informational attributes),
-for instance the **Acquisition** module attributes  are always named **acq_<attr-name>**. The available modules are :
+for instance the **Acquisition** module attributes are always named **acq_<attr-name>**. The available modules are :
 
- * General Information
- * Status  (prefix *last_* and *ready_*)
- * Acquisition (prefix *acq_* for most of them sorry)
- * Accumulation (prefix *acc_*)
- * Saving  (prefix *saving_*)
- * Image (prefix *image_*)
- * Shutter (prefix *shutter_*)
- * Debug   (prefix *debug_*)
- * Video   (prefix *video_*)
- * Shared Memory (prefix *shared_memory_*)
- * Configuration (prefix *config_*)
- * Buffer (prefix *buffer_*)
- * Plugin (prefix *plugin_*)
+===================== =================================
+Modules               Prefix
+===================== =================================
+General Information   -
+Status                *last_* and *ready_*
+Acquisition           *acq_* for most of them (sorry)
+Accumulation          *acc_*
+Saving                *saving_*
+Image                 *image_*
+Shutter               *shutter_*
+Debug                 *debug_*
+Video                 *video_*
+Shared Memory         *shared_memory_*
+Configuration         *config_*
+Buffer                *buffer_*
+Plugin                *plugin_*
+===================== =================================
 
-Many attributes are of type DevString and they have a fixed list of possible values. You can get the list by calling the special command
+Many attributes are of type DevString and they have a fixed list of possible values (enumerations). You can get the list by calling the special command
 **getAttrStringValueList**. Because a camera cannot support some attribute values , the command getAttrStringValueList will give you the
 the value list for the camera. For instance the attribute *video_mode* supports up to 14 different video formats, but a camera can only supports
 few of them.
@@ -176,7 +180,7 @@ Acquisition
 
 .. figure:: acquisition-time.png
   :alt: Layout
-  
+
   LImA acquisition time
 
 =========================== ======= ======================= =======================================================================================
@@ -231,11 +235,22 @@ acc_time_mode		    rw	    DevString		    Accumulation time mode:
 acc_dead_time		    ro	    DevDouble		    Total accumulation dead time
 acc_live_time		    ro	    DevDouble		    Total accumulation live time which corresponds to the
 							    detector total counting time.
-acc_offset_before           rw      DevLong                 Set a offset value to be added to each pixel value
+acc_mode					rw      DevString               Select the mode of accumulation
+                                                            - **STANDARD** = the sum of the pixel
+                                                            - **THRESHOLD_BEFORE** = apply a threshold specified with :code:`acc_threshold_before`. Pixels under threshold are discarded in the accumulation.
+                                                            - **OFFSET_THEN_THRESHOLD_BEFORE** = apply an offset specified with :code:`acc_offset_before` first then a threshold specified with :code:`acc_threshold_before`. Pixels under threshold are discarded in the accumulation.
+acc_offset_before           rw      DevLong                 Set a offset value to be substracted to each pixel value
+acc_threshold_before        rw      DevLong                 Set a threshold value, lower pixel values (noise) are discarded from the accumulation
+acc_out_type                rw      DevString               Set the out image type afer accumulation (Bpp8, Bpp8S, Bpp16, Bpp16S, Bpp32, Bpp32S)
+                                                            Selecting a lower bitdepth might result in saturation.
+acc_stat_type               rw      DevString               Set the accumulator/statistic applied to each pixels over the accumlation window
+                                                            - **Sum** returns the sum of the pixel intensities (Default)
+                                                            - **Mean** returns the arithmetic mean of the pixel intensities
+                                                            - **Median** returns the median of the pixel intensities
+                                                            Selecting a lower bitdepth might result in saturation.
 acc_saturated_active        rw      DevBoolean              To activate the saturation counters (i.e. readAccSaturated commands)
 acc_saturated_cblevel       rw      DevLong                 Set at which level of total saturated pixels the callback plugin (if set with the AccThresholdCallbackModule property) will be called
 acc_saturated_threshold     rw      DevLong                 The threshold for counting saturated pixels
-acc_threshold_before        rw      DevLong                 Set a threshold value to be substract to each pixel value
 =========================== ======= ======================= =======================================================================================
 
 Saving
