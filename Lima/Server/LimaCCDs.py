@@ -201,6 +201,8 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         Core.Bpp32: "Bpp32",
         Core.Bpp32S: "Bpp32S",
     }
+    
+    String2ImageType = { v: k for k, v in ImageType2String.items() }
 
     # DATA_ARRAY DevEncoded
     # enum DataArrayCategory {
@@ -1047,6 +1049,32 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         else:
             msg = "Accumulation threshold plugins not loaded"
             deb.Error(msg)
+            
+    ## @brief Read the output image type (after acumulation)
+    #
+    @Core.DEB_MEMBER_FUNCT
+    def read_acc_out_type(self, attr):
+        acc = self.__control.accumulation()
+        imageType = acc.getOutputType()
+        stringType = self.ImageType2String.get(imageType, "?")
+        
+        attr.set_value(stringType)
+
+    ## @brief Write the output image type (after acumulation)
+    #
+    @Core.DEB_MEMBER_FUNCT
+    def write_acc_out_type(self, attr):
+        stringType = attr.get_write_value()
+        imageType = self.String2ImageType.get(stringType)
+        if imageType is not None:
+            acc = self.__control.accumulation()
+            acc.setOutputType(imageType)
+        else:
+            PyTango.Except.throw_exception(
+                "WrongData",
+                "Wrong value %s: %s" % ("acc_out_type", stringType),
+                "LimaCCD Class",
+            )
 
     ## @brief Read latency time
     #
@@ -2369,6 +2397,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
         "acc_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
         "acc_threshold_before": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
         "acc_offset_before": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
+        "acc_out_type": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
         "concat_nb_frames": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
         "latency_time": [[PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]],
         "valid_ranges": [
