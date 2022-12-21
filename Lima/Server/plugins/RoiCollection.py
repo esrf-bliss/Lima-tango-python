@@ -217,7 +217,7 @@ class RoiCollectionDeviceServer(BasePostProcess):
                 first_frame_id = result_counters[0].frameNumber
 
                 returnArray = numpy.zeros(
-                    list_size * spectrum_size + 3, dtype=numpy.int
+                    list_size * spectrum_size + 3, dtype=int
                 )
                 returnArray[0:3] = (list_size, spectrum_size, first_frame_id)
                 indexArray = 3
@@ -227,7 +227,7 @@ class RoiCollectionDeviceServer(BasePostProcess):
                     ] = result.spectrum
                     indexArray += spectrum_size
                 return returnArray
-        return numpy.array([], dtype=numpy.int)
+        return numpy.array([], dtype=int)
 
 
 # ==================================================================

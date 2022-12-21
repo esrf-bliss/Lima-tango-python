@@ -300,13 +300,13 @@ class BpmDeviceServer(BasePostProcess):
                     result.max_pixel_value, fallback_value=0
                 )
             try:
-                profile_x = result.profile_x.buffer.astype(numpy.int)
+                profile_x = result.profile_x.buffer.astype(int)
             except:
-                profile_x = numpy.array([], dtype=numpy.int)
+                profile_x = numpy.array([], dtype=int)
             try:
-                profile_y = result.profile_y.buffer.astype(numpy.int)
+                profile_y = result.profile_y.buffer.astype(int)
             except:
-                profile_y = numpy.array([], dtype=numpy.int)
+                profile_y = numpy.array([], dtype=int)
         else:
             t = time.time()
             x = -1
@@ -315,8 +315,8 @@ class BpmDeviceServer(BasePostProcess):
             fwhm_x = 0
             fwhm_y = 0
             max_intensity = 0
-            profile_x = numpy.array([], dtype=numpy.int)
-            profile_y = numpy.array([], dtype=numpy.int)
+            profile_x = numpy.array([], dtype=int)
+            profile_y = numpy.array([], dtype=int)
 
         acq_time = t
         result_array = [
