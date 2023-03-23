@@ -1638,6 +1638,17 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             saving.setOverwritePolicy(value, self.__SavingStream)
 
     @Core.DEB_MEMBER_FUNCT
+    def read_saving_use_hw_comp(self, attr):
+        saving = self.__control.saving()
+        attr.set_value(saving.getUseHwComp(self.__SavingStream))
+
+    @Core.DEB_MEMBER_FUNCT
+    def write_saving_use_hw_comp(self, attr):
+        data = attr.get_write_value()
+        saving = self.__control.saving()
+        saving.setUseHwComp(data, self.__SavingStream)
+
+    @Core.DEB_MEMBER_FUNCT
     def read_saving_stream_active(self, attr):
         saving = self.__control.saving()
         attr.set_value(saving.getStreamActive(self.__SavingStream))
@@ -2502,6 +2513,9 @@ class LimaCCDsClass(PyTango.DeviceClass):
         ],
         "saving_overwrite_policy": [
             [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "saving_use_hw_comp": [
+            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "saving_frame_per_file": [
             [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
