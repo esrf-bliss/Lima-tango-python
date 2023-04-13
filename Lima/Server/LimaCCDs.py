@@ -1552,6 +1552,19 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         saving.setFramesPerFile(data, self.__SavingStream)
 
     @Core.DEB_MEMBER_FUNCT
+    def read_saving_every_n_frames(self, attr):
+        saving = self.__control.saving()
+
+        attr.set_value(saving.getEveryNFrames(self.__SavingStream))
+
+    @Core.DEB_MEMBER_FUNCT
+    def write_saving_every_n_frames(self, attr):
+        data = attr.get_write_value()
+        saving = self.__control.saving()
+
+        saving.setEveryNFrames(data, self.__SavingStream)
+
+    @Core.DEB_MEMBER_FUNCT
     def read_saving_format(self, attr):
         saving = self.__control.saving()
         attr.set_value(saving.getFormatAsString(self.__SavingStream))
@@ -2437,6 +2450,9 @@ class LimaCCDsClass(PyTango.DeviceClass):
             [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "saving_frame_per_file": [
+            [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "saving_every_n_frames": [
             [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "saving_common_header": [
