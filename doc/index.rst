@@ -533,12 +533,15 @@ For more details about the camera device interface, please have a look on the fo
   Basler <../../../../camera/basler/doc/tango>
   Dexela <../../../../camera/dexela/doc/tango>
   Dhyana <../../../../camera/dhyana/doc/tango>
+  Fli <../../../../camera/fli/doc/tango>
   Frelon <../../../../camera/frelon/doc/tango>
   ImXPAD <../../../../camera/imxpad/doc/tango>
+  Iris <../../../../camera/iris/doc/tango>
   Marccd <../../../../camera/marccd/doc/tango>
-  Maxipix <../../../../camera/maxipix/doc/tango>
   Lambda <../../../../camera/lambda/doc/tango>
+  Maxipix <../../../../camera/maxipix/doc/tango>
   Merlin <../../../../camera/merlin/doc/tango>
+  Minipix <../../../../camera/minipix/doc/tango>
   Dectris Eiger <../../../../camera/eiger/doc/tango>
   Dectris Mythen3 <../../../../camera/mythen3/doc/tango>
   Dectris Pilatus <../../../../camera/pilatus/doc/tango>
