@@ -663,7 +663,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         # Setup a user-defined detector name if it exists
         if self.UserInstrumentName:
             if SystemHasFeature("Core.HwDetInfoCtrlObj.setInstrumentName"):
-                self.__detinfo.setUserInstrumentName(self.UserInstrumentName)
+                self.__detinfo.setInstrumentName(self.UserInstrumentName)
             else:
                 deb.Warning("UserInstrumentName not supported in this version")
 
