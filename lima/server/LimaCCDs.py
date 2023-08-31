@@ -63,7 +63,7 @@ LimaCameraType = None
 #    from EnvHelper import setup_lima_env
 #    LimaCameraType = setup_lima_env(sys.argv)
 
-from .EnvHelper import get_sub_devices
+from .EnvHelper import get_sub_devices, get_device_class_map
 from .EnvHelper import get_lima_camera_type, get_lima_device_name
 from .EnvHelper import get_camera_module, get_plugin_module
 from .AttrHelper import get_attr_4u
@@ -1997,9 +1997,11 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
     def read_plugin_list(self, attr):
         returnList = []
-        for key, value in get_sub_devices().items():
-            returnList.append(key.lower().replace("deviceserver", ""))
-            returnList.append(value)
+        for klass, devices in get_device_class_map().items():
+            klass_name = klass.lower().replace("deviceserver", "")
+            for device_name in devices:
+                returnList.append(klass_name)
+                returnList.append(device_name)
         attr.set_value(returnList)
 
     def read_shared_memory_names(self, attr):
