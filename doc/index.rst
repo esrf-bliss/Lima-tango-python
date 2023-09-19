@@ -289,6 +289,7 @@ saving_managed_mode         rw      DevString               On some detectors, s
                                                             the mode using these attribute values:
                                                              - HARDWARE, lima will not manage the saving but set the camera to do the job
                                                              - SOFTWARE (default) Lima is managing the saving
+saving_every_n_frames       rw      DevLong                 Save frame every N frames (experimental)
 =========================== ======= ======================= =======================================================================================
 
 Image
