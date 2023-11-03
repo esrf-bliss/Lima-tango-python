@@ -43,11 +43,12 @@ Command name		Arg. in		             Arg. out		 	   Description
 clearAllRois		DevVoid	    	     	     DevVoid			   Remove the Rois 
 Init			DevVoid		     	     DevVoid			   Do not use
 readSpectrum		DevLong 	     	     DevVarLongArray		   from which frame id return the spectrums
-                        (number of spectrum,spectrum size, first frame id, spectrum0, spectrum1...)
+                                                                                   (number of spectrum,spectrum size, first frame id, 
+                                                                                   spectrum0, spectrum1...)
 setMaskFile		DevVarStringArray	     DevVoid			   Set the mask file
 			full path file
 setRois			DevArLongArray		     DevVoid			   Set roi positions
-			(x0,y0,w0,h0,x1,y1,w1,h1 ...)
+			(x0,y0,w0,h0,x1,y1,w1,h1...)
 Start			DevVoid			     DevVoid			   Start the operation on image
 State			DevVoid		     	     DevLong		    	   Return the device state
 Status			DevVoid		     	     DevString			   Return the device state as a string
