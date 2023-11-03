@@ -238,7 +238,7 @@ acc_time_mode		    rw	    DevString		    Accumulation time mode:
 acc_dead_time		    ro	    DevDouble		    Total accumulation dead time
 acc_live_time		    ro	    DevDouble		    Total accumulation live time which corresponds to the
 							    detector total counting time.
-acc_mode					rw      DevString               Select the mode of accumulation
+acc_mode                    rw      DevString               Select the mode of accumulation
                                                             - **STANDARD** = the sum of the pixel
                                                             - **THRESHOLD_BEFORE** = apply a threshold specified with :code:`acc_threshold_before`. Pixels under threshold are discarded in the accumulation.
                                                             - **OFFSET_THEN_THRESHOLD_BEFORE** = apply an offset specified with :code:`acc_offset_before` first then a threshold specified with :code:`acc_threshold_before`. Pixels under threshold are discarded in the accumulation.
@@ -258,6 +258,7 @@ acc_saturated_threshold     rw      DevLong                 The threshold for co
 
 Saving
 ``````
+
 =========================== ======= ======================= =======================================================================================
 Attribute name              RW      Type                    Description
 =========================== ======= ======================= =======================================================================================
@@ -277,6 +278,7 @@ saving_suffix               rw      DevString               The image file suffi
 saving_next_number          rw      DevLong                 The image next number
                                                             The full image file name is:
                                                             /saving_directory/saving_prefix+sprintf("%04d",saving_next_number)+saving_suffix
+
 saving_format               rw      DevString               The data format for saving:
                                                               - :code:`RAW`, save in binary format
                                                               - :code:`EDF`, save in ESRF Data Format
@@ -288,23 +290,25 @@ saving_format               rw      DevString               The data format for 
                                                               - :code:`HDF5GZ` save in Nexus HDF5 format with Deflate filter compression
                                                               - :code:`HDF5BS` save in Nexus HDF5 format with BS/LZ4 filter compression
 
-saving_overwrite_policy     rw     DevString                In case of existing files an overwite policy is mandatory:
+
+saving_overwrite_policy     rw      DevString               In case of existing files an overwite policy is mandatory:
                                                               - **Abort**, if the file exists the saving is aborted
                                                               - **Overwrite**, if the file exists it is overwritten
                                                               - **Append**, if the file exists the image is append to the file
 
-saving_frame_per_file       rw     DevLong                  Number of frames saved in each file
-saving_common_header        rw     DevString[]              Common header with multiple entries
-saving_header_delimiter     rw     DevString[]              The header delimiters, [0] = key header delimiter, [1] = entry header delimiter, [2] = image number header delimiter.
+saving_frame_per_file       rw      DevLong                 Number of frames saved in each file
+saving_common_header        rw      DevString[]             Common header with multiple entries
+saving_header_delimiter     rw      DevString[]             The header delimiters, [0] = key header delimiter, [1] = entry header delimiter, 
+                                                            [2] = image number header delimiter.
                                                             Default : [0] = "=", [1] = "\n", [2] = ";"
-saving_max_writing_task     rw     DevShort                 Set the max. tasks for saving file, default is 1
-saving_statistics           ro     DevDouble[]              Return stats: saving speed, compression ratio,
+saving_max_writing_task     rw      DevShort                Set the max. tasks for saving file, default is 1
+saving_statistics           ro      DevDouble[]             Return stats: saving speed, compression ratio,
                                                             compression speed and incoming speed (speed in byte/s)
-saving_statistics_history   rw     DevLong                  Set size of history for stats calculation, default is 16 frames
-saving_managed_mode         rw     evString                 On some detectors, saving can be managed by the hardware (sdk), you can switch
+saving_statistics_history   rw      DevLong                 Set size of history for stats calculation, default is 16 frames
+saving_managed_mode         rw      DevString               On some detectors, saving can be managed by the hardware (sdk), you can switch
                                                             the mode using these attribute values:
-                                                             - HARDWARE, lima will not manage the saving but set the camera to do the job
-                                                             - SOFTWARE (default) Lima is managing the saving
+                                                            - HARDWARE, lima will not manage the saving but set the camera to do the job
+                                                            - SOFTWARE, (default) Lima is managing the saving
 saving_every_n_frames       rw      DevLong                 Save frame every N frames (experimental)
 =========================== ======= ======================= =======================================================================================
 
@@ -547,6 +551,7 @@ For more details about the camera device interface, please have a look on the fo
 
   Andor <../../../../camera/andor/doc/tango>
   Andor3 <../../../../camera/andor3/doc/tango>
+  Arinax <../../../../camera/arinax/doc/tango>
   Basler <../../../../camera/basler/doc/tango>
   Dexela <../../../../camera/dexela/doc/tango>
   Dhyana <../../../../camera/dhyana/doc/tango>
@@ -579,6 +584,7 @@ For more details about the camera device interface, please have a look on the fo
   XH <../../../../camera/xh/doc/tango>
   Xpad <../../../../camera/xpad/doc/tango>
   Xspress3 <../../../../camera/xspress3/doc/tango>
+  Zwo <../../../../camera/zwo/doc/tango>
 
 
 Plugin devices: software operation and extra interfaces
