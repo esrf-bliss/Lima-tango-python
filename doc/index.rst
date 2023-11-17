@@ -557,6 +557,7 @@ For more details about the camera device interface, please have a look on the fo
   Dhyana <../../../../camera/dhyana/doc/tango>
   Fli <../../../../camera/fli/doc/tango>
   Frelon <../../../../camera/frelon/doc/tango>
+  Hamamatsu <../../../../camera/hamamatsu/doc/tango>
   ImXPAD <../../../../camera/imxpad/doc/tango>
   Iris <../../../../camera/iris/doc/tango>
   Marccd <../../../../camera/marccd/doc/tango>
