@@ -2085,7 +2085,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     #
     # @returns Image if new image available since last_frame_number else None
     @Core.DEB_MEMBER_FUNCT
-    def readLastImage(self, last_frame_number=0):
+    def readLastImage(self, last_frame_number=-1):
         deb.Param("readLastImage: last_frame_number=%d" % last_frame_number)
         status = self.__control.getStatus()
         last_img_ready = status.ImageCounters.LastImageReady
