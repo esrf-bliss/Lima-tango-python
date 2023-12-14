@@ -509,8 +509,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             "buffer_max_memory": "MaxMemory",
             "buffer_max_number": "MaxNumber",
             "acc_mode": "Mode",
-            "acc_filter": "Filter",
-            "acc_operation": "Operation",
             "acc_threshold_before": "ThresholdBefore",
             "acc_offset_before": "OffsetBefore",
         }
@@ -588,20 +586,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
                 "STANDARD": Core.CtAccumulation.Parameters.STANDARD,
                 "THRESHOLD_BEFORE": Core.CtAccumulation.Parameters.THRESHOLD_BEFORE,
                 "OFFSET_THEN_THRESHOLD_BEFORE": Core.CtAccumulation.Parameters.OFFSET_THEN_THRESHOLD_BEFORE,
-            }
-
-        if SystemHasFeature("Core.CtAccumulation.FILTER_NONE"):
-            self.__AccFilter = {
-                "FILTER_NONE": Core.CtAccumulation.FILTER_NONE,
-                "FILTER_THRESHOLD_MIN": Core.CtAccumulation.FILTER_THRESHOLD_MIN,
-                "FILTER_OFFSET_THEN_THRESHOLD_MIN": Core.CtAccumulation.FILTER_OFFSET_THEN_THRESHOLD_MIN,
-            }
-
-        if SystemHasFeature("Core.CtAccumulation.ACC_SUM"):
-            self.__AccOperation = {
-                "ACC_SUM": Core.CtAccumulation.ACC_SUM,
-                "ACC_MEAN": Core.CtAccumulation.ACC_MEAN,
-                "ACC_MEDIAN": Core.CtAccumulation.ACC_MEDIAN,
             }
 
         try:
@@ -2449,8 +2433,6 @@ class LimaCCDsClass(PyTango.DeviceClass):
         "acq_expo_time": [[PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]],
         "acc_max_expo_time": [[PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]],
         "acc_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "acc_filter": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "acc_operation": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
         "acc_threshold_before": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
         "acc_offset_before": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
         "acc_out_type": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],

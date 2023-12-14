@@ -10,7 +10,7 @@ build-noarch:
     paths:
       - dist/
   tags:
-    - win
+    - linux
 
 deploy-devel:
   stage: deploy
