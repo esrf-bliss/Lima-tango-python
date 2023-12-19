@@ -559,6 +559,15 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         if SystemHasFeature("Core.CtSaving.MultiSet"):
             self.__SavingOverwritePolicy["MULTISET"] = Core.CtSaving.MultiSet
 
+        if SystemHasFeature("Core.CtSaving.ZBufferParameters"):
+            _ZBufferParameters = Core.CtSaving.ZBufferParameters
+            self.__SavingZbufferAllocPolicy = {
+                "FIXED": _ZBufferParameters.AllocPolicy.Fixed,
+                "AUTOMATIC": _ZBufferParameters.AllocPolicy.Automatic,
+            }
+        else:  # Core too Old
+            self.__SavingZbufferAllocPolicy = {}
+
         self.__AcqTriggerMode = {
             "INTERNAL_TRIGGER": Core.IntTrig,
             "EXTERNAL_TRIGGER": Core.ExtTrigSingle,
@@ -1659,6 +1668,36 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         saving = self.__control.saving()
         saving.setStreamActive(self.__SavingStream, data)
 
+    @Core.DEB_MEMBER_FUNCT
+    def read_saving_zbuffer_pool_alloc_policy(self, attr):
+        saving = self.__control.saving()
+        zpars = saving.getZBufferParameters(self.__SavingStream)
+        val = getDictKey(self.__SavingZbufferAllocPolicy, zpars.poolAllocPolicy)
+        attr.set_value(val)
+
+    @Core.DEB_MEMBER_FUNCT
+    def write_saving_zbuffer_pool_alloc_policy(self, attr):
+        data = attr.get_write_value()
+        val = getDictValue(self.__SavingZbufferAllocPolicy, data)
+        saving = self.__control.saving()
+        zpars = saving.getZBufferParameters(self.__SavingStream)
+        zpars.poolAllocPolicy = val
+        saving.setZBufferParameters(zpars, self.__SavingStream)
+
+    @Core.DEB_MEMBER_FUNCT
+    def read_saving_zbuffer_pool_nb_buffers(self, attr):
+        saving = self.__control.saving()
+        zpars = saving.getZBufferParameters(self.__SavingStream)
+        attr.set_value(zpars.poolNumberOfBuffers)
+
+    @Core.DEB_MEMBER_FUNCT
+    def write_saving_zbuffer_pool_nb_buffers(self, attr):
+        data = attr.get_write_value()
+        saving = self.__control.saving()
+        zpars = saving.getZBufferParameters(self.__SavingStream)
+        zpars.poolNumberOfBuffers = data
+        saving.setZBufferParameters(zpars, self.__SavingStream)
+
     ## @brief get the maximum number of task for concurrent writing (saving)
     #
     @RequiresSystemFeature("Core.CtSaving.setMaxConcurrentWritingTask")
@@ -2544,6 +2583,12 @@ class LimaCCDsClass(PyTango.DeviceClass):
         ],
         "saving_stream_active": [
             [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "saving_zbuffer_pool_alloc_policy": [
+            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "saving_zbuffer_pool_nb_buffers": [
+            [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "debug_modules_possible": [
             [
