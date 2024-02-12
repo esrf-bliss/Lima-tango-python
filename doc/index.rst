@@ -378,8 +378,8 @@ image_width		    ro	    DevLong	            Width size of the detector in pixel
 image_height		    ro	    DevLong		    Height size of the detector in pixel
 image_sizes                 ro      DevULong[4]             Signed(0-unsigned,1-signed), depth(nb bytes), width and height
 image_max_dim               ro      DevULong[2]             Maximum image dimension, width and height in pixel
-image_roi		    rw	    DevLong[4]		    Region Of Interest on image, [0] = Begin X, [1] = End X,
-							    [2] Begin Y, [3] = End Y, default ROI is [0,0,0,0] (no ROI)
+image_roi		    rw	    DevLong[4]		    Region Of Interest on image, [0] = Begin X, [1] = Begin Y,
+							    [2] = Width, [3] = Height, default ROI is [0,0,0,0] (no ROI)
 image_bin		    rw	    DevLong[2]		    Binning on image, [0] = Binning factor on X, [1] =
 							    Binning factor on Y. Default binning is 1 x 1
 image_flip		    rw	    DevBoolean[2]	    Flip on the image, [0] = flip over X axis, [1] flip over Y
