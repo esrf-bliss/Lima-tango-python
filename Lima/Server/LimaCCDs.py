@@ -48,6 +48,7 @@ import sys, os, glob
 import PyTango
 import weakref
 import itertools
+import functools
 import numpy
 import struct
 import time
@@ -629,6 +630,20 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
                 "LAST_IMAGE": Core.CtVideo.LAST_IMAGE,
             }
 
+        if SystemHasFeature("Core.BufferHelper.Parameters"):
+            self.__BufferHelperEnums = {
+                "durationPolicy": {
+                    "EPHEMERAL": Core.BufferHelper.Parameters.Ephemeral,
+                    "PERSISTENT": Core.BufferHelper.Parameters.Persistent, 
+                },
+                "sizePolicy": {
+                    "AUTOMATIC": Core.BufferHelper.Parameters.Automatic,
+                    "FIXED": Core.BufferHelper.Parameters.Fixed, 
+                },
+            }
+            self.__BufferParamData = {
+            }
+
         # INIT display shared memory
         try:
             self.__shared_memory_names = ["LimaCCds", instance_name]
@@ -695,6 +710,10 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
                     % self.ImageOpMode
                 )
 
+        # Setup the BufferHelper Parameters
+        if SystemHasFeature("Core.BufferHelper.Parameters"):
+            self.apply_buffer_param_properties()
+
         for feature in SystemFeatures:
             is_not = (SystemHasFeature(feature) and "is") or "is not"
             deb.Trace("Feature %s %s present" % (feature, is_not))
@@ -728,6 +747,24 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
                 self.write_shutter_open_time,
             )
 
+    @Core.DEB_MEMBER_FUNCT
+    def apply_buffer_param_properties(self):
+        for grp, attr_data in self.__BufferParamData.items():
+            attr_name_prefix = attr_data["name"]
+            prop_name = f"{grp.title()}{attr_name_prefix}Parameters"
+            prop_val = getattr(self, prop_name)
+            deb.Trace("%s [prop]: %s" % (prop_name, prop_val))
+            try:
+                obj = self.__Prefix2SubClass[grp]()
+                get_set_names = [f"{op}{attr_name_prefix}Parameters"
+                                 for op in ["get", "set"]]
+                getter, setter = [getattr(obj, n) for n in get_set_names]
+                params = Core.BufferHelper.Parameters.fromString(prop_val)
+                deb.Always("%s [params]: %s" % (prop_name, params))
+                setter(params)
+            except Exception as e:
+                deb.Error("Error setting %s parameters: %s" % (name_prefix, e))
+
     def __getattr__(self, name):
         if name.startswith("is_") and name.endswith("_allowed"):
             split_name = name.split("_")[1:-1]
@@ -741,15 +778,43 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             self.__dict__[name] = func
             return func
         else:
-            split_name = name.split("_")[1:]
+            split_name = name.split("_")
+            action = split_name.pop(0)
             subClass = self.__Name2SubClass.get("_".join(split_name), None)
             if subClass is None:
                 subClass = self.__Prefix2SubClass.get(split_name[0], None)
             if subClass:
                 obj = subClass()
+                if SystemHasFeature("Core.BufferHelper.Parameters"):
+                    buffer_attr = self.get_buffer_param_attr(action, split_name,
+                                                             obj)
+                    if buffer_attr:
+                        return buffer_attr
                 return get_attr_4u(self, name, obj)
 
         raise AttributeError("LimaCCDs has no attribute %s" % name)
+
+    @Core.DEB_MEMBER_FUNCT
+    def get_buffer_param_attr(self, action, split_name, obj):
+        deb.Param("action=%s, split_name=%s, obj=%s" % (action, split_name, obj))
+        for grp, attr_data in self.__BufferParamData.items():
+            split_grp = [grp] + attr_data["attr_split"]
+            attr_name_prefix = attr_data["name"]
+            nb_grp_tokens = len(split_grp)
+            if list(split_grp) != split_name[:nb_grp_tokens]:
+                continue
+            get_set_names = [f"{op}{attr_name_prefix}Parameters"
+                             for op in ["get", "set"]]
+            if not all([hasattr(obj, n) for n in get_set_names]):
+                continue
+            method = getattr(self, f"{action}BufferParam")
+            param_tokens = split_name[nb_grp_tokens:]
+            param = "".join([n.title() if i else n
+                             for i, n in enumerate(param_tokens)])
+            getter, setter = [getattr(obj, n) for n in get_set_names]
+            return functools.partial(method, param=param,
+                                     getter=getter, setter=setter)
+        return None
 
     def gc(self):
         import gc
@@ -1848,6 +1913,26 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     def read_shutter_ctrl_is_available(self, attr):
         is_available = self.__control.shutter().hasCapability()
         attr.set_value(is_available)
+
+    @RequiresSystemFeature("Core.BufferHelper.Parameters")
+    def readBufferParam(self, attr, param=None, getter=None, setter=None):
+        buffer_param = getter()
+        val = getattr(buffer_param, param)
+        if param in self.__BufferHelperEnums:
+            val = getDictKey(self.__BufferHelperEnums[param], val)
+        attr.set_value(val)
+
+    @RequiresSystemFeature("Core.BufferHelper.Parameters")
+    def writeBufferParam(self, attr, param=None, getter=None, setter=None):
+        buffer_param = getter()
+        param_name = ''.join([p.title() if i else p
+                              for i, p in enumerate(param.split("_"))])
+        val = attr.get_write_value()
+        if param in self.__BufferHelperEnums:
+            val = getDictValue(self.__BufferHelperEnums[param], val)
+        setattr(buffer_param, param_name, val)
+        setter(buffer_param)
+
 
     # ==================================================================
     #
