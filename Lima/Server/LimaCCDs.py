@@ -642,6 +642,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
                 },
             }
             self.__BufferParamData = {
+                "saving": {"attr_split": ["zbuffer"], "name": "ZBuffer"},
             }
 
         # INIT display shared memory
@@ -2400,6 +2401,12 @@ class LimaCCDsClass(PyTango.DeviceClass):
             "Maximum concurrent writing tasks",
             [1],
         ],
+        "SavingZBufferParameters": [
+            PyTango.DevString,
+            "Saving ZBuffer alloc. params: "
+            "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0-100>",
+            ['<>'],
+        ],
     }
 
     #    Command definitions
@@ -2629,6 +2636,18 @@ class LimaCCDsClass(PyTango.DeviceClass):
         ],
         "saving_stream_active": [
             [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "saving_zbuffer_init_mem": [
+            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "saving_zbuffer_duration_policy": [
+            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "saving_zbuffer_size_policy": [
+            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "saving_zbuffer_req_mem_size_percent": [
+            [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "debug_modules_possible": [
             [
