@@ -642,6 +642,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
                 },
             }
             self.__BufferParamData = {
+                "acc": {"attr_split": ["buffer"], "name": "Buffer"},
                 "saving": {"attr_split": ["zbuffer"], "name": "ZBuffer"},
             }
 
@@ -2362,6 +2363,12 @@ class LimaCCDsClass(PyTango.DeviceClass):
             "Number of thread for processing",
             [2],
         ],
+        "AccBufferParameters": [
+            PyTango.DevString,
+            "Accumulation Buffer alloc. params: "
+            "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0-100>",
+            ['<>'],
+        ],
         "AccThresholdCallbackModule": [
             PyTango.DevString,
             "Plugin name file which manage threshold",
@@ -2531,6 +2538,18 @@ class LimaCCDsClass(PyTango.DeviceClass):
             [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "acc_saturated_cblevel": [
+            [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "acc_buffer_init_mem": [
+            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "acc_buffer_duration_policy": [
+            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "acc_buffer_size_policy": [
+            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "acc_buffer_req_mem_size_percent": [
             [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "acq_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
