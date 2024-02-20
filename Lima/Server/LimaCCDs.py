@@ -507,7 +507,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             "shutter_mode": "Mode",
             "image_rotation": "Rotation",
             "video_mode": "Mode",
-            "buffer_max_memory": "MaxMemory",
             "buffer_max_number": "MaxNumber",
             "acc_mode": "Mode",
             "acc_threshold_before": "ThresholdBefore",
@@ -642,6 +641,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
                 },
             }
             self.__BufferParamData = {
+                "buffer": {"attr_split": ["alloc"], "name": "Alloc"},
                 "acc": {"attr_split": ["buffer"], "name": "Buffer"},
                 "saving": {"attr_split": ["zbuffer"], "name": "ZBuffer"},
             }
@@ -695,7 +695,11 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
         # Setup the max memory usage (%)
         if self.BufferMaxMemory:
-            self.__control.buffer().setMaxMemory(int(self.BufferMaxMemory))
+            max_mem = int(self.BufferMaxMemory)
+            if SystemHasFeature("Core.BufferHelper.Parameters"):
+                self.BufferAllocReqMemSizePercent = max_mem
+            else:
+                self.__control.buffer().setMaxMemory(max_mem)
 
         unsupported_feature = "Core.Never.Unsupported.Feature"
         if SystemHasFeature(unsupported_feature):
@@ -2402,6 +2406,12 @@ class LimaCCDsClass(PyTango.DeviceClass):
             "The maximum among of memory (RAM) Lima should use to allocate the frame buffers, e.g 50 %, default is 70%",
             [],
         ],
+        "BufferAllocParameters": [
+            PyTango.DevString,
+            "HW Buffer alloc. params: "
+            "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0-100>",
+            ['<initMem=1, reqMemSizePercent=70>'],
+        ],
         "TangoEvent": [PyTango.DevBoolean, "Activate Tango event", [False]],
         "SavingMaxConcurrentWritingTask": [
             PyTango.DevShort,
@@ -2734,7 +2744,18 @@ class LimaCCDsClass(PyTango.DeviceClass):
         "config_available_name": [
             [PyTango.DevString, PyTango.SPECTRUM, PyTango.READ, 1024]
         ],
-        "buffer_max_memory": [[PyTango.DevShort, PyTango.SCALAR, PyTango.READ_WRITE]],
+        "buffer_alloc_init_mem": [
+            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "buffer_alloc_zbuffer_duration_policy": [
+            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "buffer_alloc_size_policy": [
+            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "buffer_alloc_req_mem_size_percent": [
+            [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
         "buffer_max_number": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ]],
         "shutter_ctrl_is_available": [
             [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ]
