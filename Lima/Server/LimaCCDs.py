@@ -2747,7 +2747,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
         "buffer_alloc_init_mem": [
             [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
-        "buffer_alloc_zbuffer_duration_policy": [
+        "buffer_alloc_duration_policy": [
             [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "buffer_alloc_size_policy": [
