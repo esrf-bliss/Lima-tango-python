@@ -154,8 +154,11 @@ def get_attr_4u(obj, name, interface, update_dict=True):
     if name.startswith("read_") or name.startswith("write_"):
         split_name = name.split("_")[1:]
         attr_name = "".join([x.title() for x in split_name])
-        dict_name = "_" + obj.__class__.__name__ + "__" + attr_name
-        d = getattr(obj, dict_name, None)
+        # Look for a public attribute first (available in inherited classes)
+        d = getattr(obj, "_" + attr_name, None)
+        if d is None:
+            dict_name = "_" + obj.__class__.__name__ + "__" + attr_name
+            d = getattr(obj, dict_name, None)
         dict_name = "_" + obj.__class__.__name__ + "__Attribute2FunctionBase"
         dict_name = getattr(obj, dict_name, None)
         if dict_name:
