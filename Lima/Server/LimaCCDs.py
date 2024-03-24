@@ -2389,7 +2389,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
         "AccBufferParameters": [
             PyTango.DevString,
             "Accumulation Buffer alloc. params: "
-            "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0-100>",
+            "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0.0-100.0>",
             [''],
         ],
         "AccThresholdCallbackModule": [
@@ -2431,7 +2431,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
         "BufferAllocParameters": [
             PyTango.DevString,
             "HW Buffer alloc. params: "
-            "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0-100> [default: <initMem=1, reqMemSizePercent=70>]",
+            "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0.0-100.0> [default: <initMem=1, reqMemSizePercent=70.0>]",
             [''],
         ],
         "TangoEvent": [PyTango.DevBoolean, "Activate Tango event", [False]],
@@ -2443,7 +2443,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
         "SavingZBufferParameters": [
             PyTango.DevString,
             "Saving ZBuffer alloc. params: "
-            "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0-100>",
+            "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0.0-100.0>",
             [''],
         ],
     }
@@ -2579,7 +2579,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
             [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "acc_buffer_req_mem_size_percent": [
-            [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
+            [PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "acq_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
         "acc_time_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
@@ -2700,7 +2700,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
             [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "saving_zbuffer_req_mem_size_percent": [
-            [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
+            [PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "debug_modules_possible": [
             [
@@ -2778,7 +2778,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
             [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "buffer_alloc_req_mem_size_percent": [
-            [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
+            [PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "buffer_max_number": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ]],
         "shutter_ctrl_is_available": [
