@@ -513,6 +513,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             "acc_operation": "Operation",
             "acc_threshold_before": "ThresholdBefore",
             "acc_offset_before": "OffsetBefore",
+            "acc_hw_nb_buffers": "HwNbBuffers",
         }
 
         self.__ShutterMode = {
@@ -2592,6 +2593,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
         "acc_threshold_before": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
         "acc_offset_before": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
         "acc_out_type": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
+        "acc_hw_nb_buffers": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
         "concat_nb_frames": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
         "latency_time": [[PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]],
         "valid_ranges": [
