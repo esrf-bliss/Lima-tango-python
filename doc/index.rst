@@ -453,6 +453,8 @@ Attribute name		    RW	    Type		    Description
 =========================== ======= ======================= =======================================================================================
 buffer_max_memory	    rw	    DevShort		    The maximum among of memory in percent of the available RAM
 			   		   		    that Lima is using to allocate frame buffer.
+buffer_max_number	    ro	    DevLong		    The maximum number of image buffers that can be allocated for the frame size,
+			   		   		    limiting the depth of the frame history available for (asynchronous) saving and read
 =========================== ======= ======================= =======================================================================================
 
 Plugin
