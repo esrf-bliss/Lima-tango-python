@@ -314,6 +314,7 @@ saving_managed_mode         rw      DevString               On some detectors, s
                                                             - HARDWARE, lima will not manage the saving but set the camera to do the job
                                                             - SOFTWARE, (default) Lima is managing the saving
 saving_every_n_frames       rw      DevLong                 Save frame every N frames (experimental)
+saving_use_hw_comp          rw      DevBoolean              Try to use the compressed image blob injected by the HW plugin (like the Dectris/Eiger)
 =========================== ======= ======================= =======================================================================================
 
 Image
