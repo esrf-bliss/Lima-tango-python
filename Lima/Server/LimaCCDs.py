@@ -48,6 +48,7 @@ import sys, os, glob
 import PyTango
 import weakref
 import itertools
+import functools
 import numpy
 import struct
 import time
@@ -506,13 +507,13 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             "shutter_mode": "Mode",
             "image_rotation": "Rotation",
             "video_mode": "Mode",
-            "buffer_max_memory": "MaxMemory",
             "buffer_max_number": "MaxNumber",
             "acc_mode": "Mode",
             "acc_filter": "Filter",
             "acc_operation": "Operation",
             "acc_threshold_before": "ThresholdBefore",
             "acc_offset_before": "OffsetBefore",
+            "acc_hw_nb_buffers": "HwNbBuffers",
         }
 
         self.__ShutterMode = {
@@ -645,6 +646,23 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
                 "LAST_IMAGE": Core.CtVideo.LAST_IMAGE,
             }
 
+        if SystemHasFeature("Core.BufferHelper.Parameters"):
+            self.__BufferHelperEnums = {
+                "durationPolicy": {
+                    "EPHEMERAL": Core.BufferHelper.Parameters.Ephemeral,
+                    "PERSISTENT": Core.BufferHelper.Parameters.Persistent, 
+                },
+                "sizePolicy": {
+                    "AUTOMATIC": Core.BufferHelper.Parameters.Automatic,
+                    "FIXED": Core.BufferHelper.Parameters.Fixed, 
+                },
+            }
+            self.__BufferParamData = {
+                "buffer": {"attr_split": ["alloc"], "name": "Alloc"},
+                "acc": {"attr_split": ["buffer"], "name": "Buffer"},
+                "saving": {"attr_split": ["zbuffer"], "name": "ZBuffer"},
+            }
+
         # INIT display shared memory
         try:
             self.__shared_memory_names = ["LimaCCds", instance_name]
@@ -694,7 +712,14 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
         # Setup the max memory usage (%)
         if self.BufferMaxMemory:
-            self.__control.buffer().setMaxMemory(int(self.BufferMaxMemory))
+            buffer = self.__control.buffer()
+            max_mem = int(self.BufferMaxMemory)
+            if SystemHasFeature("Core.BufferHelper.Parameters"):
+                params = buffer.getAllocParameters()
+                params.reqMemSizePercent = max_mem
+                buffer.setAllocParameters(params)
+            else:
+                buffer.setMaxMemory(max_mem)
 
         unsupported_feature = "Core.Never.Unsupported.Feature"
         if SystemHasFeature(unsupported_feature):
@@ -710,6 +735,10 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
                     "ImageOpMode='%s' is not allowed. Property ignored."
                     % self.ImageOpMode
                 )
+
+        # Setup the BufferHelper Parameters
+        if SystemHasFeature("Core.BufferHelper.Parameters"):
+            self.apply_buffer_param_properties()
 
         for feature in SystemFeatures:
             is_not = (SystemHasFeature(feature) and "is") or "is not"
@@ -744,6 +773,27 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
                 self.write_shutter_open_time,
             )
 
+    @Core.DEB_MEMBER_FUNCT
+    def apply_buffer_param_properties(self):
+        for grp, attr_data in self.__BufferParamData.items():
+            attr_name_prefix = attr_data["name"]
+            prop_name = f"{grp.title()}{attr_name_prefix}Parameters"
+            prop_val = getattr(self, prop_name)
+            deb.Trace("%s [prop]: '%s'" % (prop_name, prop_val))
+            try:
+                obj = self.__Prefix2SubClass[grp]()
+                get_set_names = [f"{op}{attr_name_prefix}Parameters"
+                                 for op in ["get", "set"]]
+                getter, setter = [getattr(obj, n) for n in get_set_names]
+                if prop_val:
+                    params = Core.BufferHelper.Parameters.fromString(prop_val)
+                else:
+                    params = getter()
+                deb.Always("%s [params]: %s" % (prop_name, params))
+                setter(params)
+            except Exception as e:
+                deb.Error("Error setting %s parameters: %s" % (name_prefix, e))
+
     def __getattr__(self, name):
         if name.startswith("is_") and name.endswith("_allowed"):
             split_name = name.split("_")[1:-1]
@@ -757,15 +807,43 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             self.__dict__[name] = func
             return func
         else:
-            split_name = name.split("_")[1:]
+            split_name = name.split("_")
+            action = split_name.pop(0)
             subClass = self.__Name2SubClass.get("_".join(split_name), None)
             if subClass is None:
                 subClass = self.__Prefix2SubClass.get(split_name[0], None)
             if subClass:
                 obj = subClass()
+                if SystemHasFeature("Core.BufferHelper.Parameters"):
+                    buffer_attr = self.get_buffer_param_attr(action, split_name,
+                                                             obj)
+                    if buffer_attr:
+                        return buffer_attr
                 return get_attr_4u(self, name, obj)
 
         raise AttributeError("LimaCCDs has no attribute %s" % name)
+
+    @Core.DEB_MEMBER_FUNCT
+    def get_buffer_param_attr(self, action, split_name, obj):
+        deb.Param("action=%s, split_name=%s, obj=%s" % (action, split_name, obj))
+        for grp, attr_data in self.__BufferParamData.items():
+            split_grp = [grp] + attr_data["attr_split"]
+            attr_name_prefix = attr_data["name"]
+            nb_grp_tokens = len(split_grp)
+            if list(split_grp) != split_name[:nb_grp_tokens]:
+                continue
+            get_set_names = [f"{op}{attr_name_prefix}Parameters"
+                             for op in ["get", "set"]]
+            if not all([hasattr(obj, n) for n in get_set_names]):
+                continue
+            method = getattr(self, f"{action}BufferParam")
+            param_tokens = split_name[nb_grp_tokens:]
+            param = "".join([n.title() if i else n
+                             for i, n in enumerate(param_tokens)])
+            getter, setter = [getattr(obj, n) for n in get_set_names]
+            return functools.partial(method, param=param,
+                                     getter=getter, setter=setter)
+        return None
 
     def gc(self):
         import gc
@@ -1865,6 +1943,26 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         is_available = self.__control.shutter().hasCapability()
         attr.set_value(is_available)
 
+    @RequiresSystemFeature("Core.BufferHelper.Parameters")
+    def readBufferParam(self, attr, param=None, getter=None, setter=None):
+        buffer_param = getter()
+        val = getattr(buffer_param, param)
+        if param in self.__BufferHelperEnums:
+            val = getDictKey(self.__BufferHelperEnums[param], val)
+        attr.set_value(val)
+
+    @RequiresSystemFeature("Core.BufferHelper.Parameters")
+    def writeBufferParam(self, attr, param=None, getter=None, setter=None):
+        buffer_param = getter()
+        param_name = ''.join([p.title() if i else p
+                              for i, p in enumerate(param.split("_"))])
+        val = attr.get_write_value()
+        if param in self.__BufferHelperEnums:
+            val = getDictValue(self.__BufferHelperEnums[param], val)
+        setattr(buffer_param, param_name, val)
+        setter(buffer_param)
+
+
     # ==================================================================
     #
     #    LimaCCDs command methods
@@ -2289,6 +2387,12 @@ class LimaCCDsClass(PyTango.DeviceClass):
             "Number of thread for processing",
             [2],
         ],
+        "AccBufferParameters": [
+            PyTango.DevString,
+            "Accumulation Buffer alloc. params: "
+            "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0.0-100.0>",
+            [''],
+        ],
         "AccThresholdCallbackModule": [
             PyTango.DevString,
             "Plugin name file which manage threshold",
@@ -2325,11 +2429,23 @@ class LimaCCDsClass(PyTango.DeviceClass):
             "The maximum among of memory (RAM) Lima should use to allocate the frame buffers, e.g 50 %, default is 70%",
             [],
         ],
+        "BufferAllocParameters": [
+            PyTango.DevString,
+            "HW Buffer alloc. params: "
+            "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0.0-100.0> [default: <initMem=1, reqMemSizePercent=70.0>]",
+            [''],
+        ],
         "TangoEvent": [PyTango.DevBoolean, "Activate Tango event", [False]],
         "SavingMaxConcurrentWritingTask": [
             PyTango.DevShort,
             "Maximum concurrent writing tasks",
             [1],
+        ],
+        "SavingZBufferParameters": [
+            PyTango.DevString,
+            "Saving ZBuffer alloc. params: "
+            "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0.0-100.0>",
+            [''],
         ],
     }
 
@@ -2454,6 +2570,18 @@ class LimaCCDsClass(PyTango.DeviceClass):
         "acc_saturated_cblevel": [
             [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
+        "acc_buffer_init_mem": [
+            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "acc_buffer_duration_policy": [
+            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "acc_buffer_size_policy": [
+            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "acc_buffer_req_mem_size_percent": [
+            [PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
         "acq_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
         "acc_time_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
         "acq_nb_frames": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
@@ -2465,6 +2593,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
         "acc_threshold_before": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
         "acc_offset_before": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
         "acc_out_type": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
+        "acc_hw_nb_buffers": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
         "concat_nb_frames": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
         "latency_time": [[PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]],
         "valid_ranges": [
@@ -2563,6 +2692,18 @@ class LimaCCDsClass(PyTango.DeviceClass):
         "saving_stream_active": [
             [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
+        "saving_zbuffer_init_mem": [
+            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "saving_zbuffer_duration_policy": [
+            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "saving_zbuffer_size_policy": [
+            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "saving_zbuffer_req_mem_size_percent": [
+            [PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
         "debug_modules_possible": [
             [
                 PyTango.DevString,
@@ -2629,7 +2770,18 @@ class LimaCCDsClass(PyTango.DeviceClass):
         "config_available_name": [
             [PyTango.DevString, PyTango.SPECTRUM, PyTango.READ, 1024]
         ],
-        "buffer_max_memory": [[PyTango.DevShort, PyTango.SCALAR, PyTango.READ_WRITE]],
+        "buffer_alloc_init_mem": [
+            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "buffer_alloc_duration_policy": [
+            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "buffer_alloc_size_policy": [
+            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "buffer_alloc_req_mem_size_percent": [
+            [PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
         "buffer_max_number": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ]],
         "shutter_ctrl_is_available": [
             [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ]

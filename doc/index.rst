@@ -23,8 +23,14 @@ Property
 Property name		   Mandatory       Default value          Description
 ========================== =============== ====================== =====================================================
 AccThresholdCallbackModule No              ""                     Plugin file name which manages threshold, see acc_saturated\_\* attributes and the \*AccSaturated\* commands to activate and use  this feature
+AccBufferParameters        No              ""                     Allocation parameters for **Accumulation** buffers
+                                                                  (see :code:`BufferHelper::Parameters` syntax below)
+BufferAllocParameters      No              <initMem=1,            Allocation parameters for **HW Plugin** buffers
+                                           reqMemSizePercent=70>  (see :code:`BufferHelper::Parameters` syntax below)
 BufferMaxMemory		   No		   70			  The maximum among of memory in percent of the available RAM
-			   		   			  that Lima is using to allocate frame buffer.
+			   		   			  that Lima is using to allocate frame buffer. Kept for
+								  backward compatibility, currently replaced by
+								  :code:`BufferAllocParameters.reqMemSizePercent`
 ConfigurationFilePath      No              ~/lima_<serv-name>.cfg The default configuration file path
 ConfigurationDefaultName   No              "default"              Your default configuration name
 IntrumentName		   No		   ""			  The instrument name, e.g ESRF-ID02 (**\***)
@@ -36,10 +42,34 @@ NbProcessingThread         No              1                      The max number
 TangoEvent		   No              False		  Activate Tango Event for counters and new images
 UserDetectorName	   No		   ""			  A user detector identifier, e.g frelon-saxs, (**\***)
 ImageOpMode                No              "HardAndSoft"          Configure the image op mode. One of 'HardOnly', 'SoftOnly', 'HardAndSoft'
+SavingZBufferParameters    No              ""                     Allocation parameters for **Saving Compression** buffers
+                                                                  (see :code:`BufferHelper::Parameters` syntax below)
 ========================== =============== ====================== =====================================================
 
 (**\***) Properties only used to set meta-data in HDF5 saving format.
 
+BufferHelper::Parameters
+''''''''''''''''''''''''
+
+The :code:`BufferHelper::Parameters` structure, used by the buffer allocation interfaces of different subsysems, has the following members:
+
+ * `initMem`: Boolean indicating if memory should be initialized after allocation, forcing the assignment of physical pages to the process. In the case of **Saving Compression**, this will force assignment of physical pages for the whole buffer, which is typically more than the real physical memory needed due to the compression factor.
+ * `durationPolicy`: Enumeration defining the duration of the allocated buffers:
+   + `EPHEMERAL`: released after use, or
+   + `PERSISTENT`: kept in a pool for later use.
+ * `sizePolicy`: For `PERSISTENT` buffers, the policy affecting the pool size:
+   + `FIXED`: the maximum number of buffers will be allocated during first `prepareAcq`, or
+   + `AUTOMATIC`: buffers will be allocated or released on `prepareAcq` depending on the requested acq. number of frames.
+ * `reqMemSizePercent`: Double-precision floating-point value indicating the maximum percentage of system memory that can be used for buffers (0.0 <= percent < 100.0). For **Saving Compression** `PERSISTENT` buffers this value should foresee a little more memory percent than the `HW Plugin` or `Accumulation` buffers in order to account for the maximum possible size of compressed chunks.
+
+Its string representation, used by the related properties mentioned above, is:
+
+ * Optional `<` / `>` head/tail delimiters, mandatory if spaces are used to separate fields
+ * A comma-separated list of `<key>=<value>` tokens, with zero or more fields described above.
+   + Example: `<initMem=1, durationPolicy=PERSISTENT, sizePolicy=FIXED, reqMemSizePercent=8.0>`
+   + Default value: `<initMem=0, durationPolicy=EPHEMERAL, sizePolicy=AUTOMATIC, reqMemSizePercent=0.0>`
+
+If not all the fields are specified, the default value for the missing ones will be used. In case of an empty property value, the default value for the corresponding subsystem will be used.
 
 Commands
 '''''''''
@@ -146,6 +176,20 @@ Many attributes are of type DevString and they have a fixed list of possible val
 the value list for the camera. For instance the attribute *video_mode* supports up to 14 different video formats, but a camera can only supports
 few of them.
 
+Three subsystems use the :code:`BufferHelper::Parameters` structure for configuration: **HW Plugin**, **Accumulation** and **Saving Compression**.
+The above-explained device properties `BufferAllocParameters`, `AccBufferParameters` and `SavingZBufferParameters` allow specifying their initial values,
+respectively. These parameters are also exported as R/W attributes named `<subsystem>_<field>`, where:
+
+ * `subsystem` is one of:
+   + `buffer_alloc`: **HW Plugin** buffers,
+   + `acc_buffer`: **Accumulation** buffers, or
+   + `saving_zbuffer`: **Saving Compression** buffers,
+
+ * `field` can be:
+   + `init_mem`: DevBoolean,
+   + `duration_policy`: DevString (enumeration),
+   + `size_policy`: DevString (enumeration),
+   + `req_mem_size_percent`: DevFloat (0.0 <= percent < 100.0).
 
 General Information
 ```````````````````
@@ -228,6 +272,7 @@ Accumulation
 =========================== ======= ======================= =======================================================================================
 Attribute name		    RW	    Type		    Description
 =========================== ======= ======================= =======================================================================================
+acc_buffer_<field>	    rw	    ...			    The allocation parameters for accumulation buffers
 acc_expotime		    ro	    DevDouble		    The effective accumulation total exposure time.
 acc_nb_frames		    ro	    DevLong		    The calculated accumulation number of frames per image.
 acc_max_expotime	    rw	    DevDouble		    The maximum exposure time per frame for accumulation
@@ -258,6 +303,7 @@ acc_out_type                rw      DevString               Set the out image ty
 acc_saturated_active        rw      DevBoolean              To activate the saturation counters (i.e. readAccSaturated commands)
 acc_saturated_cblevel       rw      DevLong                 Set at which level of total saturated pixels the callback plugin (if set with the AccThresholdCallbackModule property) will be called
 acc_saturated_threshold     rw      DevLong                 The threshold for counting saturated pixels
+acc_hw_nb_buffers           rw      DevLong                 Number of buffers allocated by the HW plugin in accumulation mode
 =========================== ======= ======================= =======================================================================================
 
 Saving
@@ -315,6 +361,7 @@ saving_managed_mode         rw      DevString               On some detectors, s
                                                             - SOFTWARE, (default) Lima is managing the saving
 saving_every_n_frames       rw      DevLong                 Save frame every N frames (experimental)
 saving_use_hw_comp          rw      DevBoolean              Try to use the compressed image blob injected by the HW plugin (like the Dectris/Eiger)
+saving_zbuffer_<field>	    rw	    ...			    The allocation parameters for saving compression buffers
 =========================== ======= ======================= =======================================================================================
 
 Image
@@ -451,8 +498,7 @@ Buffers
 =========================== ======= ======================= =======================================================================================
 Attribute name		    RW	    Type		    Description
 =========================== ======= ======================= =======================================================================================
-buffer_max_memory	    rw	    DevShort		    The maximum among of memory in percent of the available RAM
-			   		   		    that Lima is using to allocate frame buffer.
+buffer_alloc_<field>	    rw	    ...			    The allocation parameters for HW plugin buffers
 buffer_max_number	    ro	    DevLong		    The maximum number of image buffers that can be allocated for the frame size,
 			   		   		    limiting the depth of the frame history available for (asynchronous) saving and read
 =========================== ======= ======================= =======================================================================================
