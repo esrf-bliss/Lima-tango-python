@@ -238,18 +238,22 @@ acc_time_mode		    rw	    DevString		    Accumulation time mode:
 acc_dead_time		    ro	    DevDouble		    Total accumulation dead time
 acc_live_time		    ro	    DevDouble		    Total accumulation live time which corresponds to the
 							    detector total counting time.
-acc_mode                    rw      DevString               Select the mode of accumulation
-                                                            - **STANDARD** = the sum of the pixel
-                                                            - **THRESHOLD_BEFORE** = apply a threshold specified with :code:`acc_threshold_before`. Pixels under threshold are discarded in the accumulation.
-                                                            - **OFFSET_THEN_THRESHOLD_BEFORE** = apply an offset specified with :code:`acc_offset_before` first then a threshold specified with :code:`acc_threshold_before`. Pixels under threshold are discarded in the accumulation.
+acc_mode                    rw      DevString               Select the mode of accumulation: set :code:`acc_filter` and force :code:`acc_operation` to **ACC_SUM**
+                                                            - **STANDARD** = set **FILTER_NONE**
+                                                            - **THRESHOLD_BEFORE** = set **FILTER_THRESHOLD_MIN**
+                                                            - **OFFSET_THEN_THRESHOLD_BEFORE** = set **FILTER_OFFSET_THRESHOLD_MIN**
+acc_filter                  rw      DevString               Select the filter to apply in accumulation
+                                                            - **FILTER_NONE** = do not filter any pixel
+                                                            - **FILTER_THRESHOLD_MIN** = apply a threshold specified with :code:`acc_threshold_before`. Pixels under threshold are discarded in the accumulation.
+                                                            - **FILTER_OFFSET_THEN_THRESHOLD_MIN** = apply an offset specified with :code:`acc_offset_before` first then a threshold specified with :code:`acc_threshold_before`. Pixels under threshold are discarded in the accumulation.
+acc_operation               rw      DevString               Set the operation applied to each pixel over the accumulation window
+                                                            - **ACC_SUM** returns the sum of the pixel intensities (Default)
+                                                            - **ACC_MEAN** returns the arithmetic mean of the pixel intensities
+                                                            - **ACC_MEDIAN** returns the median of the pixel intensities
 acc_offset_before           rw      DevLong                 Set a offset value to be substracted to each pixel value
 acc_threshold_before        rw      DevLong                 Set a threshold value, lower pixel values (noise) are discarded from the accumulation
 acc_out_type                rw      DevString               Set the out image type afer accumulation (Bpp8, Bpp8S, Bpp16, Bpp16S, Bpp32, Bpp32S)
                                                             Selecting a lower bitdepth might result in saturation.
-acc_stat_type               rw      DevString               Set the accumulator/statistic applied to each pixels over the accumlation window
-                                                            - **Sum** returns the sum of the pixel intensities (Default)
-                                                            - **Mean** returns the arithmetic mean of the pixel intensities
-                                                            - **Median** returns the median of the pixel intensities
                                                             Selecting a lower bitdepth might result in saturation.
 acc_saturated_active        rw      DevBoolean              To activate the saturation counters (i.e. readAccSaturated commands)
 acc_saturated_cblevel       rw      DevLong                 Set at which level of total saturated pixels the callback plugin (if set with the AccThresholdCallbackModule property) will be called
@@ -310,6 +314,7 @@ saving_managed_mode         rw      DevString               On some detectors, s
                                                             - HARDWARE, lima will not manage the saving but set the camera to do the job
                                                             - SOFTWARE, (default) Lima is managing the saving
 saving_every_n_frames       rw      DevLong                 Save frame every N frames (experimental)
+saving_use_hw_comp          rw      DevBoolean              Try to use the compressed image blob injected by the HW plugin (like the Dectris/Eiger)
 =========================== ======= ======================= =======================================================================================
 
 Image
@@ -448,6 +453,8 @@ Attribute name		    RW	    Type		    Description
 =========================== ======= ======================= =======================================================================================
 buffer_max_memory	    rw	    DevShort		    The maximum among of memory in percent of the available RAM
 			   		   		    that Lima is using to allocate frame buffer.
+buffer_max_number	    ro	    DevLong		    The maximum number of image buffers that can be allocated for the frame size,
+			   		   		    limiting the depth of the frame history available for (asynchronous) saving and read
 =========================== ======= ======================= =======================================================================================
 
 Plugin
