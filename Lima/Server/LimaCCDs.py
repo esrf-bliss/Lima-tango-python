@@ -245,7 +245,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         Core.Bpp32S: 6,
     }
 
-    # The DATA_ARRAY definition v3
+    # The DATA_ARRAY definition v4
     # struct {
     # unsigned int Magic= 0x44544159;
     # unsigned short Version;
@@ -257,17 +257,21 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     # unsigned short Dim[6]
     # unsigned int DimStepBytes[6]
     # unsigned long ImageNumber;
+    # unsigned long AcqTag;
+    # unsigned int pading[2];
     # } DataArrayHeaderStruct;
 
-    DataArrayVersion = 3
-    DataArrayPackStr = "<IHHIIHHHHHHHHIIIIIIQ"
+    DataArrayVersion = 4
+    DataArrayPackStr = "<IHHIIHHHHHHHHIIIIIIQQII"
     DataArrayMagic = struct.unpack(">I", b"DTAY")[0]  # 0x44544159
-    DataArrayMinHeaderLen = 64
+    DataArrayMinHeaderLen = 64  # v1/2/3 backward compat.
     DataArrayMaxNbDim = 6
 
     def DataArrayUser(klass, DataArrayCategory=DataArrayCategory):
         klass.DataArrayCategory = DataArrayCategory
         return klass
+
+    AcqTagNone = 0xffffffff
 
     # INIT events on video_last_image
     class VideoImageCallback(Core.CtVideo.ImageCallback):
@@ -773,6 +777,10 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
                 self.write_shutter_open_time,
             )
 
+        # Acquisition number
+        self.acq_tag = self.AcqTagNone
+        self.last_acq_tag = self.AcqTagNone
+
     @Core.DEB_MEMBER_FUNCT
     def apply_buffer_param_properties(self):
         for grp, attr_data in self.__BufferParamData.items():
@@ -977,6 +985,22 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             Core.CtControl.CameraError: "Camera: error",
         }
         attr.set_value(state2string.get(status.Error, "?"))
+
+    ## @brief get the acquisition tag
+    #
+    @Core.DEB_MEMBER_FUNCT
+    def read_acq_tag(self, attr):
+        acq_tag = self.acq_tag
+        deb.Return("acq_tag=%s (%08x)" % (acq_tag, acq_tag))
+        attr.set_value(acq_tag)
+
+    ## @brief set the acquisition tag
+    #
+    @Core.DEB_MEMBER_FUNCT
+    def write_acq_tag(self, attr):
+        acq_tag = attr.get_write_value()
+        deb.Param("acq_tag=%s (%08x)" % (acq_tag, acq_tag))
+        self.acq_tag = acq_tag
 
     ## @brief read the number of frame for an acquisition
     #
@@ -2025,8 +2049,24 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     #
     @Core.DEB_MEMBER_FUNCT
     def startAcq(self):
+        status = self.__control.getStatus()
+        is_first_acq_start = (status.AcquisitionStatus != Core.AcqRunning)
         self.__control.startAcq()
         self._push_status()
+
+        # if the acq. was already started, nothing to do
+        if not is_first_acq_start:
+            return
+
+        # check that the tag is different from previous acq (if not AcqTagNone)
+        if (self.acq_tag == self.AcqTagNone or
+            self.acq_tag != self.last_acq_tag):
+            self.last_acq_tag = self.acq_tag
+            deb.Trace("Starting a new acq. with tag %s (%08x)" %
+                      (self.last_acq_tag, self.last_acq_tag))
+        else:
+            deb.Warning("Starting a new acq. with the same tag %s (%08x)" %
+                        (self.acq_tag, self.acq_tag))
 
     ##@brief stop an acquisition
     #
@@ -2125,6 +2165,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         dataType = self.ImageType2DataArrayType.get(imageType, -1)
         bigEndian = numpy.dtype(d.dtype.byteorder + "i4") == numpy.dtype(">i4")
         imageNumber = data.frameNumber
+        acqTag = self.last_acq_tag
 
         def steps_gen(s):
             size = self.ImageType2NbBytes.get(imageType, (1, 0))[0]
@@ -2168,6 +2209,8 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             t[4],
             t[5],  # 24 bytes I x 6 - stepsbytes
             imageNumber,  # 8 bytes Q x 1 - imageNumber
+            acqTag,  # 8 bytes Q x 1 - acqTag
+            0, 0,  # 8 bytes I x 2 - pading
         )
 
         flatData = d.ravel()
@@ -2213,20 +2256,32 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
     ##@brief get the data for an image sequence
     #
+    # @params start,end[,step[,acq_tag]]
     @Core.DEB_MEMBER_FUNCT
     def readImageSeq(self, frame_seq):
         deb.Param("frame_seq=%s" % frame_seq)
         frame_seq = [int(f) for f in frame_seq]
         start, end = frame_seq[:2]
         step = 1
-        if len(frame_seq) > 2:
+        acq_tag = self.AcqTagNone
+        nb_args = len(frame_seq)
+        if nb_args > 2:
             step = frame_seq[2]
             if step != 1:
                 raise ValueError("Discontiguous sequences not supported yet")
+        if nb_args > 3:
+            acq_tag = frame_seq[3] & 0xffffffff
+            if acq_tag != self.AcqTagNone:
+                if self.last_acq_tag == self.AcqTagNone:
+                    raise RuntimeError("No acq_tag has been set yet")
+                elif acq_tag != self.last_acq_tag:
+                    raise RuntimeError("Acq. #%s (%08x) is not available" %
+                                       (acq_tag, acq_tag))
         nbFrames = end - start
         deb.Param(
-            "readImageSeq:start,end,step = %d,%d,%d (%d frames)"
-            % (start, end, step, nbFrames)
+            "readImageSeq: start,end,step = %d,%d,%d (%d frames), "
+            "acq_tag = %s (%08x) " %
+            (start, end, step, nbFrames, acq_tag, acq_tag)
         )
         imageStack = self.__control.ReadImage(start, nbFrames)
         category = self.DataArrayCategory.ImageStack
@@ -2505,7 +2560,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
             [PyTango.DevEncoded, "DATA_ARRAY with requested image"],
         ],
         "readImageSeq": [
-            [PyTango.DevVarLongArray, "Image id seq: start,end[,step]"],
+            [PyTango.DevVarLong64Array, "Image id seq: start,end[,step[,acq_tag]]"],
             [PyTango.DevEncoded, "DATA_ARRAY with requested images"],
         ],
         "getPluginDeviceNameFromType": [
@@ -2557,6 +2612,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
         ],
         "acq_status": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ]],
         "acq_status_fault_error": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ]],
+        "acq_tag": [[PyTango.DevULong64, PyTango.SCALAR, PyTango.READ_WRITE]],
         "acc_expo_time": [[PyTango.DevDouble, PyTango.SCALAR, PyTango.READ]],
         "acc_nb_frames": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ]],
         "acc_dead_time": [[PyTango.DevDouble, PyTango.SCALAR, PyTango.READ]],
