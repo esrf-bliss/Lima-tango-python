@@ -991,7 +991,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     @Core.DEB_MEMBER_FUNCT
     def read_acq_tag(self, attr):
         acq_tag = self.acq_tag
-        deb.Return("acq_tag=%s (%08x)" % (acq_tag, acq_tag))
+        deb.Return("acq_tag=%s (0x%08x)" % (acq_tag, acq_tag))
         attr.set_value(acq_tag)
 
     ## @brief set the acquisition tag
@@ -999,7 +999,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     @Core.DEB_MEMBER_FUNCT
     def write_acq_tag(self, attr):
         acq_tag = attr.get_write_value()
-        deb.Param("acq_tag=%s (%08x)" % (acq_tag, acq_tag))
+        deb.Param("acq_tag=%s (0x%08x)" % (acq_tag, acq_tag))
         self.acq_tag = acq_tag
 
     ## @brief read the number of frame for an acquisition
@@ -2062,10 +2062,10 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         if (self.acq_tag == self.AcqTagNone or
             self.acq_tag != self.last_acq_tag):
             self.last_acq_tag = self.acq_tag
-            deb.Trace("Starting a new acq. with tag %s (%08x)" %
+            deb.Trace("Starting a new acq. with tag %s (0x%08x)" %
                       (self.last_acq_tag, self.last_acq_tag))
         else:
-            deb.Warning("Starting a new acq. with the same tag %s (%08x)" %
+            deb.Warning("Starting a new acq. with the same tag %s (0x%08x)" %
                         (self.acq_tag, self.acq_tag))
 
     ##@brief stop an acquisition
@@ -2275,12 +2275,12 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
                 if self.last_acq_tag == self.AcqTagNone:
                     raise RuntimeError("No acq_tag has been set yet")
                 elif acq_tag != self.last_acq_tag:
-                    raise RuntimeError("Acq. #%s (%08x) is not available" %
+                    raise RuntimeError("Acq. #%s (0x%08x) is not available" %
                                        (acq_tag, acq_tag))
         nbFrames = end - start
         deb.Param(
             "readImageSeq: start,end,step = %d,%d,%d (%d frames), "
-            "acq_tag = %s (%08x) " %
+            "acq_tag = %s (0x%08x) " %
             (start, end, step, nbFrames, acq_tag, acq_tag)
         )
         imageStack = self.__control.ReadImage(start, nbFrames)
