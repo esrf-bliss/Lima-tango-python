@@ -2040,6 +2040,15 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         self.__control.prepareAcq()
         self._push_status()
 
+        # check that the tag is different from previous acq (if not AcqTagNone)
+        tag = self.acq_tag
+        if tag == self.AcqTagNone or tag != self.last_acq_tag:
+            self.last_acq_tag = tag
+            deb.Trace("Preparing a new acq. with tag %s (0x%08x)" % (tag, tag))
+        else:
+            deb.Warning("Preparing a new acq. with the same tag %s (0x%08x)" %
+                        (tag, tag))
+
     ##@brief pushing the acquisition status
     def _push_status(self):
         status = self.__control.getStatus()
@@ -2049,24 +2058,8 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     #
     @Core.DEB_MEMBER_FUNCT
     def startAcq(self):
-        status = self.__control.getStatus()
-        is_first_acq_start = (status.AcquisitionStatus != Core.AcqRunning)
         self.__control.startAcq()
         self._push_status()
-
-        # if the acq. was already started, nothing to do
-        if not is_first_acq_start:
-            return
-
-        # check that the tag is different from previous acq (if not AcqTagNone)
-        if (self.acq_tag == self.AcqTagNone or
-            self.acq_tag != self.last_acq_tag):
-            self.last_acq_tag = self.acq_tag
-            deb.Trace("Starting a new acq. with tag %s (0x%08x)" %
-                      (self.last_acq_tag, self.last_acq_tag))
-        else:
-            deb.Warning("Starting a new acq. with the same tag %s (0x%08x)" %
-                        (self.acq_tag, self.acq_tag))
 
     ##@brief stop an acquisition
     #
