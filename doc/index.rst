@@ -111,7 +111,8 @@ Commands
 |readLastImage               |DevLong: Last image number(0-N)            |DevEncoded: Encoded image            |Return the last image acquired after the image number given in parameter in encoded format of type   |
 |                            |                                           |                                     |"**DATA_ARRAY**" (see :ref:`data_array_encoded`)                                                     |
 +----------------------------+-------------------------------------------+-------------------------------------+-----------------------------------------------------------------------------------------------------+
-|readImageSeq                |DevLongArray: Image number(0-N) list       |DevEncoded: Encoded image(S)         |Return a stack of images in encoded format of type "**DATA_ARRAY**" (see :ref:`data_array_encoded`)  |
+|readImageSeq                |DevVarLong64Array:                         |DevEncoded: Encoded image(S)         |Return a stack of images in encoded format of type "**DATA_ARRAY**" (see :ref:`data_array_encoded`)  |
+|                            |Start,End[,Step,[AcqTag]]                  |                                     |Start,End,Step define the seq. frame indexes (Only Step=1 supported), AcqTag matches acq_tag if > 0  |
 +----------------------------+-------------------------------------------+-------------------------------------+-----------------------------------------------------------------------------------------------------+
 |writeImage                  |DevLong: Image number(0-N)                 |DevVoid                              |Save manually an image                                                                               |
 +----------------------------+-------------------------------------------+-------------------------------------+-----------------------------------------------------------------------------------------------------+
@@ -235,6 +236,7 @@ Attribute name		    RW	    Type		    Description
 =========================== ======= ======================= =======================================================================================
 acq_status		    ro	    DevString		    Acquisition status: Ready, Running, Fault or Configuration
 acq_status_fault_error	    ro	    DevString		    In case of Fault state, return the error message
+acq_tag			    rw	    DevLong64		    Acquisition tag, included in DATA_ARRAY header (from v4)
 acq_mode		    rw	    DevString		    Acquisition mode:
 							     - **Single**, default mode one frame per image
 							     - **Concatenation**, frames are concatenated in image
@@ -533,7 +535,7 @@ with **little-endian** byte order and no alignment::
   # The DATA_ARRAY definition
   struct {
       unsigned int       magic= 0x44544159; // magic key
-      unsigned short     version;           // version, only 2 supported (since v1.9.5 - 2014)
+      unsigned short     version;           // version, 4 (since v1.10.0 - 2024)
       unsigned  short    header_size;       // size of the header
       DataArrayCategory  category;          // data array category, see DataArrayCategory enumerate
       DataArrayType      data_type;         // data type, see DataArrayType enumerate
@@ -541,7 +543,9 @@ with **little-endian** byte order and no alignment::
       unsigned short     nb_dim;            // number of dimension (0 to 5 max)e.g 2 for image
       unsigned short     dim[6];            // size for each dimension, e.g [width,height]
       unsigned int       dim_step[6];       // step size in pixel for each dimension, e.g [1,height]
-      unsigned int       padding[2];        // 8 bytes of padding (for alignment)
+      unsigned long      image_number;      // image index in acquisition
+      unsigned long      acq_tag;           // acq. tag, provided after prepare
+      unsigned int       padding[2];        // padding
   } DATA_ARRAY_STRUCT;
 
   enum DataArrayCategory {
