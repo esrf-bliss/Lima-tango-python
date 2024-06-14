@@ -3091,7 +3091,7 @@ def _get_control():
 #    LimaCCDs class main method
 #
 # ==================================================================
-verboseLevel = 0
+verboseLevel = 2
 
 
 def main(args=None, event_loop=None):
@@ -3112,7 +3112,7 @@ def main(args=None, event_loop=None):
     args[0] = "LimaCCDs"
 
     global verboseLevel
-    verboseLevel = 0
+
     for option in args:
         if option.startswith("-v"):
             try:
