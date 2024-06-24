@@ -275,9 +275,9 @@ Accumulation
 Attribute name		    RW	    Type		    Description
 =========================== ======= ======================= =======================================================================================
 acc_buffer_<field>	    rw	    ...			    The allocation parameters for accumulation buffers
-acc_expotime		    ro	    DevDouble		    The effective accumulation total exposure time.
+acc_expo_time		    ro	    DevDouble		    The effective accumulation total exposure time.
 acc_nb_frames		    ro	    DevLong		    The calculated accumulation number of frames per image.
-acc_max_expotime	    rw	    DevDouble		    The maximum exposure time per frame for accumulation
+acc_max_expo_time	    rw	    DevDouble		    The maximum exposure time per frame for accumulation
 acc_time_mode		    rw	    DevString		    Accumulation time mode:
 							     - **Live**,acq_expo_time = acc_live_time
 							     - **Real**,acq_expo_time = acc_dead_time + acc_live_time
