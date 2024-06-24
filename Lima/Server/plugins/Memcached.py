@@ -27,7 +27,12 @@ import sys
 import numpy
 import json
 
+# Workaround https://github.com/Blosc/bloscpack/issues/119
+if sys.version_info.major == 3 and sys.version_info.minor >= 10:
+    import collections
+    setattr(collections, "MutableMapping", collections.abc.MutableMapping)
 import bloscpack
+
 from collections import namedtuple
 from pymemcache.client.base import Client
 
