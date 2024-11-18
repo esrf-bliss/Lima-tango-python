@@ -1153,8 +1153,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         if self.__accThresholdCallback is not None:
             attr.set_value(self.__accThresholdCallback.m_max)
         else:
-            msg = "Accumulation threshold plugins not loaded"
-            deb.Error(msg)
             attr.set_value(-1)
 
     ## @brief active/unactive calculation of saturated images and counters
