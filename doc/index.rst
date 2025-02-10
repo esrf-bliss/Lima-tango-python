@@ -608,6 +608,7 @@ For more details about the camera device interface, please have a look on the fo
 
   Andor <../../../../camera/andor/doc/tango>
   Andor3 <../../../../camera/andor3/doc/tango>
+  Advacam <../../../../camera/advacam/doc/tango>
   Arinax <../../../../camera/arinax/doc/tango>
   Basler <../../../../camera/basler/doc/tango>
   Dexela <../../../../camera/dexela/doc/tango>
@@ -621,7 +622,6 @@ For more details about the camera device interface, please have a look on the fo
   Lambda <../../../../camera/lambda/doc/tango>
   Maxipix <../../../../camera/maxipix/doc/tango>
   Merlin <../../../../camera/merlin/doc/tango>
-  Minipix <../../../../camera/minipix/doc/tango>
   Dectris Eiger <../../../../camera/eiger/doc/tango>
   Dectris Mythen3 <../../../../camera/mythen3/doc/tango>
   Dectris Pilatus <../../../../camera/pilatus/doc/tango>
