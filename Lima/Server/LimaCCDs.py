@@ -1553,10 +1553,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             and shutter.getMode() == Core.ShutterManual
             and state in ["OPEN", "CLOSE"]
         ):
-            if shutter.getState():
-                state = "OPEN"
-            else:
-                state = "CLOSED"
+            shutter.setState(state == "OPEN")
         else:
             raise Exception("Shutter not in manual mode")
 
