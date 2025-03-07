@@ -127,7 +127,6 @@ def RequiresSystemFeature(feature):
                 head = "attr. %s [%s]" % (m.group("attr"), m.group("op"))
             else:
                 head = "method %s" % f.__name__
-            op = re.compile
             msg = (
                 "Error: %s cannot be called because %s is not supported "
                 "in this (detector-required) version of LIMA" % (head, feature)
