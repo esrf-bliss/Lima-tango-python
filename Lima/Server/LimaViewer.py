@@ -136,7 +136,7 @@ class LimaViewer(PyTango.LatestDeviceImpl):
         self.DevCcd.StopAcq()
         try:
             self.DevCcd.write_attribute("acq_expo_time", data)
-        except:
+        except Exception:
             self.debug_stream("Exposure time out of range")
         self.DevCcd.prepareAcq()
         self.DevCcd.StartAcq()
