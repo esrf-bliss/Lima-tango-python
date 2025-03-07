@@ -267,7 +267,7 @@ class BpmDeviceServer(BasePostProcess):
     #
     def get_bpm_result(self, frameNumber=None, timestamp=None):
         if self.enable_bpm_calc:
-            if frameNumber == None:
+            if frameNumber is None:
                 t = time.time()
                 result = self._bpmManager.getResult()
             else:
