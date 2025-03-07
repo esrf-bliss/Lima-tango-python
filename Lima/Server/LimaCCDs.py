@@ -1981,7 +1981,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         setattr(buffer_param, param_name, val)
         setter(buffer_param)
 
-
     # ==================================================================
     #
     #    LimaCCDs command methods
