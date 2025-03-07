@@ -53,7 +53,6 @@ import sys
 # Add additional import
 # ----- PROTECTED REGION ID(LimaViewer.additionnal_import) ENABLED START -----#
 import numpy
-import time
 
 # ----- PROTECTED REGION END -----#  //  LimaViewer.additionnal_import
 
