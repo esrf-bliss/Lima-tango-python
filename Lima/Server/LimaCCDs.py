@@ -2233,8 +2233,8 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             deb.Trace(f"No newer image available")
             PyTango.Except.throw_exception(PyTango.DevError(
                 desc="Frame(s) not available yet",
-                #tango.ErrSeverity.ERR,
-                #"readLastImage()",
+                # tango.ErrSeverity.ERR,
+                # "readLastImage()",
             ))
         else:
             image = self.__control.ReadImage(-1)
