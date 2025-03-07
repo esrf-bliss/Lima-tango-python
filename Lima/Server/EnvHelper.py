@@ -190,7 +190,7 @@ def check_args(argv):
         if arg.startswith("-v"):
             try:
                 Debug = max(0, int(arg[2:]) - 1)
-            except:
+            except Exception:
                 pass
     return 1
 
