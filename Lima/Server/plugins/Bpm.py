@@ -234,7 +234,7 @@ class BpmDeviceServer(BasePostProcess):
             image = _control_ref().ReadImage()
             raw_image = image.buffer.copy()
             return int(raw_image[y][x])
-        except:
+        except Exception:
             return -1
 
     def TakeBackground(self):
