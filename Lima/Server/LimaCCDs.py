@@ -435,7 +435,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         self.set_state(PyTango.DevState.ON)
         self.get_device_properties(self.get_device_class())
         self.__className2deviceName = get_sub_devices()
-        dataBase = PyTango.Database()
 
         TacoSpecificName.append(self.LimaCameraType)
 
