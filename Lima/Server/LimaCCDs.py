@@ -3061,8 +3061,8 @@ def _get_control():
             else:
                 specificDevice = class_info
             typeFlagsNameList = []
-            for l in range(verboseLevel + 1):
-                typeFlagsNameList += VerboseLevel2TypeFlags.get(l, [])
+            for level in range(verboseLevel + 1):
+                typeFlagsNameList += VerboseLevel2TypeFlags.get(level, [])
             Core.DebParams.setTypeFlagsNameList(typeFlagsNameList)
 
             util = PyTango.Util.instance()
