@@ -299,11 +299,11 @@ class BpmDeviceServer(BasePostProcess):
                 )
             try:
                 profile_x = result.profile_x.buffer.astype(int)
-            except:
+            except Exception:
                 profile_x = numpy.array([], dtype=int)
             try:
                 profile_y = result.profile_y.buffer.astype(int)
-            except:
+            except Exception:
                 profile_y = numpy.array([], dtype=int)
         else:
             t = time.time()

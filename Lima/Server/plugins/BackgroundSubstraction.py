@@ -78,7 +78,7 @@ class BackgroundSubstractionDeviceServer(BasePostProcess):
                     self.__background_op.setBackgroundImage(self.__backgroundImage)
                     if self.__offset:
                         self.__background_op.setOffset(self.__offset)
-                except:
+                except Exception:
                     self.__offset = 0
                     import traceback
 
