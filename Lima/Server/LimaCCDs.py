@@ -204,7 +204,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         Core.Bpp32S: "Bpp32S",
     }
     
-    String2ImageType = { v: k for k, v in ImageType2String.items() }
+    String2ImageType = {v: k for k, v in ImageType2String.items()}
 
     # DATA_ARRAY DevEncoded
     # enum DataArrayCategory {
