@@ -1924,7 +1924,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         try:
             shared_memory = self.__control.display()
             shared_memory_names = shared_memory.getNames()
-        except:
+        except Exception:
             shared_memory_names = ["", ""]
         attr.set_value(shared_memory_names)
 
@@ -1933,13 +1933,13 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         try:
             shared_memory = self.__control.display()
             shared_memory.setNames(*self.__shared_memory_names)
-        except:
+        except Exception:
             pass
 
     def read_shared_memory_active(self, attr):
         try:
             shared_memory = self.__control.display().isActive()
-        except:
+        except Exception:
             shared_memory = False
         attr.set_value(shared_memory)
 
@@ -1947,7 +1947,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         data = attr.get_write_value()
         try:
             self.__control.display().setActive(data)
-        except:
+        except Exception:
             pass
 
     def read_config_available_module(self, attr):
@@ -2011,7 +2011,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             try:
                 values = acq.getTriggerModeList()
                 valueList = [getDictKey(self.__AcqTriggerMode, val) for val in values]
-            except:
+            except Exception:
                 valueList = list(self.__AcqTriggerMode.keys())
         elif attr_name == "saving_format":
             return self.__SavingFormat
@@ -2949,7 +2949,7 @@ def export_default_plugins():
                     print("create device", specificDevice.__name__, deviceName)
                     try:
                         util.create_device(specificDevice.__name__, deviceName)
-                    except:
+                    except Exception:
                         import traceback
 
                         traceback.print_exc()
@@ -3112,7 +3112,7 @@ def main(args=None, event_loop=None):
         if option.startswith("-v"):
             try:
                 verboseLevel = int(option[2:])
-            except:
+            except Exception:
                 pass
 
     try:
@@ -3120,7 +3120,7 @@ def main(args=None, event_loop=None):
         py.add_TgClass(LimaCCDsClass, LimaCCDs, "LimaCCDs")
         try:
             declare_camera_n_commun_to_tango_world(py)
-        except:
+        except Exception:
             import traceback
 
             traceback.print_exc()
@@ -3139,7 +3139,7 @@ def main(args=None, event_loop=None):
 
         try:
             export_default_plugins()
-        except:
+        except Exception:
             import traceback
 
             traceback.print_exc()
