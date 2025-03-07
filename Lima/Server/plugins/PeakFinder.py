@@ -42,6 +42,7 @@ class PeakFinderDeviceServer(BasePostProcess):
 
     # --------- Add you global variables here --------------------------
     PEAK_FINDER_TASK_NAME = "PeakFinderTask"
+
     # ------------------------------------------------------------------
     #    Device constructor
     # ------------------------------------------------------------------
