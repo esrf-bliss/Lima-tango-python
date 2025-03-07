@@ -492,8 +492,8 @@ class BpmDeviceServer(BasePostProcess):
         if data[0] > max or data[1] > max:
             PyTango.Except.throw_exception(
                 "WrongData",
-                "Wrong value min_max: {0}, out of range {1}",
-                "LimaCCD Class".format(data, range),
+                "Wrong value min_max: {0}, out of range {1}".format(data, range),
+                "LimaCCD Class",
             )
         self.min_max[0] = data[0]
         self.min_max[1] = data[1]
