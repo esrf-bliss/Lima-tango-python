@@ -192,7 +192,7 @@ class LimaViewerClass(PyTango.DeviceClass):
         """Invoked to create dynamic attributes for the given devices.
         Default implementation calls
         :meth:`LimaViewer.initialize_dynamic_attributes` for each device
-    
+
         :param dev_list: list of devices
         :type dev_list: :class:`PyTango.DeviceImpl`"""
 
