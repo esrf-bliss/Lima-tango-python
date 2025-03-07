@@ -44,7 +44,9 @@
 # =============================================================================
 #
 
-import sys, os, glob
+import sys
+import os
+import glob
 import PyTango
 import weakref
 import itertools
