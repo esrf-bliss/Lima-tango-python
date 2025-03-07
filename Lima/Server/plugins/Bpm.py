@@ -755,15 +755,15 @@ def construct_bvdata(bpm):
     else:
         img_buffer = bpm.palette["grey"].take(scale_image, axis=0)
 
-    I = Image.fromarray(img_buffer, "RGB")
+    rgb = Image.fromarray(img_buffer, "RGB")
     if turbo_jpeg:
         jpegFile.write(
             turbo_jpeg.encode(
-                numpy.asarray(I), pixel_format=TJPF_RGB, quality=bpm.jpeg_quality
+                numpy.asarray(rgb), pixel_format=TJPF_RGB, quality=bpm.jpeg_quality
             )
         )
     else:
-        I.save(jpegFile, "jpeg", quality=bpm.jpeg_quality)
+        rgb.save(jpegFile, "jpeg", quality=bpm.jpeg_quality)
 
     raw_jpeg_data = jpegFile.getvalue()
     image_jpeg = base64.b64encode(raw_jpeg_data)
