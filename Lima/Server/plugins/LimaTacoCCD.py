@@ -43,7 +43,7 @@
 # =============================================================================
 #
 
-import sys, struct
+import struct
 import PyTango
 
 from Lima import Core

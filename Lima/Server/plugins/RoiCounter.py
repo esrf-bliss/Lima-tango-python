@@ -25,12 +25,9 @@
 import itertools
 import weakref
 import PyTango
-import sys
 import numpy
-import processlib
 from Lima import Core
-from Lima.Server.plugins.Utils import getDataFromFile, getMaskFromFile, BasePostProcess
-from Lima.Server import EdfFile
+from Lima.Server.plugins.Utils import getMaskFromFile, BasePostProcess
 
 
 def grouper(n, iterable, padvalue=None):

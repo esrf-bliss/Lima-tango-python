@@ -22,14 +22,10 @@
 ############################################################################
 
 import itertools
-import weakref
 import PyTango
-import sys
 import numpy
-import processlib
 from Lima import Core
-from Lima.Server.plugins.Utils import getDataFromFile, BasePostProcess
-from Lima.Server import AttrHelper
+from Lima.Server.plugins.Utils import BasePostProcess
 
 
 def grouper(n, iterable, padvalue=None):

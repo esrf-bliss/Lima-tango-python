@@ -22,7 +22,6 @@
 ############################################################################
 import PyTango
 import numpy
-import processlib
 import time
 import struct
 import threading
@@ -53,7 +52,6 @@ except ImportError:
     turbo_jpeg = None
 
 import base64
-import math
 
 
 # ==================================================================

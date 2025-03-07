@@ -22,11 +22,7 @@
 ############################################################################
 
 import itertools
-import weakref
 import PyTango
-import sys
-import numpy
-import processlib
 from Lima import Core
 from Lima.Server.plugins.Utils import getMaskFromFile, BasePostProcess
 
