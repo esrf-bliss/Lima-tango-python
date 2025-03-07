@@ -237,7 +237,7 @@ class Roi2spectrumDeviceServer(BasePostProcess):
         if len(argin):
             try:
                 data = getMaskFromFile(argin)
-            except:
+            except Exception:
                 raise ValueError(f"Could read mask from {argin}")
             self.__maskData = data
             self.__maskFile = argin
