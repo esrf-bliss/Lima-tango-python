@@ -239,7 +239,7 @@ def setup_env(mod):
 
 def find_dep_vers(mod):
     vers = {}
-    vre_str = "v[0-9]+\.[0-9]+\.[0-9]+"
+    vre_str = r"v[0-9]+\.[0-9]+\.[0-9]+"
     vre_obj = re.compile(vre_str)
     pdir = os.path.join(check_lima_dir(), mod)
     for vdir in os.listdir(pdir):
