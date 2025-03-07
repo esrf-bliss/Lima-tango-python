@@ -22,6 +22,7 @@
 ############################################################################
 from Lima import Core
 
+
 ##@brief this is an plugin example for accumulation saturation callback
 #
 # To use this plugin, you have to set AccThresholdCallbackModule property in
