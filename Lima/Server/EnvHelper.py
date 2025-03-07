@@ -317,7 +317,7 @@ def __filter(obj, tango_class_name, member_name, member):
     import Lima.Core
 
     # Avoid enumerations
-    is_enum = type(type(member)) == type(Lima.Core.CtControl.CameraErrorCode)
+    is_enum = type(type(member)) is type(Lima.Core.CtControl.CameraErrorCode)
     if is_enum and member_name[0].isupper():
         return False
     return True
