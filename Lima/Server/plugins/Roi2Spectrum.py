@@ -108,25 +108,6 @@ class Roi2spectrumDeviceServer(BasePostProcess):
         return True
 
     # ------------------------------------------------------------------
-    #    Read MaskFile attribute
-    # ------------------------------------------------------------------
-    def read_MaskFile(self, attr):
-        if self.__maskFile is not None:
-            attr.set_value(self.__maskFile)
-        else:
-            attr.set_value("")
-
-    # ------------------------------------------------------------------
-    #    Write MaskFile attribute
-    # ------------------------------------------------------------------
-    def write_MaskFile(self, attr):
-        filename = attr.get_write_value()
-        self.setMaskFile(filename)
-
-    def is_MaskFile_allowed(self, mode):
-        return True
-
-    # ------------------------------------------------------------------
     #    Read CounterStatus attribute
     # ------------------------------------------------------------------
     @Core.DEB_MEMBER_FUNCT
