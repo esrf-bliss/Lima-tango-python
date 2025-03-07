@@ -715,9 +715,6 @@ def construct_bvdata(bpm):
     roi_top_left = lima_roi.getTopLeft()
     roi_size = lima_roi.getSize()
     jpegFile = StringIO()
-    image_type = _control_ref().image().getImageType()
-
-    bpp = bpm.ImageType2Bpp[image_type]
 
     # manual scaling: use the user image min/max intensity to filter
     if not bpm.autoscale:
