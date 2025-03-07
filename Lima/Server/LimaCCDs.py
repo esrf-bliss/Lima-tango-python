@@ -203,7 +203,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         Core.Bpp32: "Bpp32",
         Core.Bpp32S: "Bpp32S",
     }
-    
+
     String2ImageType = {v: k for k, v in ImageType2String.items()}
 
     # DATA_ARRAY DevEncoded
@@ -654,11 +654,11 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             self.__BufferHelperEnums = {
                 "durationPolicy": {
                     "EPHEMERAL": Core.BufferHelper.Parameters.Ephemeral,
-                    "PERSISTENT": Core.BufferHelper.Parameters.Persistent, 
+                    "PERSISTENT": Core.BufferHelper.Parameters.Persistent,
                 },
                 "sizePolicy": {
                     "AUTOMATIC": Core.BufferHelper.Parameters.Automatic,
-                    "FIXED": Core.BufferHelper.Parameters.Fixed, 
+                    "FIXED": Core.BufferHelper.Parameters.Fixed,
                 },
             }
             self.__BufferParamData = {
@@ -1165,7 +1165,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         else:
             msg = "Accumulation threshold plugins not loaded"
             deb.Error(msg)
-            
+
     ## @brief Read the output image type (after acumulation)
     #
     @Core.DEB_MEMBER_FUNCT
@@ -1173,7 +1173,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         acc = self.__control.accumulation()
         imageType = acc.getOutputType()
         stringType = self.ImageType2String.get(imageType, "?")
-        
+
         attr.set_value(stringType)
 
     ## @brief Write the output image type (after acumulation)
@@ -2220,7 +2220,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         category = self.DataArrayCategory.Image
         self._datacache = self._image_2_data_array(image, category)
         return ("DATA_ARRAY", self._datacache)
-        
+
     ##@brief get last image data (if new image since last_frame_number)
     #
     # @returns Image if new image available since last_frame_number else None
