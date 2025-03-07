@@ -104,7 +104,7 @@ def get_lima_device_name(server=None, cache=True):
                    [default: use current process args]
     :type server: str
     :param cache: use last value stored in cache
-    :type cache: bool    
+    :type cache: bool
     :return: LimaCCDs tango device name for the given server
     :rtype: str
     """
@@ -119,7 +119,7 @@ def get_lima_camera_type(server=None, cache=True):
                    [default: use current process args]
     :type server: str
     :param cache: use last value stored in cache
-    :type cache: bool    
+    :type cache: bool
     :return: the lima camera type for the given server (Ex: Basler)
     :rtype: str
     """
