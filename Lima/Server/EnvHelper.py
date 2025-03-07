@@ -164,8 +164,8 @@ def setup_lima_env(argv):
     s2 = h + "from[ ]+Lima[ ]+import[ ]+" + p
     s3 = h + "from[ ]+Lima\\." + p + "(\\.([A-Za-z0-9_]+))*[ ]+import[ ]+"
     o1, o2, o3 = re.compile(s1), re.compile(s2), re.compile(s3)
-    for l in cfile.readlines():
-        m = o1.match(l) or o2.match(l) or o3.match(l)
+    for line in cfile.readlines():
+        m = o1.match(line) or o2.match(line) or o3.match(line)
         if not m:
             continue
         pname = m.group("plugin")
