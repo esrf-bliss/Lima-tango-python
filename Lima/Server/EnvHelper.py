@@ -22,9 +22,8 @@
 ############################################################################
 
 import sys
-import time
-import types
-import os, tempfile, re
+import os
+import re
 from subprocess import Popen, PIPE
 import inspect
 import logging
