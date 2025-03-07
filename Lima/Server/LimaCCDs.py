@@ -3115,8 +3115,6 @@ def main(args=None, event_loop=None):
             except:
                 pass
 
-    pytango_ver = PyTango.__version_info__[:3]
-
     try:
         py = PyTango.Util(args)
         py.add_TgClass(LimaCCDsClass, LimaCCDs, "LimaCCDs")
