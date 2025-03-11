@@ -100,13 +100,13 @@ try:
     import gzip
 
     GZIP = True
-except:
+except ImportError:
     GZIP = False
 try:
     import bz2
 
     BZ2 = True
-except:
+except ImportError:
     BZ2 = False
 
 MARCCD_SUPPORT = False
@@ -118,7 +118,7 @@ try:
     from . import TiffIO
 
     TIFF_SUPPORT = True
-except:
+except ImportError:
     TIFF_SUPPORT = False
 
 # Constants
@@ -299,7 +299,7 @@ class EdfFile(object):
             else:
                 try:
                     self.File.close()
-                except:
+                except Exception:
                     pass
                 raise IOError("EdfFile: Error opening file")
 
@@ -429,7 +429,7 @@ class EdfFile(object):
                         header[key.strip()] = val.strip(" ;\n")
                     line = infile.readline()
                     bytesread = bytesread + len(line)
-            except:
+            except Exception:
                 raise Exception("Error processing adsc header")
             # banned by bzip/gzip???
             try:
@@ -1045,7 +1045,7 @@ class EdfFile(object):
     def __del__(self):
         try:
             self.__makeSureFileIsClosed()
-        except:
+        except Exception:
             pass
 
     def GetDefaultNumpyType(self, EdfType, index=None):

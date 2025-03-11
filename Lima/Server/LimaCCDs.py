@@ -44,7 +44,9 @@
 # =============================================================================
 #
 
-import sys, os, glob
+import sys
+import os
+import glob
 import PyTango
 import weakref
 import itertools
@@ -125,7 +127,6 @@ def RequiresSystemFeature(feature):
                 head = "attr. %s [%s]" % (m.group("attr"), m.group("op"))
             else:
                 head = "method %s" % f.__name__
-            op = re.compile
             msg = (
                 "Error: %s cannot be called because %s is not supported "
                 "in this (detector-required) version of LIMA" % (head, feature)
@@ -202,8 +203,8 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         Core.Bpp32: "Bpp32",
         Core.Bpp32S: "Bpp32S",
     }
-    
-    String2ImageType = { v: k for k, v in ImageType2String.items() }
+
+    String2ImageType = {v: k for k, v in ImageType2String.items()}
 
     # DATA_ARRAY DevEncoded
     # enum DataArrayCategory {
@@ -434,7 +435,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         self.set_state(PyTango.DevState.ON)
         self.get_device_properties(self.get_device_class())
         self.__className2deviceName = get_sub_devices()
-        dataBase = PyTango.Database()
 
         TacoSpecificName.append(self.LimaCameraType)
 
@@ -654,11 +654,11 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             self.__BufferHelperEnums = {
                 "durationPolicy": {
                     "EPHEMERAL": Core.BufferHelper.Parameters.Ephemeral,
-                    "PERSISTENT": Core.BufferHelper.Parameters.Persistent, 
+                    "PERSISTENT": Core.BufferHelper.Parameters.Persistent,
                 },
                 "sizePolicy": {
                     "AUTOMATIC": Core.BufferHelper.Parameters.Automatic,
-                    "FIXED": Core.BufferHelper.Parameters.Fixed, 
+                    "FIXED": Core.BufferHelper.Parameters.Fixed,
                 },
             }
             self.__BufferParamData = {
@@ -1165,7 +1165,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         else:
             msg = "Accumulation threshold plugins not loaded"
             deb.Error(msg)
-            
+
     ## @brief Read the output image type (after acumulation)
     #
     @Core.DEB_MEMBER_FUNCT
@@ -1173,7 +1173,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         acc = self.__control.accumulation()
         imageType = acc.getOutputType()
         stringType = self.ImageType2String.get(imageType, "?")
-        
+
         attr.set_value(stringType)
 
     ## @brief Write the output image type (after acumulation)
@@ -1924,7 +1924,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         try:
             shared_memory = self.__control.display()
             shared_memory_names = shared_memory.getNames()
-        except:
+        except Exception:
             shared_memory_names = ["", ""]
         attr.set_value(shared_memory_names)
 
@@ -1933,13 +1933,13 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         try:
             shared_memory = self.__control.display()
             shared_memory.setNames(*self.__shared_memory_names)
-        except:
+        except Exception:
             pass
 
     def read_shared_memory_active(self, attr):
         try:
             shared_memory = self.__control.display().isActive()
-        except:
+        except Exception:
             shared_memory = False
         attr.set_value(shared_memory)
 
@@ -1947,7 +1947,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         data = attr.get_write_value()
         try:
             self.__control.display().setActive(data)
-        except:
+        except Exception:
             pass
 
     def read_config_available_module(self, attr):
@@ -1981,7 +1981,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         setattr(buffer_param, param_name, val)
         setter(buffer_param)
 
-
     # ==================================================================
     #
     #    LimaCCDs command methods
@@ -2011,7 +2010,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             try:
                 values = acq.getTriggerModeList()
                 valueList = [getDictKey(self.__AcqTriggerMode, val) for val in values]
-            except:
+            except Exception:
                 valueList = list(self.__AcqTriggerMode.keys())
         elif attr_name == "saving_format":
             return self.__SavingFormat
@@ -2090,7 +2089,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         for image_header in headers_str:
             imageIdSepPos = image_header.find(self.__image_number_header_delimiter)
             imageId = int(image_header[:imageIdSepPos])
-            header_str = image_header[imageIdSepPos + 1 :]
+            header_str = image_header[imageIdSepPos + 1:]
             deb.Param("Setting to image %d file header: %s" % (imageId, header_str))
             header_map = {}
             for line in header_str.split(self.__entry_header_delimiter):
@@ -2220,7 +2219,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         category = self.DataArrayCategory.Image
         self._datacache = self._image_2_data_array(image, category)
         return ("DATA_ARRAY", self._datacache)
-        
+
     ##@brief get last image data (if new image since last_frame_number)
     #
     # @returns Image if new image available since last_frame_number else None
@@ -2230,11 +2229,11 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         status = self.__control.getStatus()
         last_img_ready = status.ImageCounters.LastImageReady
         if last_img_ready <= last_frame_number:
-            deb.Trace(f"No newer image available")
+            deb.Trace("No newer image available")
             PyTango.Except.throw_exception(PyTango.DevError(
                 desc="Frame(s) not available yet",
-                #tango.ErrSeverity.ERR,
-                #"readLastImage()",
+                # tango.ErrSeverity.ERR,
+                # "readLastImage()",
             ))
         else:
             image = self.__control.ReadImage(-1)
@@ -2949,7 +2948,7 @@ def export_default_plugins():
                     print("create device", specificDevice.__name__, deviceName)
                     try:
                         util.create_device(specificDevice.__name__, deviceName)
-                    except:
+                    except Exception:
                         import traceback
 
                         traceback.print_exc()
@@ -3061,8 +3060,8 @@ def _get_control():
             else:
                 specificDevice = class_info
             typeFlagsNameList = []
-            for l in range(verboseLevel + 1):
-                typeFlagsNameList += VerboseLevel2TypeFlags.get(l, [])
+            for level in range(verboseLevel + 1):
+                typeFlagsNameList += VerboseLevel2TypeFlags.get(level, [])
             Core.DebParams.setTypeFlagsNameList(typeFlagsNameList)
 
             util = PyTango.Util.instance()
@@ -3112,17 +3111,15 @@ def main(args=None, event_loop=None):
         if option.startswith("-v"):
             try:
                 verboseLevel = int(option[2:])
-            except:
+            except Exception:
                 pass
-
-    pytango_ver = PyTango.__version_info__[:3]
 
     try:
         py = PyTango.Util(args)
         py.add_TgClass(LimaCCDsClass, LimaCCDs, "LimaCCDs")
         try:
             declare_camera_n_commun_to_tango_world(py)
-        except:
+        except Exception:
             import traceback
 
             traceback.print_exc()
@@ -3141,7 +3138,7 @@ def main(args=None, event_loop=None):
 
         try:
             export_default_plugins()
-        except:
+        except Exception:
             import traceback
 
             traceback.print_exc()

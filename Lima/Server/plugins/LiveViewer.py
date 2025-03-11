@@ -48,13 +48,9 @@ images for camera support the continuous acquistion mode
 __docformat__ = "restructuredtext"
 
 import PyTango
-import sys
 
 # Add additional import
 from Lima import Core
-
-import numpy
-import time
 
 
 # ------------------------------------------------------------------

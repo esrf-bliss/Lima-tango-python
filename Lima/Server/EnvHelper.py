@@ -22,9 +22,8 @@
 ############################################################################
 
 import sys
-import time
-import types
-import os, tempfile, re
+import os
+import re
 from subprocess import Popen, PIPE
 import inspect
 import logging
@@ -105,7 +104,7 @@ def get_lima_device_name(server=None, cache=True):
                    [default: use current process args]
     :type server: str
     :param cache: use last value stored in cache
-    :type cache: bool    
+    :type cache: bool
     :return: LimaCCDs tango device name for the given server
     :rtype: str
     """
@@ -120,7 +119,7 @@ def get_lima_camera_type(server=None, cache=True):
                    [default: use current process args]
     :type server: str
     :param cache: use last value stored in cache
-    :type cache: bool    
+    :type cache: bool
     :return: the lima camera type for the given server (Ex: Basler)
     :rtype: str
     """
@@ -165,9 +164,8 @@ def setup_lima_env(argv):
     s2 = h + "from[ ]+Lima[ ]+import[ ]+" + p
     s3 = h + "from[ ]+Lima\\." + p + "(\\.([A-Za-z0-9_]+))*[ ]+import[ ]+"
     o1, o2, o3 = re.compile(s1), re.compile(s2), re.compile(s3)
-    vers = {}
-    for l in cfile.readlines():
-        m = o1.match(l) or o2.match(l) or o3.match(l)
+    for line in cfile.readlines():
+        m = o1.match(line) or o2.match(line) or o3.match(line)
         if not m:
             continue
         pname = m.group("plugin")
@@ -191,7 +189,7 @@ def check_args(argv):
         if arg.startswith("-v"):
             try:
                 Debug = max(0, int(arg[2:]) - 1)
-            except:
+            except Exception:
                 pass
     return 1
 
@@ -240,7 +238,7 @@ def setup_env(mod):
 
 def find_dep_vers(mod):
     vers = {}
-    vre_str = "v[0-9]+\.[0-9]+\.[0-9]+"
+    vre_str = r"v[0-9]+\.[0-9]+\.[0-9]+"
     vre_obj = re.compile(vre_str)
     pdir = os.path.join(check_lima_dir(), mod)
     for vdir in os.listdir(pdir):
@@ -318,7 +316,7 @@ def __filter(obj, tango_class_name, member_name, member):
     import Lima.Core
 
     # Avoid enumerations
-    is_enum = type(type(member)) == type(Lima.Core.CtControl.CameraErrorCode)
+    is_enum = type(type(member)) is type(Lima.Core.CtControl.CameraErrorCode)
     if is_enum and member_name[0].isupper():
         return False
     return True

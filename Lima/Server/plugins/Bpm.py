@@ -22,7 +22,6 @@
 ############################################################################
 import PyTango
 import numpy
-import processlib
 import time
 import struct
 import threading
@@ -53,7 +52,6 @@ except ImportError:
     turbo_jpeg = None
 
 import base64
-import math
 
 
 # ==================================================================
@@ -236,7 +234,7 @@ class BpmDeviceServer(BasePostProcess):
             image = _control_ref().ReadImage()
             raw_image = image.buffer.copy()
             return int(raw_image[y][x])
-        except:
+        except Exception:
             return -1
 
     def TakeBackground(self):
@@ -269,7 +267,7 @@ class BpmDeviceServer(BasePostProcess):
     #
     def get_bpm_result(self, frameNumber=None, timestamp=None):
         if self.enable_bpm_calc:
-            if frameNumber == None:
+            if frameNumber is None:
                 t = time.time()
                 result = self._bpmManager.getResult()
             else:
@@ -301,11 +299,11 @@ class BpmDeviceServer(BasePostProcess):
                 )
             try:
                 profile_x = result.profile_x.buffer.astype(int)
-            except:
+            except Exception:
                 profile_x = numpy.array([], dtype=int)
             try:
                 profile_y = result.profile_y.buffer.astype(int)
-            except:
+            except Exception:
                 profile_y = numpy.array([], dtype=int)
         else:
             t = time.time()
@@ -494,8 +492,8 @@ class BpmDeviceServer(BasePostProcess):
         if data[0] > max or data[1] > max:
             PyTango.Except.throw_exception(
                 "WrongData",
-                "Wrong value min_max: {0}, out of range {1}",
-                "LimaCCD Class".format(data, range),
+                "Wrong value min_max: {0}, out of range {1}".format(data, range),
+                "LimaCCD Class",
             )
         self.min_max[0] = data[0]
         self.min_max[1] = data[1]
@@ -717,9 +715,6 @@ def construct_bvdata(bpm):
     roi_top_left = lima_roi.getTopLeft()
     roi_size = lima_roi.getSize()
     jpegFile = StringIO()
-    image_type = _control_ref().image().getImageType()
-
-    bpp = bpm.ImageType2Bpp[image_type]
 
     # manual scaling: use the user image min/max intensity to filter
     if not bpm.autoscale:
@@ -757,15 +752,15 @@ def construct_bvdata(bpm):
     else:
         img_buffer = bpm.palette["grey"].take(scale_image, axis=0)
 
-    I = Image.fromarray(img_buffer, "RGB")
+    rgb = Image.fromarray(img_buffer, "RGB")
     if turbo_jpeg:
         jpegFile.write(
             turbo_jpeg.encode(
-                numpy.asarray(I), pixel_format=TJPF_RGB, quality=bpm.jpeg_quality
+                numpy.asarray(rgb), pixel_format=TJPF_RGB, quality=bpm.jpeg_quality
             )
         )
     else:
-        I.save(jpegFile, "jpeg", quality=bpm.jpeg_quality)
+        rgb.save(jpegFile, "jpeg", quality=bpm.jpeg_quality)
 
     raw_jpeg_data = jpegFile.getvalue()
     image_jpeg = base64.b64encode(raw_jpeg_data)

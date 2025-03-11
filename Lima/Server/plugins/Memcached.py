@@ -21,10 +21,8 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 ############################################################################
 
-import weakref
 import PyTango
 import sys
-import numpy
 import json
 
 # Workaround https://github.com/Blosc/bloscpack/issues/119
@@ -37,8 +35,7 @@ from collections import namedtuple
 from pymemcache.client.base import Client
 
 from Lima import Core
-from Lima.Server.plugins.Utils import getDataFromFile, BasePostProcess
-from Lima.Server import AttrHelper
+from Lima.Server.plugins.Utils import BasePostProcess
 
 # ==================================================================
 #   MemcachedSinkTask SinkTask

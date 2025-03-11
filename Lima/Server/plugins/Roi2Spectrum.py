@@ -22,11 +22,7 @@
 ############################################################################
 
 import itertools
-import weakref
 import PyTango
-import sys
-import numpy
-import processlib
 from Lima import Core
 from Lima.Server.plugins.Utils import getMaskFromFile, BasePostProcess
 
@@ -108,25 +104,6 @@ class Roi2spectrumDeviceServer(BasePostProcess):
         return True
 
     # ------------------------------------------------------------------
-    #    Read MaskFile attribute
-    # ------------------------------------------------------------------
-    def read_MaskFile(self, attr):
-        if self.__maskFile is not None:
-            attr.set_value(self.__maskFile)
-        else:
-            attr.set_value("")
-
-    # ------------------------------------------------------------------
-    #    Write MaskFile attribute
-    # ------------------------------------------------------------------
-    def write_MaskFile(self, attr):
-        filename = attr.get_write_value()
-        self.setMaskFile(filename)
-
-    def is_MaskFile_allowed(self, mode):
-        return True
-
-    # ------------------------------------------------------------------
     #    Read CounterStatus attribute
     # ------------------------------------------------------------------
     @Core.DEB_MEMBER_FUNCT
@@ -164,7 +141,7 @@ class Roi2spectrumDeviceServer(BasePostProcess):
     def addNames(self, argin):
         roi_id = []
         for roi_name in argin:
-            if not roi_name in self.__roiName2ID:
+            if roi_name not in self.__roiName2ID:
                 self.__roiName2ID[roi_name] = self.__currentRoiId
                 self.__roiID2Name[self.__currentRoiId] = roi_name
                 roi_id.append(self.__currentRoiId)
@@ -260,7 +237,7 @@ class Roi2spectrumDeviceServer(BasePostProcess):
         if len(argin):
             try:
                 data = getMaskFromFile(argin)
-            except:
+            except Exception:
                 raise ValueError(f"Could read mask from {argin}")
             self.__maskData = data
             self.__maskFile = argin

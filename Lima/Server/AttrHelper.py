@@ -54,8 +54,6 @@
 #       return get_attr_4u(self, name, _AndorCamera)
 #
 
-import six
-
 import PyTango
 
 
