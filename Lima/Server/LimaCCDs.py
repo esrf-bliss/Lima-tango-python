@@ -3013,7 +3013,8 @@ def _video_image_2_struct(image):
         0,
     )  # padding
 
-    return videoheader + image.buffer()
+    data = image.buffer() or b""
+    return videoheader + data
 
 
 def _acqstate2string(state):
