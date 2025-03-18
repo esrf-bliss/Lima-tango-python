@@ -369,24 +369,27 @@ saving_zbuffer_<field>	    rw	    ...			    The allocation parameters for saving
 
 Image
 `````
-=========================== ======= ======================= =======================================================================================
-Attribute name		    RW	    Type		    Description
-=========================== ======= ======================= =======================================================================================
-image_type		    ro	    DevString		    Return the current image data type, bit per pixel signed or unsigned:
-							     - Bpp8, Bpp8S, Bpp10, Bpp10S, Bpp12, Bpp12S, Bpp14,
-							     - Bpp14S, Bpp16, Bpp16S, Bpp32, Bpp32S , Bpp32F.
-image_width		    ro	    DevLong	            Width size of the detector in pixel
-image_height		    ro	    DevLong		    Height size of the detector in pixel
-image_sizes                 ro      DevULong[4]             Signed(0-unsigned,1-signed), depth(nb bytes), width and height
-image_max_dim               ro      DevULong[2]             Maximum image dimension, width and height in pixel
-image_roi		    rw	    DevLong[4]		    Region Of Interest on image, [0] = Begin X, [1] = Begin Y,
-							    [2] = Width, [3] = Height, default ROI is [0,0,0,0] (no ROI)
-image_bin		    rw	    DevLong[2]		    Binning on image, [0] = Binning factor on X, [1] =
-							    Binning factor on Y. Default binning is 1 x 1
-image_flip		    rw	    DevBoolean[2]	    Flip on the image, [0] = flip over X axis, [1] flip over Y
-				           		    axis. Default flip is False x False
-image_rotation              rw      DevString               Rotate the image: "0", "90", "180" or "270"
-=========================== ======= ======================= =======================================================================================
+======================= ======= ======================= =======================================================================================
+Attribute name          RW      Type                    Description
+======================= ======= ======================= =======================================================================================
+image_type              ro      DevString               Return the current image data type, bit per pixel signed or unsigned:
+                                                         - Bpp8, Bpp8S, Bpp10, Bpp10S, Bpp12, Bpp12S, Bpp14,
+                                                         - Bpp14S, Bpp16, Bpp16S, Bpp32, Bpp32S , Bpp32F.
+image_width             ro      DevLong                 Width size of the detector in pixel
+image_height            ro      DevLong                 Height size of the detector in pixel
+image_sizes             ro      DevULong[4]             Signed(0-unsigned,1-signed), depth(nb bytes), width and height
+image_max_dim           ro      DevULong[2]             Maximum image dimension, width and height in pixel
+image_roi               rw      DevLong[4]              Region Of Interest on image, [0] = Begin X, [1] = Begin Y,
+                                                        [2] = Width, [3] = Height, default ROI is [0,0,0,0] (no ROI)
+image_bin               rw      DevLong[2]              Binning on image, [0] = Binning factor on X, [1] =
+                                                        Binning factor on Y. Default binning is 1 x 1
+image_bin_mode          rw      DevString               Set the operation applied to each bins over the accumulated pixels
+                                                         - **SUM** returns the sum of the pixel intensities (Default)
+                                                         - **MEAN** returns the arithmetic mean of the pixel intensities
+image_flip              rw      DevBoolean[2]           Flip on the image, [0] = flip over X axis, [1] flip over Y
+                                                        axis. Default flip is False x False
+image_rotation          rw      DevString               Rotate the image: "0", "90", "180" or "270"
+======================= ======= ======================= =======================================================================================
 
 Shutter
 ```````
