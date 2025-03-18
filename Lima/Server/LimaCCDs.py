@@ -3009,11 +3009,12 @@ def _video_image_2_struct(image):
         image.height(),  # height
         ord(struct.pack("=H", 1).decode()[-1]),  # endianness
         struct.calcsize(VIDEO_HEADER_FORMAT),  # header size
-        0,
-        0,
-    )  # padding
+        0,  # padding
+        0,  # padding
+    )
 
-    return videoheader + image.buffer()
+    data = image.buffer() or b""
+    return videoheader + data
 
 
 def _acqstate2string(state):
