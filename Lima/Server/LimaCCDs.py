@@ -510,6 +510,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             "saving_managed_mode": "ManagedMode",
             "shutter_mode": "Mode",
             "image_rotation": "Rotation",
+            "image_bin_mode": "BinMode",
             "video_mode": "Mode",
             "buffer_max_number": "MaxNumber",
             "acc_mode": "Mode",
@@ -586,6 +587,12 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
                 "90": Core.Rotation_90,
                 "180": Core.Rotation_180,
                 "270": Core.Rotation_270,
+            }
+
+        if SystemHasFeature("Core.Bin_Sum"):
+            self.__ImageBinMode = {
+                "SUM": Core.Bin_Sum,
+                "MEAN": Core.Bin_Mean,
             }
 
         if SystemHasFeature("Core.CtAccumulation.Parameters.STANDARD"):
@@ -2676,6 +2683,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
         "image_width": [[PyTango.DevULong, PyTango.SCALAR, PyTango.READ]],
         "image_height": [[PyTango.DevULong, PyTango.SCALAR, PyTango.READ]],
         "image_bin": [[PyTango.DevULong, PyTango.SPECTRUM, PyTango.READ_WRITE, 2]],
+        "image_bin_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
         "image_flip": [[PyTango.DevBoolean, PyTango.SPECTRUM, PyTango.READ_WRITE, 2]],
         "image_rotation": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
         "last_image_acquired": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ]],
