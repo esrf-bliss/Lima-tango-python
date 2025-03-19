@@ -13,7 +13,7 @@ console_scripts_entry_points = [
     "LimaViewer = Lima.Server.LimaViewer:main",
 ]
 
-setup(name='Lima.Server',
+setup(name='lima-tango-server',
     description='Python server for Lima cameras',
     url='https://gitlab.esrf.fr/limagroup/Lima-tango-python',
     packages=packages,
