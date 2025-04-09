@@ -55,7 +55,6 @@ import numpy
 import struct
 import time
 import re
-import six
 
 # Before loading Lima.Core, must find out the version the plug-in
 # was compiled with - horrible hack ...
@@ -1349,7 +1348,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         header = saving.getCommonHeader()
         headerArr = [
             "%s%s%s" % (k, self.__key_header_delimiter, v)
-            for k, v in six.iteritems(header)
+            for k, v in header.items()
         ]
         attr.set_value(headerArr, len(headerArr))
 
@@ -1922,7 +1921,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
     def read_plugin_list(self, attr):
         returnList = []
-        for key, value in six.iteritems(get_sub_devices()):
+        for key, value in get_sub_devices().items():
             returnList.append(key.lower().replace("deviceserver", ""))
             returnList.append(value)
         attr.set_value(returnList)
@@ -2375,7 +2374,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         pluginType2deviceName = dict(
             [
                 (x.lower().replace("deviceserver", ""), y)
-                for x, y in six.iteritems(get_sub_devices())
+                for x, y in get_sub_devices().items()
             ]
         )
         return pluginType2deviceName.get(pluginType.lower(), "")
