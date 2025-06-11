@@ -138,7 +138,6 @@ def RequiresSystemFeature(feature):
 
 
 class LimaCCDs(PyTango.LatestDeviceImpl):
-
     Core.DEB_CLASS(Core.DebModApplication, "LimaCCDs")
 
     _ImageOpModes = {
@@ -271,7 +270,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         klass.DataArrayCategory = DataArrayCategory
         return klass
 
-    AcqTagNone = 0xffffffff
+    AcqTagNone = 0xFFFFFFFF
 
     # INIT events on video_last_image
     class VideoImageCallback(Core.CtVideo.ImageCallback):
@@ -295,7 +294,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
     @DataArrayUser
     class ImageStatusCallback(Core.CtControl.ImageStatusCallback):
-
         DefaultMaxEventRate = 25
 
         def __init__(self, device, control, events=False):
@@ -579,9 +577,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         if SystemHasFeature("Core.ExtTrigReadout"):
             self.__AcqTriggerMode["EXTERNAL_TRIGGER_READOUT"] = Core.ExtTrigReadout
 
-        if SystemHasFeature('Core.ExtTrigSequences'):
-            self.__AcqTriggerMode['EXTERNAL_TRIGGER_SEQUENCES'] = Core.ExtTrigSequences
-            
         if SystemHasFeature("Core.Rotation_0"):
             self.__ImageRotation = {
                 "NONE": Core.Rotation_0,
@@ -798,8 +793,9 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             deb.Trace("%s [prop]: '%s'" % (prop_name, prop_val))
             try:
                 obj = self.__Prefix2SubClass[grp]()
-                get_set_names = [f"{op}{attr_name_prefix}Parameters"
-                                 for op in ["get", "set"]]
+                get_set_names = [
+                    f"{op}{attr_name_prefix}Parameters" for op in ["get", "set"]
+                ]
                 getter, setter = [getattr(obj, n) for n in get_set_names]
                 if prop_val:
                     params = Core.BufferHelper.Parameters.fromString(prop_val)
@@ -831,8 +827,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             if subClass:
                 obj = subClass()
                 if SystemHasFeature("Core.BufferHelper.Parameters"):
-                    buffer_attr = self.get_buffer_param_attr(action, split_name,
-                                                             obj)
+                    buffer_attr = self.get_buffer_param_attr(action, split_name, obj)
                     if buffer_attr:
                         return buffer_attr
                 return get_attr_4u(self, name, obj)
@@ -848,17 +843,16 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             nb_grp_tokens = len(split_grp)
             if list(split_grp) != split_name[:nb_grp_tokens]:
                 continue
-            get_set_names = [f"{op}{attr_name_prefix}Parameters"
-                             for op in ["get", "set"]]
+            get_set_names = [
+                f"{op}{attr_name_prefix}Parameters" for op in ["get", "set"]
+            ]
             if not all([hasattr(obj, n) for n in get_set_names]):
                 continue
             method = getattr(self, f"{action}BufferParam")
             param_tokens = split_name[nb_grp_tokens:]
-            param = "".join([n.title() if i else n
-                             for i, n in enumerate(param_tokens)])
+            param = "".join([n.title() if i else n for i, n in enumerate(param_tokens)])
             getter, setter = [getattr(obj, n) for n in get_set_names]
-            return functools.partial(method, param=param,
-                                     getter=getter, setter=setter)
+            return functools.partial(method, param=param, getter=getter, setter=setter)
         return None
 
     def gc(self):
@@ -1349,8 +1343,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         saving = self.__control.saving()
         header = saving.getCommonHeader()
         headerArr = [
-            "%s%s%s" % (k, self.__key_header_delimiter, v)
-            for k, v in header.items()
+            "%s%s%s" % (k, self.__key_header_delimiter, v) for k, v in header.items()
         ]
         attr.set_value(headerArr)
 
@@ -1997,8 +1990,9 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     @RequiresSystemFeature("Core.BufferHelper.Parameters")
     def writeBufferParam(self, attr, param=None, getter=None, setter=None):
         buffer_param = getter()
-        param_name = ''.join([p.title() if i else p
-                              for i, p in enumerate(param.split("_"))])
+        param_name = "".join(
+            [p.title() if i else p for i, p in enumerate(param.split("_"))]
+        )
         val = attr.get_write_value()
         if param in self.__BufferHelperEnums:
             val = getDictValue(self.__BufferHelperEnums[param], val)
@@ -2064,8 +2058,9 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             self.last_acq_tag = tag
             deb.Trace("Preparing a new acq. with tag %s (0x%08x)" % (tag, tag))
         else:
-            deb.Warning("Preparing a new acq. with the same tag %s (0x%08x)" %
-                        (tag, tag))
+            deb.Warning(
+                "Preparing a new acq. with the same tag %s (0x%08x)" % (tag, tag)
+            )
 
     ##@brief pushing the acquisition status
     def _push_status(self):
@@ -2113,7 +2108,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         for image_header in headers_str:
             imageIdSepPos = image_header.find(self.__image_number_header_delimiter)
             imageId = int(image_header[:imageIdSepPos])
-            header_str = image_header[imageIdSepPos + 1:]
+            header_str = image_header[imageIdSepPos + 1 :]
             deb.Param("Setting to image %d file header: %s" % (imageId, header_str))
             header_map = {}
             for line in header_str.split(self.__entry_header_delimiter):
@@ -2221,7 +2216,8 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             t[5],  # 24 bytes I x 6 - stepsbytes
             imageNumber,  # 8 bytes Q x 1 - imageNumber
             acqTag,  # 8 bytes Q x 1 - acqTag
-            0, 0,  # 8 bytes I x 2 - pading
+            0,
+            0,  # 8 bytes I x 2 - pading
         )
 
         flatData = d.ravel()
@@ -2254,11 +2250,13 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         last_img_ready = status.ImageCounters.LastImageReady
         if last_img_ready <= last_frame_number:
             deb.Trace("No newer image available")
-            PyTango.Except.throw_exception(PyTango.DevError(
-                desc="Frame(s) not available yet",
-                # tango.ErrSeverity.ERR,
-                # "readLastImage()",
-            ))
+            PyTango.Except.throw_exception(
+                PyTango.DevError(
+                    desc="Frame(s) not available yet",
+                    # tango.ErrSeverity.ERR,
+                    # "readLastImage()",
+                )
+            )
         else:
             image = self.__control.ReadImage(-1)
             category = self.DataArrayCategory.Image
@@ -2281,18 +2279,18 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             if step != 1:
                 raise ValueError("Discontiguous sequences not supported yet")
         if nb_args > 3:
-            acq_tag = frame_seq[3] & 0xffffffff
+            acq_tag = frame_seq[3] & 0xFFFFFFFF
             if acq_tag != self.AcqTagNone:
                 if self.last_acq_tag == self.AcqTagNone:
                     raise RuntimeError("No acq_tag has been set yet")
                 elif acq_tag != self.last_acq_tag:
-                    raise RuntimeError("Acq. #%s (0x%08x) is not available" %
-                                       (acq_tag, acq_tag))
+                    raise RuntimeError(
+                        "Acq. #%s (0x%08x) is not available" % (acq_tag, acq_tag)
+                    )
         nbFrames = end - start
         deb.Param(
             "readImageSeq: start,end,step = %d,%d,%d (%d frames), "
-            "acq_tag = %s (0x%08x) " %
-            (start, end, step, nbFrames, acq_tag, acq_tag)
+            "acq_tag = %s (0x%08x) " % (start, end, step, nbFrames, acq_tag, acq_tag)
         )
         imageStack = self.__control.ReadImage(start, nbFrames)
         category = self.DataArrayCategory.ImageStack
@@ -2367,7 +2365,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     # ------------------------------------------------------------------
     @Core.DEB_MEMBER_FUNCT
     def closeShutterManual(self):
-
         shutter = self.__control.shutter()
 
         if shutter.getModeList().count(Core.ShutterManual):
@@ -2381,7 +2378,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     # ------------------------------------------------------------------
     @Core.DEB_MEMBER_FUNCT
     def openShutterManual(self):
-
         shutter = self.__control.shutter()
 
         if shutter.getModeList().count(Core.ShutterManual):
@@ -2457,7 +2453,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
             PyTango.DevString,
             "Accumulation Buffer alloc. params: "
             "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0.0-100.0>",
-            [''],
+            [""],
         ],
         "AccThresholdCallbackModule": [
             PyTango.DevString,
@@ -2499,7 +2495,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
             PyTango.DevString,
             "HW Buffer alloc. params: "
             "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0.0-100.0> [default: <initMem=1, reqMemSizePercent=70.0>]",
-            [''],
+            [""],
         ],
         "TangoEvent": [PyTango.DevBoolean, "Activate Tango event", [False]],
         "SavingMaxConcurrentWritingTask": [
@@ -2511,7 +2507,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
             PyTango.DevString,
             "Saving ZBuffer alloc. params: "
             "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0.0-100.0>",
-            [''],
+            [""],
         ],
     }
 
