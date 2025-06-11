@@ -2,7 +2,7 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2022
+# Copyright (C) : 2009-2025
 # European Synchrotron Radiation Facility
 # CS40220 38043 Grenoble Cedex 9
 # FRANCE
@@ -579,6 +579,9 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         if SystemHasFeature("Core.ExtTrigReadout"):
             self.__AcqTriggerMode["EXTERNAL_TRIGGER_READOUT"] = Core.ExtTrigReadout
 
+        if SystemHasFeature('Core.ExtTrigSequences'):
+            self.__AcqTriggerMode['EXTERNAL_TRIGGER_SEQUENCES'] = Core.ExtTrigSequences
+            
         if SystemHasFeature("Core.Rotation_0"):
             self.__ImageRotation = {
                 "NONE": Core.Rotation_0,
@@ -1310,7 +1313,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         image = self.__control.image()
         binValues = image.getBin()
 
-        attr.set_value([binValues.getX(), binValues.getY()], 2)
+        attr.set_value([binValues.getX(), binValues.getY()])
 
     ## @brief Write image binning
     #
@@ -1328,7 +1331,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     def read_image_flip(self, attr):
         image = self.__control.image()
         flip = image.getFlip()
-        attr.set_value([flip.x, flip.y], 2)
+        attr.set_value([flip.x, flip.y])
 
     ## @brief Write image flip
     #
@@ -1349,7 +1352,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             "%s%s%s" % (k, self.__key_header_delimiter, v)
             for k, v in header.items()
         ]
-        attr.set_value(headerArr, len(headerArr))
+        attr.set_value(headerArr)
 
     ## @brief Write common header
     #
@@ -1370,7 +1373,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
                 self.__entry_header_delimiter,
                 self.__image_number_header_delimiter,
             ],
-            3,
         )
 
     ##@brief Write header delimiter
@@ -1512,7 +1514,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     @Core.DEB_MEMBER_FUNCT
     def read_saving_statistics(self, attr):
         saving = self.__control.saving()
-        attr.set_value(saving.getStatisticCounters(), 4)
+        attr.set_value(saving.getStatisticCounters())
 
     ## @brief get the write statistics history size
     #
@@ -1815,14 +1817,14 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     ##@brief Read possible modules
     #
     def read_debug_modules_possible(self, attr):
-        attr.set_value(LimaCCDs._debugModuleList, len(LimaCCDs._debugModuleList))
+        attr.set_value(LimaCCDs._debugModuleList)
 
     ##@brief Read list of module which are in debug
     #
     @Core.DEB_MEMBER_FUNCT
     def read_debug_modules(self, attr):
         NameList = Core.DebParams.getModuleFlagsNameList()
-        attr.set_value(NameList, len(NameList))
+        attr.set_value(NameList)
 
     ##@brief set debug module list
     #
@@ -1834,7 +1836,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     ##@biref Read possible modules
     #
     def read_debug_types_possible(self, attr):
-        attr.set_value(LimaCCDs._debugTypeList, len(LimaCCDs._debugTypeList))
+        attr.set_value(LimaCCDs._debugTypeList)
 
     ##@brief Read list of module which are in debug
     #
@@ -1843,9 +1845,9 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         NameList = Core.DebParams.getTypeFlagsNameList()
 
         if NameList:
-            attr.set_value(NameList, len(NameList))
+            attr.set_value(NameList)
         else:
-            attr.set_value([""], 1)
+            attr.set_value([""])
 
     ##@brief set debug module list
     #
@@ -1897,7 +1899,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         video = self.__control.video()
         binValue = video.getBin()
 
-        attr.set_value([binValue.getX(), binValue.getY()], 2)
+        attr.set_value([binValue.getX(), binValue.getY()])
 
     def write_video_bin(self, attr):
         data = attr.get_write_value()
