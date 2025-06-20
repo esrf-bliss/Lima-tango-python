@@ -115,8 +115,8 @@ class Roi2spectrumDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     @Core.DEB_MEMBER_FUNCT
     def read_MaskFile(self, attr):
-        if self._maskFile is not None:
-            attr.set_value(self._maskFile)
+        if self.__maskFile is not None:
+            attr.set_value(self.__maskFile)
         else:
             attr.set_value("")
 
