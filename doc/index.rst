@@ -311,61 +311,57 @@ acc_hw_nb_buffers           rw      DevLong                 Number of buffers al
 Saving
 ``````
 
-=========================== ======= ======================= =======================================================================================
-Attribute name              RW      Type                    Description
-=========================== ======= ======================= =======================================================================================
-saving_mode                 rw      DevString               Saving mode:
-                                                              - **Manual**, no automatic saving, a command will
-                                                                be implemented in a next release to be able to
-                                                                save an acquired image.
-                                                              - **Auto_Frame**, Frames are automatically saved
-                                                                according the saving parameters (see below).
-                                                              - **Auto_header**, Frames are only saved when the
-                                                                setImageHeader() is called in order to set
-                                                                header information with image data.
-
-saving_directory            rw      DevString               The directory where to save the image files
-saving_prefix               rw      DevString               The image file prefix
-saving_suffix               rw      DevString               The image file suffix
-saving_next_number          rw      DevLong                 The image next number
-                                                            The full image file name is:
-                                                            /saving_directory/saving_prefix+sprintf("%04d",saving_next_number)+saving_suffix
-
-saving_format               rw      DevString               The data format for saving:
-                                                              - :code:`RAW`, save in binary format
-                                                              - :code:`EDF`, save in ESRF Data Format
-                                                              - :code:`EDFGZ` (or edf.gz), EDF with Deflate filter compression
-                                                              - :code:`EDFLZ4` (or edf.lz4), EDF with BS/LZ4 filter compression
-                                                              - :code:`TIFF`, The famous TIFF format
-                                                              - :code:`CBF`, save in CBF format (a compressed format for crystallography)
-                                                              - :code:`HDF5` save in Nexus HDF5 format
-                                                              - :code:`HDF5GZ` save in Nexus HDF5 format with Deflate filter compression
-                                                              - :code:`HDF5BS` save in Nexus HDF5 format with BS/LZ4 filter compression
-
-
-saving_overwrite_policy     rw      DevString               In case of existing files an overwite policy is mandatory:
-                                                              - **Abort**, if the file exists the saving is aborted
-                                                              - **Overwrite**, if the file exists it is overwritten
-                                                              - **Append**, if the file exists the image is append to the file
-
-saving_frame_per_file       rw      DevLong                 Number of frames saved in each file
-saving_common_header        rw      DevString[]             Common header with multiple entries
-saving_header_delimiter     rw      DevString[]             The header delimiters, [0] = key header delimiter, [1] = entry header delimiter, 
-                                                            [2] = image number header delimiter.
-                                                            Default : [0] = "=", [1] = "\n", [2] = ";"
-saving_max_writing_task     rw      DevShort                Set the max. tasks for saving file, default is 1
-saving_statistics           ro      DevDouble[]             Return stats: saving speed, compression ratio,
-                                                            compression speed and incoming speed (speed in byte/s)
-saving_statistics_history   rw      DevLong                 Set size of history for stats calculation, default is 16 frames
-saving_managed_mode         rw      DevString               On some detectors, saving can be managed by the hardware (sdk), you can switch
-                                                            the mode using these attribute values:
-                                                            - HARDWARE, lima will not manage the saving but set the camera to do the job
-                                                            - SOFTWARE, (default) Lima is managing the saving
-saving_every_n_frames       rw      DevLong                 if positive it does save frame every N frames, if negative it does NOT save every N 
-                                                            frames, for instance -2 means frames 0,2,4.. are not saved
-saving_use_hw_comp          rw      DevBoolean              Try to use the compressed image blob injected by the HW plugin (like the Dectris/Eiger)
-saving_zbuffer_<field>	    rw	    ...			    The allocation parameters for saving compression buffers
-=========================== ======= ======================= =======================================================================================
+============================ ======= ======================= =======================================================================================
+Attribute name               RW      Type                    Description
+============================ ======= ======================= =======================================================================================
+saving_mode                  rw      DevString               Saving mode:
+                                                               - **Manual**, no automatic saving, a command will
+                                                                 be implemented in a next release to be able to
+                                                                 save an acquired image.
+                                                               - **Auto_Frame**, Frames are automatically saved
+                                                                 according the saving parameters (see below).
+                                                               - **Auto_header**, Frames are only saved when the
+                                                                 setImageHeader() is called in order to set
+                                                                 header information with image data.
+saving_directory             rw      DevString               The directory where to save the image files
+saving_prefix                rw      DevString               The image file prefix
+saving_suffix                rw      DevString               The image file suffix
+saving_next_number           rw      DevLong                 The image next number
+                                                             The full image file path is:
+                                                               /saving_directory/saving_prefix+sprintf("%04d",saving_next_number)+saving_suffix
+saving_format                rw      DevString               The data format for saving:
+                                                               - :code:`RAW`, save in binary format
+                                                               - :code:`EDF`, save in ESRF Data Format
+                                                               - :code:`EDFGZ` (or edf.gz), EDF with Deflate filter compression
+                                                               - :code:`EDFLZ4` (or edf.lz4), EDF with BS/LZ4 filter compression
+                                                               - :code:`TIFF`, The famous TIFF format
+                                                               - :code:`CBF`, save in CBF format (a compressed format for crystallography)
+                                                               - :code:`HDF5` save in Nexus HDF5 format
+                                                               - :code:`HDF5GZ` save in Nexus HDF5 format with Deflate filter compression
+                                                               - :code:`HDF5BS` save in Nexus HDF5 format with BS/LZ4 filter compression
+saving_overwrite_policy      rw      DevString               In case of existing files an overwite policy is mandatory:
+                                                               - **Abort**, if the file exists the saving is aborted
+                                                               - **Overwrite**, if the file exists it is overwritten
+                                                               - **Append**, if the file exists the image is append to the file
+saving_frame_per_file        rw      DevLong                 Number of frames saved in each file
+saving_common_header         rw      DevString[]             Common header with multiple entries
+saving_header_delimiter      rw      DevString[]             The header delimiters, [0] = key header delimiter, [1] = entry header delimiter, 
+                                                             [2] = image number header delimiter.
+                                                             Default : [0] = "=", [1] = "\n", [2] = ";"
+saving_max_writing_task      rw      DevShort                Set the max. tasks for saving file, default is 1
+saving_statistics            ro      DevDouble[]             Return stats: saving speed, compression ratio,
+                                                             compression speed and incoming speed (speed in byte/s)
+saving_statistics_history    rw      DevLong                 Set size of history for stats calculation, default is 16 frames
+saving_statistics_log_enable rw      DevBoolean              Enable the generation of the saving statistics log file
+saving_managed_mode          rw      DevString               On some detectors, saving can be managed by the hardware (SDK), you can switch
+                                                             the mode using these attribute values:
+                                                               - HARDWARE, lima will not manage the saving but set the camera to do the job
+                                                               - SOFTWARE, (default) Lima is managing the saving
+saving_every_n_frames        rw      DevLong                 If positive it does save frame every N frames, if negative it does NOT save every N 
+                                                             frames, for instance -2 means frames 0,2,4.. are not saved
+saving_use_hw_comp           rw      DevBoolean              Try to use the compressed image blob injected by the HW plugin (like the Dectris/Eiger)
+saving_zbuffer_<field>	     rw	     ...                     The allocation parameters for saving compression buffers
+============================ ======= ======================= =======================================================================================
 
 Image
 `````
