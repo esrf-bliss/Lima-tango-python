@@ -21,6 +21,8 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 ############################################################################
 
+from __future__ import annotations
+
 import sys
 import os
 import re
@@ -428,8 +430,10 @@ def _import(name):
     return sys.modules[name]
 
 
-def get_entry_point(group, name):
-    # try to find an extension using setuptools entry points
+def get_entry_point(group: str, name: str):
+    """
+    Try to find an extension using entry points.
+    """
     if pkg_resources is None:
         return None
     entry_points = tuple(pkg_resources.iter_entry_points(group, name))
@@ -440,7 +444,7 @@ def get_entry_point(group, name):
     return entry_points[0]
 
 
-def get_camera_module(name):
+def get_camera_module(name: str):
     """Returns the python module for the given camera type"""
     entry_point = get_entry_point("Lima_tango_camera", name)
     if entry_point is None:
@@ -450,7 +454,7 @@ def get_camera_module(name):
     return entry_point.load()
 
 
-def get_plugin_module(name):
+def get_plugin_module(name: str):
     """Returns the python module for the given plugin type"""
     entry_point = get_entry_point("Lima_tango_plugin", name)
     if entry_point is None:

@@ -21,11 +21,13 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 ############################################################################
 
+from __future__ import annotations
 
-def _init_module():
+
+def _init_module() -> list[str]:
     import os
 
-    plugins = []
+    plugins: list[str] = []
     for root, dirs, files in os.walk(__path__[0], followlinks=True):
         for file_name in files:
             if file_name.startswith("__"):
