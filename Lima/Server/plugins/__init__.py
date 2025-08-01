@@ -38,13 +38,23 @@ def _init_module() -> list[str]:
                 if subdir:
                     base = "%s.%s" % (subdir, base)
                 plugins.append(base)
+
+    # New way to import entry points
     try:
-        import pkg_resources
+        from importlib.metadata import entry_points
     except ImportError:
-        pass
+        # Old way to import entry points
+        try:
+            import pkg_resources
+        except ImportError:
+            pass
+        else:
+            for ep in pkg_resources.iter_entry_points("Lima_tango_plugin"):
+                plugins.append(ep.name)
     else:
-        for ep in pkg_resources.iter_entry_points("Lima_tango_plugin"):
-            plugins.append(ep.name)
+        eps = entry_points()
+        for entry_point in eps.select(group="Lima_tango_plugin"):
+            plugins.append(entry_point.value)
 
     return plugins
 

@@ -33,11 +33,6 @@ import functools
 
 import PyTango
 
-try:
-    import pkg_resources
-except ImportError:
-    pkg_resources = None
-
 
 ModDepend = ["Core", "Espia"]
 Debug = 0
@@ -434,8 +429,25 @@ def get_entry_point(group: str, name: str):
     """
     Try to find an extension using entry points.
     """
-    if pkg_resources is None:
+    try:
+        from importlib.metadata import entry_points
+    except ImportError:
+        pass
+    else:
+        eps = entry_points()
+        plugins = eps.select(group=group, name=name)
+        if not plugins:
+            return None
+        elif len(plugins) > 1:
+            raise ValueError("found more than one entry point matching {}".format(name))
+        return plugins[0]
+
+    # Here is the old way to import plugins
+    try:
+        import pkg_resources
+    except ImportError:
         return None
+
     entry_points = tuple(pkg_resources.iter_entry_points(group, name))
     if not entry_points:
         return None
