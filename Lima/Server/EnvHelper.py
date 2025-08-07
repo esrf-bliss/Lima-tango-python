@@ -21,6 +21,8 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 ############################################################################
 
+from __future__ import annotations
+
 import sys
 import os
 import re
@@ -30,11 +32,6 @@ import logging
 import functools
 
 import PyTango
-
-try:
-    import pkg_resources
-except ImportError:
-    pkg_resources = None
 
 
 ModDepend = ["Core", "Espia"]
@@ -428,10 +425,29 @@ def _import(name):
     return sys.modules[name]
 
 
-def get_entry_point(group, name):
-    # try to find an extension using setuptools entry points
-    if pkg_resources is None:
+def get_entry_point(group: str, name: str):
+    """
+    Try to find an extension using entry points.
+    """
+    try:
+        from importlib.metadata import entry_points
+    except ImportError:
+        pass
+    else:
+        eps = entry_points()
+        plugins = eps.select(group=group, name=name)
+        if not plugins:
+            return None
+        elif len(plugins) > 1:
+            raise ValueError("found more than one entry point matching {}".format(name))
+        return plugins[0]
+
+    # Here is the old way to import plugins
+    try:
+        import pkg_resources
+    except ImportError:
         return None
+
     entry_points = tuple(pkg_resources.iter_entry_points(group, name))
     if not entry_points:
         return None
@@ -440,7 +456,7 @@ def get_entry_point(group, name):
     return entry_points[0]
 
 
-def get_camera_module(name):
+def get_camera_module(name: str):
     """Returns the python module for the given camera type"""
     entry_point = get_entry_point("Lima_tango_camera", name)
     if entry_point is None:
@@ -450,7 +466,7 @@ def get_camera_module(name):
     return entry_point.load()
 
 
-def get_plugin_module(name):
+def get_plugin_module(name: str):
     """Returns the python module for the given plugin type"""
     entry_point = get_entry_point("Lima_tango_plugin", name)
     if entry_point is None:
