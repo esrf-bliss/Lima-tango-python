@@ -507,7 +507,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         self.__Attribute2FunctionBase = {
             "acq_trigger_mode": "TriggerMode",
             "saving_managed_mode": "ManagedMode",
-            "shutter_mode": "Mode",
             "image_rotation": "Rotation",
             "image_bin_mode": "BinMode",
             "video_mode": "Mode",
@@ -1581,6 +1580,23 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             state = "NO_MANUAL_MODE"
 
         attr.set_value(state)
+
+    ## @brief Read shutter mode 
+    @Core.DEB_MEMBER_FUNCT
+    def read_shutter_mode(self, attr):
+        shutter = self.__control.shutter()
+        value = shutter.getMode()
+        mode = getDictKey(self.__ShutterMode, value)
+        attr.set_value(mode)
+
+    ## @brief Write shutter mode 
+    @Core.DEB_MEMBER_FUNCT
+    def write_shutter_mode(self, attr):
+        data = attr.get_write_value()
+        shutter = self.__control.shutter()
+
+        mode = self.__ShutterMode[data.upper()]
+        shutter.setMode(mode)
 
     ## @brief Read shutter open time
     # True-Open, False-Close
