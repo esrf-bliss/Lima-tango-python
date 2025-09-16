@@ -984,7 +984,9 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     @core.DEB_MEMBER_FUNCT
     def read_acq_status(self, attr):
         status = self.__control.getStatus()
-        attr.set_value(_acqstate2string(status.AcquisitionStatus))
+        value = _acqstate2string(status.AcquisitionStatus)
+        attr.set_value(value)
+        deb.Return("acq_status=%s" % value)
 
     ## @brief get the errir message when acq_status is in Fault stat
     #
@@ -1425,6 +1427,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
         value = img_counters.LastImageAcquired
         attr.set_value(value)
+        deb.Return("last_image_acquired=%s" % value)
 
     ## @brief last base image acquired
     #
@@ -1435,6 +1438,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
         value = img_counters.LastBaseImageReady
         attr.set_value(value)
+        deb.Return("last_base_image_ready=%s" % value)
 
     ## @brief Read last image ready
     #
@@ -1446,6 +1450,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         value = img_counters.LastImageReady
 
         attr.set_value(value)
+        deb.Return("last_image_ready=%s" % value)
 
     ## @brief last counter ready
     #
@@ -1457,6 +1462,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         value = img_counters.LastCounterReady
 
         attr.set_value(value)
+        deb.Return("last_counter_ready=%s" % value)
 
     ## @brief Read last image saved
     #
@@ -1470,6 +1476,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             value = -1
 
         attr.set_value(value)
+        deb.Return("last_image_saved=%s" % value)
 
     ## @brief get if last_image attr pushes events
     #
