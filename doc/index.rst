@@ -503,6 +503,14 @@ Attribute name		    RW	    Type		    Description
 buffer_alloc_<field>	    rw	    ...			    The allocation parameters for HW plugin buffers
 buffer_max_number	    ro	    DevLong		    The maximum number of image buffers that can be allocated for the frame size,
 			   		   		    limiting the depth of the frame history available for (asynchronous) saving and read
+buffer_info		    ro	    DevString[]		    Information on the internal buffer subsystems, in the form of "<key>=<value>".
+                                                            Currently implemented keys are:
+							    "hw_max_number":      max. nb. of frames in the HW camera plugin buffers
+							    "acc_max_number":     max. nb. of frames in the Accumulation buffers (if active)
+							    "std_max_number":     max. nb. of frames in standard buffers (only Int. Soft. Op.)
+							    "ext_op_max_number":  max. nb. of frames in Ext. Soft. Op. buffers
+							    "readout_max_number": max. nb. of frames in RAM buffers available for asynch. readout
+							    "saving_max_number":  max. nb. of frames in saving compression buffers
 =========================== ======= ======================= =======================================================================================
 
 Plugin
