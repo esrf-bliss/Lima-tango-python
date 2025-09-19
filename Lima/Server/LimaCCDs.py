@@ -508,7 +508,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             "image_rotation": "Rotation",
             "image_bin_mode": "BinMode",
             "video_mode": "Mode",
-            "buffer_max_number": "MaxNumber",
             "acc_mode": "Mode",
             "acc_filter": "Filter",
             "acc_operation": "Operation",
@@ -2039,6 +2038,13 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         out = ["%s=%d" % x for x in buffer_info.items()]
         deb.Return("buffer_info=%s" % out)
         attr.set_value(out)
+
+    @Core.DEB_MEMBER_FUNCT
+    def read_buffer_max_number(self, attr):
+        buffer_info = self._get_buffer_info()
+        readout_max_number = buffer_info["readout_max_number"]
+        deb.Return("readout_max_number=%s" % readout_max_number)
+        attr.set_value(readout_max_number)
 
     # ==================================================================
     #
