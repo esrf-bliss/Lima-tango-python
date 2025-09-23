@@ -41,7 +41,6 @@ Roi2SpectrumTask = Core.Processlib.Tasks.Roi2SpectrumTask
 
 
 class Roi2spectrumDeviceServer(BasePostProcess):
-
     # --------- Add you global variables here --------------------------
     ROI_SPECTRUM_TASK_NAME = "Roi2SpectrumTask"
     Core.DEB_CLASS(Core.DebModApplication, "Roi2spectrumDeviceServer")
@@ -116,8 +115,8 @@ class Roi2spectrumDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     @Core.DEB_MEMBER_FUNCT
     def read_MaskFile(self, attr):
-        if self._maskFile is not None:
-            attr.set_value(self._maskFile)
+        if self.__maskFile is not None:
+            attr.set_value(self.__maskFile)
         else:
             attr.set_value("")
 
@@ -241,14 +240,14 @@ class Roi2spectrumDeviceServer(BasePostProcess):
                 raise ValueError(f"Could read mask from {argin}")
             self.__maskData = data
             self.__maskFile = argin
-            if self.__roiCounterMgr is not None:
+            if self.__roi2spectrumMgr is not None:
                 self.__roi2spectrumMgr.setMask(self.__maskData)
         else:
             if self.__maskData is not None:
                 # reset the mask if needed
-                if self.__roiCounterMgr is not None:
+                if self.__roi2spectrumMgr is not None:
                     emptyData = Core.Processlib.Data()
-                    self.__roiCounterMgr.setMask(emptyData)
+                    self.__roi2spectrumMgr.setMask(emptyData)
             self.__maskData = None
             self.__maskFile = None
 
@@ -278,7 +277,6 @@ class Roi2spectrumDeviceServer(BasePostProcess):
 #
 # ==================================================================
 class Roi2spectrumDeviceServerClass(PyTango.DeviceClass):
-
     # 	 Class Properties
     class_property_list = {}
 

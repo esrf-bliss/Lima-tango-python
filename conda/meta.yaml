@@ -29,8 +29,8 @@ requirements:
     - setuptools
     - setuptools_scm
   run:
-    - lima-core
-    - pytango
+    - lima-core 1.10*
+    - pytango 10*
     - pillow # Required by the Bpm plugin
     - pyturbojpeg # Required by the Bpm plugin
     - pymemcache # Required by the Memcached plugin
