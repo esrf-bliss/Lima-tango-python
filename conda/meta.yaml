@@ -29,7 +29,7 @@ requirements:
     - setuptools
     - setuptools_scm
   run:
-    - {{ pin_compatible('lima-core', min_pin='x.x', max_pin='x.x') }}
+    - lima-core {{ version.split('.')[:2]|join('.') }}
     - pytango 10*
     - pillow # Required by the Bpm plugin
     - pyturbojpeg # Required by the Bpm plugin
