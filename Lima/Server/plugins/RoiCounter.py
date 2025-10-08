@@ -62,28 +62,8 @@ class RoiCounterDeviceServer(BasePostProcess):
         RoiCounterDeviceServer.init_device(self)
         self.setMaskFile(self.MaskFile)
 
-        try:
-            ctControl = _control_ref()
-            config = ctControl.config()
-
-            class _RoiConfigSave(Core.CtConfig.ModuleTypeCallback):
-                def __init__(self, cnt):
-                    Core.CtConfig.ModuleTypeCallback.__init__(self, b"RoiCounters")
-                    self.__cnt = weakref.ref(cnt)
-
-                def store(self):
-                    cnt = self.__cnt()
-                    return cnt.get_current_config()
-
-                def restore(self, c):
-                    cnt = self.__cnt()
-                    cnt.apply_config(c)
-
-            self.__roiConfigsave = _RoiConfigSave(self)
-            config.registerModule(self.__roiConfigsave)
-        except AttributeError:
-            pass
-
+        ctControl = _control_ref()
+        
     def set_state(self, state):
         if state == PyTango.DevState.OFF:
             if self.__roiCounterMgr:
@@ -292,105 +272,6 @@ class RoiCounterDeviceServer(BasePostProcess):
 
         roi_list_flat = list(itertools.chain(*roi_list))
         return numpy.array(roi_list_flat, numpy.float64)
-
-    def get_current_config(self):
-        try:
-            returnDict = {}
-            if self.__roiCounterMgr:
-                returnDict["active"] = True
-                returnDict["runLevel"] = self._runLevel
-                for name, roiTask in self.__roiCounterMgr.getTasks():
-                    rType = roiTask.getType()
-                    if rType == roiTask.SQUARE:
-                        x, y, width, height = roiTask.getRoi()
-                        returnDict[name] = {
-                            "type": rType,
-                            "x": x,
-                            "y": y,
-                            "width": width,
-                            "height": height,
-                        }
-                    elif rType == roiTask.ARC:
-                        x, y, r1, r2, a1, a2 = roiTask.getArcRoi()
-                        returnDict[name] = {
-                            "type": rType,
-                            "x": x,
-                            "y": y,
-                            "r1": r1,
-                            "r2": r2,
-                            "a1": a1,
-                            "a2": a2,
-                        }
-                    else:
-                        if rType == roiTask.LUT:
-                            x, y, data = roiTask.getLut()
-                        else:
-                            x, y, data = roiTask.getLutMask()
-                        returnDict[name] = {"type": rType, "x": x, "y": y, "data": data}
-            else:
-                returnDict["active"] = False
-            return returnDict
-        except:
-            import traceback
-
-            traceback.print_exc()
-
-    def apply_config(self, c):
-        try:
-            active = c.get("active", False)
-            self.Stop()
-            if active:
-                self._runLevel = c.get("runLevel", 0)
-                self.Start()
-                namedRois = []
-                names = []
-                for name, d in c.iteritems():
-                    try:
-                        if isinstance(d, dict):
-                            rType = d.get("type", None)
-                            if rType == RoiCounterTask.SQUARE:
-                                x = d["x"]
-                                y = d["y"]
-                                width = d["width"]
-                                height = d["height"]
-                                namedRois.append((name, Core.Roi(x, y, width, height)))
-                            elif rType == RoiCounterTask.ARC:
-                                x = d["x"]
-                                y = d["y"]
-                                r1 = d["r1"]
-                                r2 = d["r2"]
-                                a1 = d["a1"]
-                                a2 = d["a2"]
-                                namedRois.append(
-                                    (name, Core.ArcRoi(x, y, r1, r2, a1, a2))
-                                )
-                            elif rType == RoiCounterTask.MASK:
-                                x = d["x"]
-                                y = d["y"]
-                                data = d["data"]
-                                self.__roiCounterMgr.setLutMask(
-                                    name, Core.Point(x, y), data
-                                )
-                            elif rType == RoiCounterTask.LUT:
-                                x = d["x"]
-                                y = d["y"]
-                                data = d["data"]
-                                self.__roiCounterMgr.setLut(
-                                    name, Core.Point(x, y), data
-                                )
-                            names.append(name)
-                    except KeyError as err:
-                        PyTango.Except.throw_exception(
-                            "Config error",
-                            "Missing key %s in roi named %s" % (err, name),
-                            "RoiCounterDeviceServer Class",
-                        )
-                self.__roiCounterMgr.updateRois(namedRois)
-                self.add(names)
-        except:
-            import traceback
-
-            traceback.print_exc()
 
     def clearAllRois(self):
         if self.__roiCounterMgr:
