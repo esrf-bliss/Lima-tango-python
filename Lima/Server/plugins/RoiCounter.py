@@ -34,7 +34,7 @@ def grouper(n, iterable, padvalue=None):
     return zip(*[itertools.chain(iterable, itertools.repeat(padvalue, n - 1))] * n)
 
 
-RoiCounterTask = Core.Processlib.Tasks.RoiCounterTask
+RoiCounter = Core.Processlib.Tasks.RoiCounter
 
 # ==================================================================
 #   RoiCounter Class Description:
@@ -46,7 +46,7 @@ RoiCounterTask = Core.Processlib.Tasks.RoiCounterTask
 class RoiCounterDeviceServer(BasePostProcess):
 
     # --------- Add you global variables here --------------------------
-    ROI_COUNTER_TASK_NAME = "RoiCounterTask"
+    ROI_COUNTER_TASK_NAME = "RoiCounter"
     # ------------------------------------------------------------------
     #    Device constructor
     # ------------------------------------------------------------------
@@ -83,8 +83,7 @@ class RoiCounterDeviceServer(BasePostProcess):
                     self.__roiCounterMgr.setMask(self.__maskData)
                 self.__roiCounterMgr.setOverflowThreshold(self.__overflowThl)
 
-            self.__roiCounterMgr.clearCounterStatus()
-
+ 
         PyTango.LatestDeviceImpl.set_state(self, state)
 
     # ------------------------------------------------------------------
@@ -185,7 +184,7 @@ class RoiCounterDeviceServer(BasePostProcess):
             for roi_id, x, y, width, height in grouper(5, argin):
                 roi_name = self.__roiID2Name.get(roi_id, None)
                 if roi_name is None:
-                    raise RuntimeError("should call add method before setRoi")
+                    raise RuntimeError("should call add method before setRois")
                 roi_list.append((roi_name.encode(), Core.Roi(x, y, width, height)))
             self.__roiCounterMgr.updateRois(roi_list)
         else:
@@ -202,7 +201,7 @@ class RoiCounterDeviceServer(BasePostProcess):
             for roi_id, x, y, r1, r2, start, end in grouper(7, argin):
                 roi_name = self.__roiID2Name.get(roi_id)
                 if roi_name is None:
-                    raise RuntimeError("should call add method before setRoi")
+                    raise RuntimeError("should call add method before setArcRois")
                 arc_list.append((roi_name, Core.ArcRoi(x, y, r1, r2, start, end)))
             self.__roiCounterMgr.updateArcRois(arc_list)
         else:
@@ -227,10 +226,10 @@ class RoiCounterDeviceServer(BasePostProcess):
             else:
                 raise ValueError("Roi %s not defined yet" % roi_name)
             roi_type_map = {
-                RoiCounterTask.SQUARE: "SQUARE",
-                RoiCounterTask.ARC: "ARC",
-                RoiCounterTask.MASK: "MASK",
-                RoiCounterTask.LUT: "LUT",
+                RoiCounter.SQUARE: "SQUARE",
+                RoiCounter.ARC: "ARC",
+                RoiCounter.MASK: "MASK",
+                RoiCounter.LUT: "LUT",
             }
             roi_type_list.append(roi_type_map[roi_type])
         return roi_type_list
