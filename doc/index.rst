@@ -635,6 +635,7 @@ For more details about the camera device interface, please have a look on the fo
   Roper Scientific <../../../../camera/roperscientific/doc/tango>
   Simulator <../../../../camera/simulator/doc/tango>
   SlsDetector <../../../../camera/slsdetector/doc/tango>
+  SVCam <../../../../camera/svcam/doc/tango>
   Ueye <../../../../camera/ueye/doc/tango>
   Ultra <../../../../camera/ultra/doc/tango>
   V4l2 <../../../../camera/v4l2/doc/tango>
