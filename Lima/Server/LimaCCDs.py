@@ -751,6 +751,11 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             is_not = (SystemHasFeature(feature) and "is") or "is not"
             deb.Trace("Feature %s %s present" % (feature, is_not))
 
+        # Setup the BufferMallocTrimPad
+        if SystemHasFeature("Core.CtBuffer.setMallocTrimPad"):
+            buffer = self.__control.buffer()
+            buffer.setMallocTrimPad(self.BufferMallocTrimPad)
+
         # Add shutter capability related attributes if supported
         if self.__control.shutter().hasCapability():
             self.add_attribute(
@@ -2516,6 +2521,11 @@ class LimaCCDsClass(PyTango.DeviceClass):
             "HW Buffer alloc. params: "
             "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0.0-100.0> [default: <initMem=1, reqMemSizePercent=70.0>]",
             [""],
+        ],
+        "BufferMallocTrimPad": [
+            PyTango.DevULong64,
+            "Pad parameter passed to malloc_trim after buffer alloc",
+            [0],
         ],
         "TangoEvent": [PyTango.DevBoolean, "Activate Tango event", [False]],
         "SavingMaxConcurrentWritingTask": [
