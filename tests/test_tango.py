@@ -32,10 +32,10 @@ class MockedLimaCCDs(LimaCCDs.LimaCCDs):
                 setattr(self, k, v)
         for k, v in properties.items():
             setattr(self, k, v)
-        with mock.patch('PyTango.LatestDeviceImpl.__init__'):
-            with mock.patch('PyTango.Database'):
-                with mock.patch('lima.server.LimaCCDs._get_control') as control:
-                    super(MockedLimaCCDs, self).__init__()
+        with mock.patch("PyTango.LatestDeviceImpl.__init__"):
+            with mock.patch("PyTango.Database"):
+                with mock.patch("Lima.Server.LimaCCDs._get_control") as control:
+                    super().__init__()
 
     def add_attribute(self, prop, getter, setter):
         pass
