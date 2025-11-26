@@ -508,7 +508,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             "image_rotation": "Rotation",
             "image_bin_mode": "BinMode",
             "video_mode": "Mode",
-            "buffer_max_number": "MaxNumber",
             "acc_mode": "Mode",
             "acc_filter": "Filter",
             "acc_operation": "Operation",
@@ -1999,6 +1998,54 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         setattr(buffer_param, param_name, val)
         setter(buffer_param)
 
+    @Core.DEB_MEMBER_FUNCT
+    def _get_buffer_info(self):
+        info_keys = [
+            "hw_max_number",
+            "acc_max_number",
+            "std_max_number",
+            "ext_op_max_number",
+            "readout_max_number",
+            "saving_max_number",
+        ]
+        buffer_info = {k: 0 for k in info_keys}
+
+        buffer = self.__control.buffer()
+        saving = self.__control.saving()
+        extOp = self.__control.externalOperation()
+
+        buffer_info["hw_max_number"] = buffer.getMaxHwNumber()
+        buffer_info["acc_max_number"] = buffer.getMaxAccNumber()
+        buffer_info["std_max_number"] = buffer.getMaxNumber()
+        buffer_info["readout_max_number"] = buffer_info["std_max_number"]
+
+        link_task_act, sink_task_act = extOp.isTaskActive()
+        if link_task_act:
+            buffer_info["ext_op_max_number"] = 16
+            buffer_info["readout_max_number"] = buffer_info["ext_op_max_number"]
+
+        if SystemHasFeature("Core.CtSaving.getNbZBuffers"):
+            buffer_info["saving_max_number"] = saving.getNbZBuffers()
+        if buffer_info["saving_max_number"] == 0:
+            buffer_info["saving_max_number"] = buffer_info["std_max_number"]
+
+        deb.Return("buffer_info=%s" % buffer_info)
+        return buffer_info
+
+    @Core.DEB_MEMBER_FUNCT
+    def read_buffer_info(self, attr):
+        buffer_info = self._get_buffer_info()
+        out = ["%s=%d" % x for x in buffer_info.items()]
+        deb.Return("buffer_info=%s" % out)
+        attr.set_value(out)
+
+    @Core.DEB_MEMBER_FUNCT
+    def read_buffer_max_number(self, attr):
+        buffer_info = self._get_buffer_info()
+        readout_max_number = buffer_info["readout_max_number"]
+        deb.Return("readout_max_number=%s" % readout_max_number)
+        attr.set_value(readout_max_number)
+
     # ==================================================================
     #
     #    LimaCCDs command methods
@@ -2847,6 +2894,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
             [PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "buffer_max_number": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ]],
+        "buffer_info": [[PyTango.DevString, PyTango.SPECTRUM, PyTango.READ, 16]],
         "shutter_ctrl_is_available": [
             [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ]
         ],
