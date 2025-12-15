@@ -109,8 +109,7 @@ class MaskDeviceServer(BasePostProcess):
 
     @Core.DEB_MEMBER_FUNCT
     def setMaskFile(self, filepath):
-        """ new command to fit with other correction plugin api
-        """
+        """new command to fit with other correction plugin api"""
         self.setMaskImage(filepath)
 
     # ------------------------------------------------------------------

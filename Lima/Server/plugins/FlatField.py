@@ -122,8 +122,7 @@ class FlatfieldDeviceServer(BasePostProcess):
 
     @Core.DEB_MEMBER_FUNCT
     def setFlatFieldFile(self, filepath):
-        """ new command to fit with other correction plugin api
-        """
+        """new command to fit with other correction plugin api"""
         self.setFlatFieldImage(filepath)
 
 

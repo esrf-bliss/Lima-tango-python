@@ -160,12 +160,10 @@ VALUES = 2
 
 
 class Image(object):
-    """
-    """
+    """ """
 
     def __init__(self):
-        """ Constructor
-        """
+        """Constructor"""
         self.Header = {}
         self.StaticHeader = {}
         self.HeaderPosition = 0
@@ -179,11 +177,10 @@ class Image(object):
 
 
 class EdfFile(object):
-    """
-    """
+    """ """
 
     def __init__(self, FileName, access=None, fastedf=None):
-        """ Constructor
+        """Constructor
 
         :param FileName: Name of the file (either existing or to be created)
         :type FileName: string
@@ -419,7 +416,7 @@ class EdfFile(object):
             header_keys = []
             header = {}
             try:
-                """ read an adsc header """
+                """read an adsc header"""
                 line = infile.readline()
                 bytesread = len(line)
                 while "}" not in line:
@@ -546,8 +543,7 @@ class EdfFile(object):
         self.Images[Index].StaticHeader["DataType"] = self.Images[Index].DataType
 
     def GetNumImages(self):
-        """ Returns number of images of the object (and associated file)
-        """
+        """Returns number of images of the object (and associated file)"""
         return self.NumImages
 
     def GetData(self, *var, **kw):
@@ -558,34 +554,34 @@ class EdfFile(object):
             self.__makeSureFileIsClosed()
 
     def _GetData(self, Index, DataType="", Pos=None, Size=None):
-        """ Returns numpy array with image data
-            Index:          The zero-based index of the image in the file
-            DataType:       The edf type of the array to be returnd
-                            If ommited, it is used the default one for the type
-                            indicated in the image header
-                            Attention to the absence of UnsignedShort,
-                            UnsignedInteger and UnsignedLong types in
-                            Numpy Python
-                            Default relation between Edf types and NumPy's typecodes:
-                                SignedByte          int8   b
-                                UnsignedByte        uint8  B
-                                SignedShort         int16  h
-                                UnsignedShort       uint16 H
-                                SignedInteger       int32  i
-                                UnsignedInteger     uint32 I
-                                SignedLong          int32  i
-                                UnsignedLong        uint32 I
-                                Signed64            int64  (l in 64bit, q in 32 bit)
-                                Unsigned64          uint64 (L in 64bit, Q in 32 bit)
-                                FloatValue          float32 f
-                                DoubleValue         float64 d
-            Pos:            Tuple (x) or (x,y) or (x,y,z) that indicates the begining
-                            of data to be read. If ommited, set to the origin (0),
-                            (0,0) or (0,0,0)
-            Size:           Tuple, size of the data to be returned as x) or (x,y) or
-                            (x,y,z) if ommited, is the distance from Pos to the end.
+        """Returns numpy array with image data
+        Index:          The zero-based index of the image in the file
+        DataType:       The edf type of the array to be returnd
+                        If ommited, it is used the default one for the type
+                        indicated in the image header
+                        Attention to the absence of UnsignedShort,
+                        UnsignedInteger and UnsignedLong types in
+                        Numpy Python
+                        Default relation between Edf types and NumPy's typecodes:
+                            SignedByte          int8   b
+                            UnsignedByte        uint8  B
+                            SignedShort         int16  h
+                            UnsignedShort       uint16 H
+                            SignedInteger       int32  i
+                            UnsignedInteger     uint32 I
+                            SignedLong          int32  i
+                            UnsignedLong        uint32 I
+                            Signed64            int64  (l in 64bit, q in 32 bit)
+                            Unsigned64          uint64 (L in 64bit, Q in 32 bit)
+                            FloatValue          float32 f
+                            DoubleValue         float64 d
+        Pos:            Tuple (x) or (x,y) or (x,y,z) that indicates the begining
+                        of data to be read. If ommited, set to the origin (0),
+                        (0,0) or (0,0,0)
+        Size:           Tuple, size of the data to be returned as x) or (x,y) or
+                        (x,y,z) if ommited, is the distance from Pos to the end.
 
-            If Pos and Size not mentioned, returns the whole data.
+        If Pos and Size not mentioned, returns the whole data.
         """
         fastedf = self.fastedf
         if Index < 0 or Index >= self.NumImages:
@@ -730,9 +726,9 @@ class EdfFile(object):
         return Data
 
     def GetPixel(self, Index, Position):
-        """ Returns double value of the pixel, regardless the format of the array
-            Index:      The zero-based index of the image in the file
-            Position:   Tuple with the coordinete (x), (x,y) or (x,y,z)
+        """Returns double value of the pixel, regardless the format of the array
+        Index:      The zero-based index of the image in the file
+        Position:   Tuple with the coordinete (x), (x,y) or (x,y,z)
         """
         if Index < 0 or Index >= self.NumImages:
             raise ValueError("EdfFile: Index out of limit")
@@ -760,11 +756,11 @@ class EdfFile(object):
         return Data[0]
 
     def GetHeader(self, Index):
-        """ Returns dictionary with image header fields.
-            Does not include the basic fields (static) defined by data shape,
-            type and file position. These are get with GetStaticHeader
-            method.
-            Index:          The zero-based index of the image in the file
+        """Returns dictionary with image header fields.
+        Does not include the basic fields (static) defined by data shape,
+        type and file position. These are get with GetStaticHeader
+        method.
+        Index:          The zero-based index of the image in the file
         """
         if Index < 0 or Index >= self.NumImages:
             raise ValueError("Index out of limit")
@@ -775,10 +771,10 @@ class EdfFile(object):
         return ret
 
     def GetStaticHeader(self, Index):
-        """ Returns dictionary with static parameters
-            Data format and file position dependent information
-            (dim1,dim2,size,datatype,byteorder,headerId,Image)
-            Index:          The zero-based index of the image in the file
+        """Returns dictionary with static parameters
+        Data format and file position dependent information
+        (dim1,dim2,size,datatype,byteorder,headerId,Image)
+        Index:          The zero-based index of the image in the file
         """
         if Index < 0 or Index >= self.NumImages:
             raise ValueError("Index out of limit")
@@ -796,37 +792,37 @@ class EdfFile(object):
             self.__makeSureFileIsClosed()
 
     def _WriteImage(self, Header, Data, Append=1, DataType="", ByteOrder=""):
-        """ Writes image to the file.
-            Header:         Dictionary containing the non-static header
-                            information (static information is generated
-                            according to position of image and data format
-            Append:         If equals to 0, overwrites the file. Otherwise, appends
-                            to the end of the file
-            DataType:       The data type to be saved to the file:
-                                SignedByte
-                                UnsignedByte
-                                SignedShort
-                                UnsignedShort
-                                SignedInteger
-                                UnsignedInteger
-                                SignedLong
-                                UnsignedLong
-                                FloatValue
-                                DoubleValue
-                            Default: according to Data array typecode:
-                                    1:  SignedByte
-                                    b:  UnsignedByte
-                                    s:  SignedShort
-                                    w:  UnsignedShort
-                                    i:  SignedInteger
-                                    l:  SignedLong
-                                    u:  UnsignedLong
-                                    f:  FloatValue
-                                    d:  DoubleValue
-            ByteOrder:      Byte order of the data in file:
-                                HighByteFirst
-                                LowByteFirst
-                            Default: system's byte order
+        """Writes image to the file.
+        Header:         Dictionary containing the non-static header
+                        information (static information is generated
+                        according to position of image and data format
+        Append:         If equals to 0, overwrites the file. Otherwise, appends
+                        to the end of the file
+        DataType:       The data type to be saved to the file:
+                            SignedByte
+                            UnsignedByte
+                            SignedShort
+                            UnsignedShort
+                            SignedInteger
+                            UnsignedInteger
+                            SignedLong
+                            UnsignedLong
+                            FloatValue
+                            DoubleValue
+                        Default: according to Data array typecode:
+                                1:  SignedByte
+                                b:  UnsignedByte
+                                s:  SignedShort
+                                w:  UnsignedShort
+                                i:  SignedInteger
+                                l:  SignedLong
+                                u:  UnsignedLong
+                                f:  FloatValue
+                                d:  DoubleValue
+        ByteOrder:      Byte order of the data in file:
+                            HighByteFirst
+                            LowByteFirst
+                        Default: system's byte order
         """
         if Append == 0:
             self.File.truncate(0)
@@ -951,13 +947,11 @@ class EdfFile(object):
         return
 
     def __GetDefaultNumpyType__(self, EdfType, index=None):
-        """ Internal method: returns NumPy type according to Edf type
-        """
+        """Internal method: returns NumPy type according to Edf type"""
         return self.GetDefaultNumpyType(EdfType, index)
 
     def __GetDefaultEdfType__(self, NumpyType):
-        """ Internal method: returns Edf type according Numpy type
-        """
+        """Internal method: returns Edf type according Numpy type"""
         if NumpyType in ["b", numpy.int8]:
             return "SignedByte"
         elif NumpyType in ["B", numpy.uint8]:
@@ -992,8 +986,7 @@ class EdfFile(object):
             raise TypeError("unknown NumpyType %s" % NumpyType)
 
     def __GetSizeNumpyType__(self, NumpyType):
-        """ Internal method: returns size of NumPy's Array Types
-        """
+        """Internal method: returns size of NumPy's Array Types"""
         if NumpyType in ["b", numpy.int8]:
             return 1
         elif NumpyType in ["B", numpy.uint8]:
@@ -1032,8 +1025,7 @@ class EdfFile(object):
             raise TypeError("unknown NumpyType %s" % NumpyType)
 
     def __SetDataType__(self, Array, DataType):
-        """ Internal method: array type convertion
-        """
+        """Internal method: array type convertion"""
         # AVOID problems not using FromEdfType= Array.dtype.char
         FromEdfType = Array.dtype
         ToEdfType = self.__GetDefaultNumpyType__(DataType)
@@ -1049,8 +1041,7 @@ class EdfFile(object):
             pass
 
     def GetDefaultNumpyType(self, EdfType, index=None):
-        """ Returns NumPy type according Edf type
-        """
+        """Returns NumPy type according Edf type"""
         if index is None:
             return GetDefaultNumpyType(EdfType)
         EdfType = EdfType.upper()
@@ -1088,8 +1079,7 @@ class EdfFile(object):
 
 
 def GetDefaultNumpyType(EdfType):
-    """ Returns NumPy type according Edf type
-    """
+    """Returns NumPy type according Edf type"""
     EdfType = EdfType.upper()
     if EdfType == "SIGNEDBYTE":
         return numpy.int8  # "b"
@@ -1122,10 +1112,10 @@ def GetDefaultNumpyType(EdfType):
 
 
 def SetDictCase(Dict, Case, Flag):
-    """ Returns dictionary with keys and/or values converted into upper or lowercase
-        Dict:   input dictionary
-        Case:   LOWER_CASE, UPPER_CASE
-        Flag:   KEYS, VALUES or KEYS | VALUES
+    """Returns dictionary with keys and/or values converted into upper or lowercase
+    Dict:   input dictionary
+    Case:   LOWER_CASE, UPPER_CASE
+    Flag:   KEYS, VALUES or KEYS | VALUES
     """
     newdict = {}
     for i in Dict.keys():
@@ -1147,9 +1137,9 @@ def SetDictCase(Dict, Case, Flag):
 
 def GetRegion(Arr, Pos, Size):
     """Returns array with refion of Arr.
-       Arr must be 1d, 2d or 3d
-       Pos and Size are tuples in the format (x) or (x,y) or (x,y,z)
-       Both parameters must have the same size as the dimention of Arr
+    Arr must be 1d, 2d or 3d
+    Pos and Size are tuples in the format (x) or (x,y) or (x,y,z)
+    Both parameters must have the same size as the dimention of Arr
     """
     Dim = len(Arr.shape)
     if len(Pos) != Dim:

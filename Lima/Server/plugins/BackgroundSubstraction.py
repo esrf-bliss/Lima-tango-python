@@ -159,8 +159,7 @@ class BackgroundSubstractionDeviceServer(BasePostProcess):
 
     @Core.DEB_MEMBER_FUNCT
     def setBackgroundFile(self, filepath):
-        """ new command to fit with other correction plugin api
-        """
+        """new command to fit with other correction plugin api"""
         self.setBackgroundImage(filepath)
 
     @Core.DEB_MEMBER_FUNCT

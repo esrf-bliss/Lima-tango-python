@@ -708,9 +708,17 @@ def construct_bvdata(bpm):
     # just read the last image
     image = _control_ref().ReadImage()
 
-    last_acq_time, last_x, last_y, last_intensity, last_fwhm_x, last_fwhm_y, last_max_intensity, last_proj_x, last_proj_y = bpm.get_bpm_result(
-        image.frameNumber, image.timestamp
-    )
+    (
+        last_acq_time,
+        last_x,
+        last_y,
+        last_intensity,
+        last_fwhm_x,
+        last_fwhm_y,
+        last_max_intensity,
+        last_proj_x,
+        last_proj_y,
+    ) = bpm.get_bpm_result(image.frameNumber, image.timestamp)
     lima_roi = _control_ref().image().getRoi()
     roi_top_left = lima_roi.getTopLeft()
     roi_size = lima_roi.getSize()
@@ -743,7 +751,7 @@ def construct_bvdata(bpm):
     # scale the image to the whole range 16bit before palette transformation for 0 to 65535
     if max_val == min_val:
         max_val += 1
-    scaling = (2 ** 16 - 1.) / (max_val - min_val)
+    scaling = (2**16 - 1.0) / (max_val - min_val)
     scale_image = ((scale_image - min_val) * scaling).astype(numpy.uint16)
 
     # last transformation ot color or greys palette
