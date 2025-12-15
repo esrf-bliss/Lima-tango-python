@@ -51,10 +51,11 @@ class AcqCallback(Core.SoftCallback):
 
 
 class RoiCollectionDeviceServer(BasePostProcess):
-    Core.DEB_CLASS(Core.DebModApplication, "RoiCollectionDeviceServer")
+    Core.DEB_CLASS(Core.DebModule.DebModApplication, "RoiCollectionDeviceServer")
 
     # --------- Add you global variables here --------------------------
     ROI_COLLECTION_TASK_NAME = "RoiCollectionTask"
+
     # ------------------------------------------------------------------
     #    Device constructor
     # ------------------------------------------------------------------
@@ -230,7 +231,7 @@ class RoiCollectionDeviceServer(BasePostProcess):
 #
 # ==================================================================
 class RoiCollectionDeviceServerClass(PyTango.DeviceClass):
-    Core.DEB_CLASS(Core.DebModApplication, "RoiCollectionDeviceServerClass")
+    Core.DEB_CLASS(Core.DebModule.DebModApplication, "RoiCollectionDeviceServerClass")
     # 	 Class Properties
     class_property_list = {}
 

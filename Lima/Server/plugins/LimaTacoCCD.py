@@ -48,8 +48,6 @@ import PyTango
 
 from Lima import Core
 
-import processlib
-
 import numpy
 
 DevCcdBase = 0xC180000
@@ -100,7 +98,7 @@ DevErrCcdProcessImage = DevCcdBase + 13
 
 class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
 
-    Core.DEB_CLASS(Core.DebModApplication, "LimaTacoCCDs")
+    Core.DEB_CLASS(Core.DebModule.DebModApplication, "LimaTacoCCDs")
 
     # --------- Add you global variables here --------------------------
     LiveDisplay = 1
@@ -112,18 +110,18 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
     LiveNbConcatFrames = 16
 
     ImageType2DataArrayType = {
-        Core.Bpp8: 0,
-        Core.Bpp10: 1,
-        Core.Bpp12: 1,
-        Core.Bpp14: 1,
-        Core.Bpp16: 1,
-        Core.Bpp32: 2,
-        Core.Bpp8S: 4,
-        Core.Bpp10S: 5,
-        Core.Bpp12S: 5,
-        Core.Bpp14S: 5,
-        Core.Bpp16S: 5,
-        Core.Bpp32S: 6,
+        Core.ImageType.Bpp8: 0,
+        Core.ImageType.Bpp10: 1,
+        Core.ImageType.Bpp12: 1,
+        Core.ImageType.Bpp14: 1,
+        Core.ImageType.Bpp16: 1,
+        Core.ImageType.Bpp32: 2,
+        Core.ImageType.Bpp8S: 4,
+        Core.ImageType.Bpp10S: 5,
+        Core.ImageType.Bpp12S: 5,
+        Core.ImageType.Bpp14S: 5,
+        Core.ImageType.Bpp16S: 5,
+        Core.ImageType.Bpp32S: 6,
     }
 
     # --------- TACO specific cmd_list & proxy -------------------------
@@ -170,8 +168,8 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         PyTango.LatestDeviceImpl.__init__(self, cl, name)
         self.init_device()
         try:
-            self.__bpm_mgr = processlib.Tasks.BpmManager()
-            self.__bpm_task = processlib.Tasks.BpmTask(self.__bpm_mgr)
+            self.__bpm_mgr = Core.Processlib.Tasks.BpmManager()
+            self.__bpm_task = Core.Processlib.Tasks.BpmTask(self.__bpm_mgr)
         except AttributeError:
             self.__bpm_mgr = None
             self.__bpm_task = None
@@ -201,7 +199,7 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
 
         # ImageType Bpp32F (Float 32)
         try:
-            self.ImageType2DataArrayType[Core.Bpp32F] = 8
+            self.ImageType2DataArrayType[Core.ImageType.Bpp32F] = 8
         except AttributeError:
             pass
 
@@ -258,9 +256,9 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         control = _control_ref()
         ct_status = control.getStatus()
         acq_status = ct_status.AcquisitionStatus
-        if acq_status == Core.AcqReady:
+        if acq_status == Core.AcqStatus.AcqReady:
             return PyTango.DevState.OFF
-        elif acq_status != Core.AcqRunning:
+        elif acq_status != Core.AcqStatus.AcqRunning:
             return PyTango.DevState.FAULT
         elif self.__mult_trig_data is None:
             return PyTango.DevState.ON
@@ -297,9 +295,9 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
             acq = control.acquisition()
             ct_status = control.getStatus()
             acq_status = ct_status.AcquisitionStatus
-            prepare = acq_status != Core.AcqRunning
+            prepare = acq_status != Core.AcqStatus.AcqRunning
             trig_mode = acq.getTriggerMode()
-            start = prepare or (trig_mode == Core.IntTrigMult)
+            start = prepare or (trig_mode == Core.TrigMode.IntTrigMult)
 
         if prepare:
             if is_mult_trig:
@@ -490,10 +488,10 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         acq = control.acquisition()
 
         trig_mode = acq.getTriggerMode()
-        if exp_time == 0 and trig_mode == Core.ExtTrigSingle:
-            acq.setTriggerMode(Core.ExtGate)
-        elif exp_time > 0 and trig_mode == Core.ExtGate:
-            acq.setTriggerMode(Core.ExtTrigSingle)
+        if exp_time == 0 and trig_mode == Core.TrigMode.ExtTrigSingle:
+            acq.setTriggerMode(Core.TrigMode.ExtGate)
+        elif exp_time > 0 and trig_mode == Core.TrigMode.ExtGate:
+            acq.setTriggerMode(Core.TrigMode.ExtTrigSingle)
         if exp_time > 0.0:
             acq.setAcqExpoTime(exp_time)
 
@@ -574,37 +572,37 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         index_format = par_arr[4]
 
         if par_arr[5] in ["y", "yes"]:
-            pars.overwritePolicy = Core.CtSaving.Overwrite
+            pars.overwritePolicy = Core.CtSaving.OverwritePolicy.Overwrite
         else:
-            pars.overwritePolicy = Core.CtSaving.Abort
+            pars.overwritePolicy = Core.CtSaving.OverwritePolicy.Abort
         if pars.suffix.lower()[-4:] == ".edf":
-            pars.fileFormat = Core.CtSaving.EDF
+            pars.fileFormat = Core.CtSaving.FileFormat.EDF
         elif pars.suffix.lower()[-6:] == ".edfgz":
-            pars.fileFormat = Core.CtSaving.EDFGZ
+            pars.fileFormat = Core.CtSaving.FileFormat.EDFGZ
         elif pars.suffix.lower()[-7:] == ".edf.gz":
-            pars.fileFormat = Core.CtSaving.EDFGZ
+            pars.fileFormat = Core.CtSaving.FileFormat.EDFGZ
         elif pars.suffix.lower()[-4:] == ".cbf":
-            pars.fileFormat = Core.CtSaving.CBFFormat
+            pars.fileFormat = Core.CtSaving.FileFormat.CBFFormat
         elif pars.suffix.lower()[-3:] == ".h5":
-            pars.fileFormat = Core.CtSaving.HDF5
+            pars.fileFormat = Core.CtSaving.FileFormat.HDF5
         elif pars.suffix.lower()[-5:] == ".h5gz":
-            pars.fileFormat = Core.CtSaving.HDF5GZ
+            pars.fileFormat = Core.CtSaving.FileFormat.HDF5GZ
         elif pars.suffix.lower()[-5:] == ".h5bs":
-            pars.fileFormat = Core.CtSaving.HDF5BS
+            pars.fileFormat = Core.CtSaving.FileFormat.HDF5BS
         elif pars.suffix.lower()[-5:] == ".hdf5":
-            pars.fileFormat = Core.CtSaving.HDF5
+            pars.fileFormat = Core.CtSaving.FileFormat.HDF5
         elif pars.suffix.lower()[-7:] == ".hdf5gz":
-            pars.fileFormat = Core.CtSaving.HDF5GZ
+            pars.fileFormat = Core.CtSaving.FileFormat.HDF5GZ
         elif pars.suffix.lower()[-7:] == ".hdf5bs":
-            pars.fileFormat = Core.CtSaving.HDF5BS
+            pars.fileFormat = Core.CtSaving.FileFormat.HDF5BS
         elif pars.suffix.lower()[-5:] == ".tiff":
-            pars.fileFormat = Core.CtSaving.TIFFFormat
+            pars.fileFormat = Core.CtSaving.FileFormat.TIFFFormat
         elif pars.suffix.lower()[-8:] == ".edf.lz4":
-            pars.fileFormat = Core.CtSaving.EDFLZ4
+            pars.fileFormat = Core.CtSaving.FileFormat.EDFLZ4
         elif pars.suffix.lower()[-7:] == ".edflz4":
-            pars.fileFormat = Core.CtSaving.EDFLZ4
+            pars.fileFormat = Core.CtSaving.FileFormat.EDFLZ4
         else:
-            pars.fileFormat = Core.CtSaving.RAW
+            pars.fileFormat = Core.CtSaving.FileFormat.RAW
         saving.setParameters(pars)
 
     # ------------------------------------------------------------------
@@ -618,7 +616,7 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         control = _control_ref()
         saving = control.saving()
         pars = saving.getParameters()
-        overwrite = pars.overwritePolicy == Core.CtSaving.Overwrite
+        overwrite = pars.overwritePolicy == Core.CtSaving.OverwritePolicy.Overwrite
         over_str = "yes" if overwrite else "no"
         index_format = "%04d"
         arr = [
@@ -658,7 +656,7 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
                 val = val[:-1]
             header_map[key] = val
         savingMode = saving.getSavingMode()
-        if savingMode != Core.CtSaving.AutoHeader:
+        if savingMode != Core.CtSaving.SavingMode.AutoHeader:
             saving.setCommonHeader(header_map)
         else:
             imageStatus = control.getImageStatus()
@@ -805,10 +803,12 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         deb.Param("Setting autosave active: %s" % autosave_act)
         if autosave_act:
             saving_mode = (
-                auto_header and Core.CtSaving.AutoHeader or Core.CtSaving.AutoFrame
+                auto_header
+                and Core.CtSaving.SavingMode.AutoHeader
+                or Core.CtSaving.SavingMode.AutoFrame
             )
         else:
-            saving_mode = Core.CtSaving.Manual
+            saving_mode = Core.CtSaving.SavingMode.Manual
         saving.setSavingMode(saving_mode)
 
     @Core.DEB_MEMBER_FUNCT
@@ -816,8 +816,10 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         control = _control_ref()
         saving = control.saving()
         saving_mode = saving.getSavingMode()
-        auto_header = saving_mode == Core.CtSaving.AutoHeader
-        autosave_act = auto_header or (saving_mode == Core.CtSaving.AutoFrame)
+        auto_header = saving_mode == Core.CtSaving.SavingMode.AutoHeader
+        autosave_act = auto_header or (
+            saving_mode == Core.CtSaving.SavingMode.AutoFrame
+        )
         deb.Return("Getting autosave active: %s" % autosave_act)
         return autosave_act, auto_header
 
@@ -828,11 +830,11 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
             % (stripe_concat, frame_accum)
         )
         if not stripe_concat and not frame_accum:
-            acq_mode = Core.Single
+            acq_mode = Core.AcqMode.Single
         elif stripe_concat and not frame_accum:
-            acq_mode = Core.Concatenation
+            acq_mode = Core.AcqMode.Concatenation
         elif not stripe_concat and frame_accum:
-            acq_mode = Core.Accumulation
+            acq_mode = Core.AcqMode.Accumulation
         else:
             err_msg = "Invalid acq. mode: stripe_concat=%s, frame_accum=%s" % (
                 stripe_concat,
@@ -848,8 +850,8 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         control = _control_ref()
         acq = control.acquisition()
         acq_mode = acq.getAcqMode()
-        stripe_concat = acq_mode == Core.Concatenation
-        frame_accum = acq_mode == Core.Accumulation
+        stripe_concat = acq_mode == Core.AcqMode.Concatenation
+        frame_accum = acq_mode == Core.AcqMode.Accumulation
         deb.Return(
             "Getting acq. mode: stripe_concat=%s, frame_accum=%s"
             % (stripe_concat, frame_accum)
@@ -959,18 +961,18 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
 
         triggerMode = None
         if argin == 0:
-            triggerMode = Core.IntTrig
+            triggerMode = Core.TrigMode.IntTrig
         elif argin == 1:
-            triggerMode = Core.ExtTrigSingle
+            triggerMode = Core.TrigMode.ExtTrigSingle
             if self.__last_exp_time is not None:
                 if self.__last_exp_time == 0:
-                    triggerMode = Core.ExtGate
+                    triggerMode = Core.TrigMode.ExtGate
         elif argin == 2:
-            triggerMode = Core.ExtTrigMult
+            triggerMode = Core.TrigMode.ExtTrigMult
         elif argin == 3:
-            triggerMode = Core.ExtStartStop
+            triggerMode = Core.TrigMode.ExtStartStop
         elif argin == 4:
-            triggerMode = Core.ExtTrigReadout
+            triggerMode = Core.TrigMode.ExtTrigReadout
         else:
             raise Core.Exception("Invalid ext. trig: %s" % argin)
 
@@ -987,15 +989,21 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         control = _control_ref()
         acquisition = control.acquisition()
         triggerMode = acquisition.getTriggerMode()
-        if triggerMode == Core.IntTrig or triggerMode == Core.IntTrigMult:
+        if (
+            triggerMode == Core.TrigMode.IntTrig
+            or triggerMode == Core.TrigMode.IntTrigMult
+        ):
             returnValue = 0
-        elif triggerMode == Core.ExtTrigSingle or triggerMode == Core.ExtGate:
+        elif (
+            triggerMode == Core.TrigMode.ExtTrigSingle
+            or triggerMode == Core.TrigMode.ExtGate
+        ):
             returnValue = 1
-        elif triggerMode == Core.ExtTrigMult:
+        elif triggerMode == Core.TrigMode.ExtTrigMult:
             returnValue = 2
-        elif triggerMode == Core.ExtStartStop:
+        elif triggerMode == Core.TrigMode.ExtStartStop:
             returnValue = 3
-        elif triggerMode == Core.ExtTrigReadout:
+        elif triggerMode == Core.TrigMode.ExtTrigReadout:
             returnValue = 4
         else:
             raise Core.Exception("Invalid trigger mode: %s" % triggerMode)
@@ -1106,7 +1114,7 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         ct_status = control.getStatus()
         saving = control.saving()
         img_counters = ct_status.ImageCounters
-        saving_act = saving.getSavingMode() == Core.CtSaving.AutoFrame
+        saving_act = saving.getSavingMode() == Core.CtSaving.SavingMode.AutoFrame
         cnt_attr = "LastImageSaved" if saving_act else "LastImageAcquired"
         data = self.__mult_trig_data
         if data is not None:

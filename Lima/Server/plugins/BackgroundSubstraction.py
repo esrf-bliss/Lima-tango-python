@@ -31,7 +31,9 @@ from Lima.Server.plugins.Utils import getDataFromFile, BasePostProcess
 class BackgroundSubstractionDeviceServer(BasePostProcess):
     BACKGROUND_TASK_NAME = "BackGroundTask"
     GET_BACKGROUND_IMAGE = "TMP_GET_BACKGROUND_IMAGE"
-    Core.DEB_CLASS(Core.DebModApplication, "BackgroundSubstractionDeviceServer")
+    Core.DEB_CLASS(
+        Core.DebModule.DebModApplication, "BackgroundSubstractionDeviceServer"
+    )
 
     @Core.DEB_MEMBER_FUNCT
     def __init__(self, cl, name):
@@ -64,14 +66,16 @@ class BackgroundSubstractionDeviceServer(BasePostProcess):
                     # first create and add the task to update the background_image at level runLevel
                     # This task update the image only on demand from takeNextAcquisitionAsBackground() command
                     self.__get_image_op = extOpt.addOp(
-                        Core.USER_SINK_TASK, self.GET_BACKGROUND_IMAGE, self._runLevel
+                        Core.SoftOpId.USER_SINK_TASK,
+                        self.GET_BACKGROUND_IMAGE,
+                        self._runLevel,
                     )
                     self.__get_image_task = GetBackgroundImageTask(self, _control_ref)
                     self.__get_image_op.setSinkTask(self.__get_image_task)
 
                     # now add the background correction task at level runLevel+1
                     self.__background_op = extOpt.addOp(
-                        Core.BACKGROUNDSUBSTRACTION,
+                        Core.SoftOpId.BACKGROUNDSUBSTRACTION,
                         self.BACKGROUND_TASK_NAME,
                         self._runLevel + 1,
                     )

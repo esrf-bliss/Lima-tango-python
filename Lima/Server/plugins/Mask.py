@@ -30,7 +30,7 @@ from Lima.Server import AttrHelper
 
 class MaskDeviceServer(BasePostProcess):
     MASK_TASK_NAME = "MaskTask"
-    Core.DEB_CLASS(Core.DebModApplication, "MaskDeviceServer")
+    Core.DEB_CLASS(Core.DebModule.DebModApplication, "MaskDeviceServer")
 
     @Core.DEB_MEMBER_FUNCT
     def __init__(self, cl, name):
@@ -56,7 +56,7 @@ class MaskDeviceServer(BasePostProcess):
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__maskTask = extOpt.addOp(
-                    Core.MASK, self.MASK_TASK_NAME, self._runLevel
+                    Core.SoftOpId.MASK, self.MASK_TASK_NAME, self._runLevel
                 )
                 self.__maskTask.setMaskImage(self.__maskImage)
         PyTango.LatestDeviceImpl.set_state(self, state)

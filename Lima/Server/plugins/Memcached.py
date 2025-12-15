@@ -28,6 +28,7 @@ import json
 # Workaround https://github.com/Blosc/bloscpack/issues/119
 if sys.version_info.major == 3 and sys.version_info.minor >= 10:
     import collections
+
     setattr(collections, "MutableMapping", collections.abc.MutableMapping)
 import bloscpack
 
@@ -121,13 +122,15 @@ class MemcachedDeviceServer(BasePostProcess):
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__memcachedOpInstance = extOpt.addOp(
-                    Core.USER_SINK_TASK, self.MEMCACHED_TASK_NAME, self._runLevel
+                    Core.SoftOpId.USER_SINK_TASK,
+                    self.MEMCACHED_TASK_NAME,
+                    self._runLevel,
                 )
                 self.__client = Client((self.ServerIP, self.ServerPort))
 
                 # Get detector model
                 hw = ctControl.hwInterface()
-                detinfo = hw.getHwCtrlObj(Core.HwCap.DetInfo)
+                detinfo = hw.getHwCtrlObj(Core.HwCap.Type.DetInfo)
                 detectorID = detinfo.getDetectorModel()
 
                 # Get image size

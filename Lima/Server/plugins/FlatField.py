@@ -29,7 +29,7 @@ from Lima.Server.plugins.Utils import getDataFromFile, BasePostProcess
 
 class FlatfieldDeviceServer(BasePostProcess):
     FLATFIELD_TASK_NAME = "FlatField"
-    Core.DEB_CLASS(Core.DebModApplication, "FlatfieldDeviceServer")
+    Core.DEB_CLASS(Core.DebModule.DebModApplication, "FlatfieldDeviceServer")
 
     @Core.DEB_MEMBER_FUNCT
     def __init__(self, cl, name):
@@ -55,7 +55,9 @@ class FlatfieldDeviceServer(BasePostProcess):
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__flatFieldTask = extOpt.addOp(
-                    Core.FLATFIELDCORRECTION, self.FLATFIELD_TASK_NAME, self._runLevel
+                    Core.SoftOpId.FLATFIELDCORRECTION,
+                    self.FLATFIELD_TASK_NAME,
+                    self._runLevel,
                 )
                 self.__flatFieldTask.setFlatFieldImage(
                     self.__flatFieldImage, self.__normalize

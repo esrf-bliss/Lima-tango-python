@@ -44,9 +44,10 @@ RoiCounterTask = Core.Processlib.Tasks.RoiCounterTask
 
 
 class RoiCounterDeviceServer(BasePostProcess):
-
+    Core.DEB_CLASS(Core.DebModule.DebModApplication, "RoiCounterDeviceServer")
     # --------- Add you global variables here --------------------------
     ROI_COUNTER_TASK_NAME = "RoiCounterTask"
+
     # ------------------------------------------------------------------
     #    Device constructor
     # ------------------------------------------------------------------
@@ -96,7 +97,7 @@ class RoiCounterDeviceServer(BasePostProcess):
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__roiCounterMgr = extOpt.addOp(
-                    Core.ROICOUNTERS, self.ROI_COUNTER_TASK_NAME, self._runLevel
+                    Core.SoftOpId.ROICOUNTERS, self.ROI_COUNTER_TASK_NAME, self._runLevel
                 )
                 self.__roiCounterMgr.setBufferSize(int(self.BufferSize))
                 if self.__maskData is not None:
@@ -110,12 +111,14 @@ class RoiCounterDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read BufferSize attribute
     # ------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def read_BufferSize(self, attr):
         attr.set_value(self.BufferSize)
 
     # ------------------------------------------------------------------
     #    Write BufferSize attribute
     # ------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def write_BufferSize(self, attr):
         data = attr.get_write_value()
         self.BufferSize = int(data)
@@ -128,6 +131,7 @@ class RoiCounterDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read MaskFile attribute
     # ------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def read_MaskFile(self, attr):
         if self.__maskFile is not None:
             attr.set_value(self.__maskFile)
@@ -137,6 +141,7 @@ class RoiCounterDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Write MaskFile attribute
     # ------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def write_MaskFile(self, attr):
         filename = attr.get_write_value()
         self.setMaskFile(filename)
@@ -147,6 +152,7 @@ class RoiCounterDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read CounterStatus attribute
     # ------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def read_CounterStatus(self, attr):
         value_read = self.__roiCounterMgr.getCounterStatus()
         attr.set_value(value_read)
@@ -155,6 +161,7 @@ class RoiCounterDeviceServer(BasePostProcess):
     #    Read OverflowThreshold attribute
     # ------------------------------------------------------------------
 
+    @Core.DEB_MEMBER_FUNCT
     def read_OverflowThreshold(self, attr):
         value_read = self.__overflowThl
         attr.set_value(value_read)
@@ -165,6 +172,7 @@ class RoiCounterDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Write MaskFile attribute
     # ------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def write_OverflowThreshold(self, attr):
         self.__overflowThl = attr.get_write_value()
         if self.__roiCounterMgr is not None:
@@ -175,6 +183,7 @@ class RoiCounterDeviceServer(BasePostProcess):
     #    RoiCounter command methods
     #
     # ==================================================================
+    @Core.DEB_MEMBER_FUNCT
     def addNames(self, argin):
         roi_id = []
         for roi_name in argin:
@@ -187,6 +196,7 @@ class RoiCounterDeviceServer(BasePostProcess):
                 roi_id.append(self.__roiName2ID[roi_name])
         return roi_id
 
+    @Core.DEB_MEMBER_FUNCT
     def removeRois(self, argin):
         if self.__roiCounterMgr:
             self.__roiCounterMgr.removeRois(argin)
@@ -196,6 +206,7 @@ class RoiCounterDeviceServer(BasePostProcess):
         if not len(self.__roiName2ID):
             self.Stop()
 
+    @Core.DEB_MEMBER_FUNCT
     def setRois(self, argin):
         if self.__roiCounterMgr is None:
             raise RuntimeError("should start the device first")
@@ -213,6 +224,7 @@ class RoiCounterDeviceServer(BasePostProcess):
                 "should be a vector as follow [roi_id0,x0,y0,width0,height0,..."
             )
 
+    @Core.DEB_MEMBER_FUNCT
     def setArcRois(self, argin):
         if self.__roiCounterMgr is None:
             raise RuntimeError("should start the device first")
@@ -230,11 +242,13 @@ class RoiCounterDeviceServer(BasePostProcess):
                 "should be a vector as follow [roi_id,centerX,centerY,rayon1,rayon2,angle_start,angle_end,...]"
             )
 
+    @Core.DEB_MEMBER_FUNCT
     def getNames(self):
         if self.__roiCounterMgr is None:
             raise RuntimeError("should start the device first")
         return self.__roiCounterMgr.getNames()
 
+    @Core.DEB_MEMBER_FUNCT
     def getRoiTypes(self, argin):
         if self.__roiCounterMgr is None:
             raise RuntimeError("should start the device first")
@@ -255,6 +269,7 @@ class RoiCounterDeviceServer(BasePostProcess):
             roi_type_list.append(roi_type_map[roi_type])
         return roi_type_list
 
+    @Core.DEB_MEMBER_FUNCT
     def getRois(self, argin):
         if self.__roiCounterMgr is None:
             raise RuntimeError("should start the device first")
@@ -273,6 +288,7 @@ class RoiCounterDeviceServer(BasePostProcess):
         roi_list_flat = list(itertools.chain(*roi_list))
         return numpy.array(roi_list_flat, numpy.uint32)
 
+    @Core.DEB_MEMBER_FUNCT
     def getArcRois(self, argin):
         if self.__roiCounterMgr is None:
             raise RuntimeError("should start the device first")
@@ -293,6 +309,7 @@ class RoiCounterDeviceServer(BasePostProcess):
         roi_list_flat = list(itertools.chain(*roi_list))
         return numpy.array(roi_list_flat, numpy.float64)
 
+    @Core.DEB_MEMBER_FUNCT
     def get_current_config(self):
         try:
             returnDict = {}
@@ -335,6 +352,7 @@ class RoiCounterDeviceServer(BasePostProcess):
 
             traceback.print_exc()
 
+    @Core.DEB_MEMBER_FUNCT
     def apply_config(self, c):
         try:
             active = c.get("active", False)
@@ -392,11 +410,13 @@ class RoiCounterDeviceServer(BasePostProcess):
 
             traceback.print_exc()
 
+    @Core.DEB_MEMBER_FUNCT
     def clearAllRois(self):
         if self.__roiCounterMgr:
             self.__roiCounterMgr.clearAllRois()
             self.Stop()
 
+    @Core.DEB_MEMBER_FUNCT
     def setMaskFile(self, argin):
         if len(argin):
             try:
@@ -416,6 +436,7 @@ class RoiCounterDeviceServer(BasePostProcess):
             self.__maskData = None
             self.__maskFile = None
 
+    @Core.DEB_MEMBER_FUNCT
     def readCounters(self, argin):
         roiResultCounterList = self.__roiCounterMgr.readCounters(argin)
         if roiResultCounterList:

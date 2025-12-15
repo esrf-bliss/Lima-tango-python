@@ -62,26 +62,27 @@ import base64
 
 
 class BpmDeviceServer(BasePostProcess):
-    Core.DEB_CLASS(Core.DebModApplication, "BpmDeviceServer")
+    Core.DEB_CLASS(Core.DebModule.DebModApplication, "BpmDeviceServer")
 
     # --------- Add you global variables here --------------------------
     BPM_TASK_NAME = "BpmTask"
     BVDATA_TASK_NAME = "BVDataTask"
 
     ImageType2Bpp = {
-        Core.Bpp8: 8,
-        Core.Bpp10: 10,
-        Core.Bpp12: 12,
-        Core.Bpp14: 14,
-        Core.Bpp16: 16,
-        Core.Bpp32: 32,
-        Core.Bpp8S: 7,
-        Core.Bpp10S: 9,
-        Core.Bpp12S: 11,
-        Core.Bpp14S: 13,
-        Core.Bpp16S: 15,
-        Core.Bpp32S: 31,
+        Core.ImageType.Bpp8: 8,
+        Core.ImageType.Bpp10: 10,
+        Core.ImageType.Bpp12: 12,
+        Core.ImageType.Bpp14: 14,
+        Core.ImageType.Bpp16: 16,
+        Core.ImageType.Bpp32: 32,
+        Core.ImageType.Bpp8S: 7,
+        Core.ImageType.Bpp10S: 9,
+        Core.ImageType.Bpp12S: 11,
+        Core.ImageType.Bpp14S: 13,
+        Core.ImageType.Bpp16S: 15,
+        Core.ImageType.Bpp32S: 31,
     }
+
     # ------------------------------------------------------------------
     #    Device constructor
     # ------------------------------------------------------------------
@@ -133,13 +134,15 @@ class BpmDeviceServer(BasePostProcess):
             extOpt = ctControl.externalOperation()
             if self.enable_bpm_calc and not self._bpmManager:
                 self._softOp = extOpt.addOp(
-                    Core.BPM, self.BPM_TASK_NAME, self._runLevel + 1
+                    Core.SoftOpId.BPM, self.BPM_TASK_NAME, self._runLevel + 1
                 )
                 self._bpmManager = self._softOp.getManager()
             if self.enable_tango_event and not self._BVDataTask:
                 self._BVDataTask = BVDataTask(self)
                 handler = extOpt.addOp(
-                    Core.USER_SINK_TASK, self.BVDATA_TASK_NAME, self._runLevel + 2
+                    Core.SoftOpId.USER_SINK_TASK,
+                    self.BVDATA_TASK_NAME,
+                    self._runLevel + 2,
                 )
                 handler.setSinkTask(self._BVDataTask)
 
@@ -244,7 +247,7 @@ class BpmDeviceServer(BasePostProcess):
             extOpt.delOp("bkg")
         im = ctControl.ReadImage()
         self.bkg_substraction_handler = extOpt.addOp(
-            Core.BACKGROUNDSUBSTRACTION, "bkg", self._runLevel
+            Core.SoftOpId.BACKGROUNDSUBSTRACTION, "bkg", self._runLevel
         )
         self.bkg_substraction_handler.setBackgroundImage(im)
 
@@ -647,10 +650,10 @@ class BpmDeviceServerClass(PyTango.DeviceClass):
 
 
 class BVDataTask(Core.Processlib.SinkTaskBase):
-    Core.DEB_CLASS(Core.DebModApplication, "BVDataTask")
+    Core.DEB_CLASS(Core.DebModule.DebModApplication, "BVDataTask")
 
     class _PushingThread(threading.Thread):
-        Core.DEB_CLASS(Core.DebModApplication, "_PushingThread")
+        Core.DEB_CLASS(Core.DebModule.DebModApplication, "_PushingThread")
 
         def __init__(self, task):
             threading.Thread.__init__(self)

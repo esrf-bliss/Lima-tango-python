@@ -43,7 +43,7 @@ Roi2SpectrumTask = Core.Processlib.Tasks.Roi2SpectrumTask
 class Roi2spectrumDeviceServer(BasePostProcess):
     # --------- Add you global variables here --------------------------
     ROI_SPECTRUM_TASK_NAME = "Roi2SpectrumTask"
-    Core.DEB_CLASS(Core.DebModApplication, "Roi2spectrumDeviceServer")
+    Core.DEB_CLASS(Core.DebModule.DebModApplication, "Roi2spectrumDeviceServer")
 
     # ------------------------------------------------------------------
     #    Device constructor
@@ -73,7 +73,9 @@ class Roi2spectrumDeviceServer(BasePostProcess):
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__roi2spectrumMgr = extOpt.addOp(
-                    Core.ROI2SPECTRUM, self.ROI_SPECTRUM_TASK_NAME, self._runLevel
+                    Core.SoftOpId.ROI2SPECTRUM,
+                    self.ROI_SPECTRUM_TASK_NAME,
+                    self._runLevel,
                 )
                 self.__roi2spectrumMgr.setBufferSize(int(self.BufferSize))
                 if self.__maskData is not None:
@@ -212,8 +214,8 @@ class Roi2spectrumDeviceServer(BasePostProcess):
             else:
                 raise ValueError("Roi %s not defined yet" % roi_name)
             roi_mode_map = {
-                Roi2SpectrumTask.COLUMN_SUM: "COLUMN_SUM",
-                Roi2SpectrumTask.LINES_SUM: "LINES_SUM",
+                Roi2SpectrumTask.Mode.COLUMN_SUM: "COLUMN_SUM",
+                Roi2SpectrumTask.Mode.LINES_SUM: "LINES_SUM",
             }
             roi_mode_list.append(roi_mode_map[roi_mode])
         return roi_mode_list
@@ -221,8 +223,8 @@ class Roi2spectrumDeviceServer(BasePostProcess):
     @Core.DEB_MEMBER_FUNCT
     def setRoiModes(self, argin):
         roi_mode_map = {
-            "COLUMN_SUM": Roi2SpectrumTask.COLUMN_SUM,
-            "LINES_SUM": Roi2SpectrumTask.LINES_SUM,
+            "COLUMN_SUM": Roi2SpectrumTask.Mode.COLUMN_SUM.value,
+            "LINES_SUM": Roi2SpectrumTask.Mode.LINES_SUM.value,
         }
         rois_modes = [(n, roi_mode_map[m]) for n, m in grouper(2, argin)]
         self.__roi2spectrumMgr.setRoiModes(rois_modes)

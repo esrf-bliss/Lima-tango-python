@@ -138,12 +138,12 @@ def RequiresSystemFeature(feature):
 
 
 class LimaCCDs(PyTango.LatestDeviceImpl):
-    Core.DEB_CLASS(Core.DebModApplication, "LimaCCDs")
+    Core.DEB_CLASS(Core.DebModule.DebModApplication, "LimaCCDs")
 
     _ImageOpModes = {
-        "HardOnly": Core.CtImage.HardOnly,
-        "SoftOnly": Core.CtImage.SoftOnly,
-        "HardAndSoft": Core.CtImage.HardAndSoft,
+        "HardOnly": Core.CtImage.ImageOpMode.HardOnly,
+        "SoftOnly": Core.CtImage.ImageOpMode.SoftOnly,
+        "HardAndSoft": Core.CtImage.ImageOpMode.HardAndSoft,
     }
 
     _debugModuleList = [
@@ -173,33 +173,33 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     ]
 
     ImageType2NbBytes = {
-        Core.Bpp8: (1, 0),
-        Core.Bpp8S: (1, 1),
-        Core.Bpp10: (2, 0),
-        Core.Bpp10S: (2, 1),
-        Core.Bpp12: (2, 0),
-        Core.Bpp12S: (2, 1),
-        Core.Bpp14: (2, 0),
-        Core.Bpp14S: (2, 1),
-        Core.Bpp16: (2, 0),
-        Core.Bpp16S: (2, 1),
-        Core.Bpp32: (4, 0),
-        Core.Bpp32S: (4, 1),
+        Core.ImageType.Bpp8: (1, 0),
+        Core.ImageType.Bpp8S: (1, 1),
+        Core.ImageType.Bpp10: (2, 0),
+        Core.ImageType.Bpp10S: (2, 1),
+        Core.ImageType.Bpp12: (2, 0),
+        Core.ImageType.Bpp12S: (2, 1),
+        Core.ImageType.Bpp14: (2, 0),
+        Core.ImageType.Bpp14S: (2, 1),
+        Core.ImageType.Bpp16: (2, 0),
+        Core.ImageType.Bpp16S: (2, 1),
+        Core.ImageType.Bpp32: (4, 0),
+        Core.ImageType.Bpp32S: (4, 1),
     }
 
     ImageType2String = {
-        Core.Bpp8: "Bpp8",
-        Core.Bpp8S: "Bpp8S",
-        Core.Bpp10: "Bpp10",
-        Core.Bpp10S: "Bpp10S",
-        Core.Bpp12: "Bpp12",
-        Core.Bpp12S: "Bpp12S",
-        Core.Bpp14: "Bpp14",
-        Core.Bpp14S: "Bpp14S",
-        Core.Bpp16: "Bpp16",
-        Core.Bpp16S: "Bpp16S",
-        Core.Bpp32: "Bpp32",
-        Core.Bpp32S: "Bpp32S",
+        Core.ImageType.Bpp8: "Bpp8",
+        Core.ImageType.Bpp8S: "Bpp8S",
+        Core.ImageType.Bpp10: "Bpp10",
+        Core.ImageType.Bpp10S: "Bpp10S",
+        Core.ImageType.Bpp12: "Bpp12",
+        Core.ImageType.Bpp12S: "Bpp12S",
+        Core.ImageType.Bpp14: "Bpp14",
+        Core.ImageType.Bpp14S: "Bpp14S",
+        Core.ImageType.Bpp16: "Bpp16",
+        Core.ImageType.Bpp16S: "Bpp16S",
+        Core.ImageType.Bpp32: "Bpp32",
+        Core.ImageType.Bpp32S: "Bpp32S",
     }
 
     String2ImageType = {v: k for k, v in ImageType2String.items()}
@@ -230,18 +230,18 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     # };
 
     ImageType2DataArrayType = {
-        Core.Bpp8: 0,
-        Core.Bpp10: 1,
-        Core.Bpp12: 1,
-        Core.Bpp14: 1,
-        Core.Bpp16: 1,
-        Core.Bpp32: 2,
-        Core.Bpp8S: 4,
-        Core.Bpp10S: 5,
-        Core.Bpp12S: 5,
-        Core.Bpp14S: 5,
-        Core.Bpp16S: 5,
-        Core.Bpp32S: 6,
+        Core.ImageType.Bpp8: 0,
+        Core.ImageType.Bpp10: 1,
+        Core.ImageType.Bpp12: 1,
+        Core.ImageType.Bpp14: 1,
+        Core.ImageType.Bpp16: 1,
+        Core.ImageType.Bpp32: 2,
+        Core.ImageType.Bpp8S: 4,
+        Core.ImageType.Bpp10S: 5,
+        Core.ImageType.Bpp12S: 5,
+        Core.ImageType.Bpp14S: 5,
+        Core.ImageType.Bpp16S: 5,
+        Core.ImageType.Bpp32S: 6,
     }
 
     # The DATA_ARRAY definition v4
@@ -447,7 +447,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             saving.setMaxConcurrentWritingTask(max_concurrent_writing_task)
 
         interface = self.__control.hwInterface()
-        self.__detinfo = interface.getHwCtrlObj(Core.HwCap.DetInfo)
+        self.__detinfo = interface.getHwCtrlObj(Core.HwCap.Type.DetInfo)
 
         self.__accThresholdCallback = None
 
@@ -472,18 +472,18 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
                     )
 
         # ImageType Bpp32F (Float 32)
-        if SystemHasFeature("Core.Bpp32F"):
-            self.ImageType2NbBytes[Core.Bpp32F] = (4, 1)
-            self.ImageType2String[Core.Bpp32F] = "Bpp32F"
-            self.ImageType2DataArrayType[Core.Bpp32F] = 8
+        if SystemHasFeature("Core.ImageType.Bpp32F"):
+            self.ImageType2NbBytes[Core.ImageType.Bpp32F] = (4, 1)
+            self.ImageType2String[Core.ImageType.Bpp32F] = "Bpp32F"
+            self.ImageType2DataArrayType[Core.ImageType.Bpp32F] = 8
 
         # ImageType Bpp1 to Bpp24
-        if SystemHasFeature("Core.Bpp1"):
+        if SystemHasFeature("Core.ImageType.Bpp1"):
             for Bpp_type, Bpp_def, Bpp_name, Bpp_size in [
-                (Core.Bpp1, (1, 0), "Bpp1", 0),
-                (Core.Bpp6, (1, 0), "Bpp6", 0),
-                (Core.Bpp12, (2, 0), "Bpp12", 1),
-                (Core.Bpp24, (4, 0), "Bpp24", 2),
+                (Core.ImageType.Bpp1, (1, 0), "Bpp1", 0),
+                (Core.ImageType.Bpp6, (1, 0), "Bpp6", 0),
+                (Core.ImageType.Bpp12, (2, 0), "Bpp12", 1),
+                (Core.ImageType.Bpp24, (4, 0), "Bpp24", 2),
             ]:
                 self.ImageType2NbBytes[Bpp_type] = Bpp_def
                 self.ImageType2String[Bpp_type] = Bpp_name
@@ -518,28 +518,28 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         }
 
         self.__ShutterMode = {
-            "MANUAL": Core.ShutterManual,
-            "AUTO_FRAME": Core.ShutterAutoFrame,
-            "AUTO_SEQUENCE": Core.ShutterAutoSequence,
+            "MANUAL": Core.ShutterMode.ShutterManual,
+            "AUTO_FRAME": Core.ShutterMode.ShutterAutoFrame,
+            "AUTO_SEQUENCE": Core.ShutterMode.ShutterAutoSequence,
         }
 
         self.__AcqMode = {
-            "SINGLE": Core.Single,
-            "CONCATENATION": Core.Concatenation,
-            "ACCUMULATION": Core.Accumulation,
+            "SINGLE": Core.AcqMode.Single,
+            "CONCATENATION": Core.AcqMode.Concatenation,
+            "ACCUMULATION": Core.AcqMode.Accumulation,
         }
 
-        if SystemHasFeature("Core.CtAcquisition.Live"):
+        if SystemHasFeature("Core.CtAcquisition.AccTimeMode.Live"):
             self.__AccTimeMode = {
-                "LIVE": Core.CtAcquisition.Live,
-                "REAL": Core.CtAcquisition.Real,
+                "LIVE": Core.CtAcquisition.AccTimeMode.Live,
+                "REAL": Core.CtAcquisition.AccTimeMode.Real,
             }
         else:  # Core too Old
             self.__AccTimeMode = {}
 
         self.__SavingManagedMode = {
-            "SOFTWARE": Core.CtSaving.Software,
-            "HARDWARE": Core.CtSaving.Hardware,
+            "SOFTWARE": Core.CtSaving.ManagedMode.Software,
+            "HARDWARE": Core.CtSaving.ManagedMode.Hardware,
         }
 
         # default saving stream
@@ -549,119 +549,125 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         self.__SavingFormat = saving.getFormatListAsString()
 
         self.__SavingMode = {
-            "MANUAL": Core.CtSaving.Manual,
-            "AUTO_FRAME": Core.CtSaving.AutoFrame,
-            "AUTO_HEADER": Core.CtSaving.AutoHeader,
+            "MANUAL": Core.CtSaving.SavingMode.Manual,
+            "AUTO_FRAME": Core.CtSaving.SavingMode.AutoFrame,
+            "AUTO_HEADER": Core.CtSaving.SavingMode.AutoHeader,
         }
 
         self.__SavingOverwritePolicy = {
-            "ABORT": Core.CtSaving.Abort,
-            "OVERWRITE": Core.CtSaving.Overwrite,
-            "APPEND": Core.CtSaving.Append,
+            "ABORT": Core.CtSaving.OverwritePolicy.Abort,
+            "OVERWRITE": Core.CtSaving.OverwritePolicy.Overwrite,
+            "APPEND": Core.CtSaving.OverwritePolicy.Append,
         }
 
-        if SystemHasFeature("Core.CtSaving.MultiSet"):
-            self.__SavingOverwritePolicy["MULTISET"] = Core.CtSaving.MultiSet
+        if SystemHasFeature("Core.CtSaving.OverwritePolicy.MultiSet"):
+            self.__SavingOverwritePolicy["MULTISET"] = (
+                Core.CtSaving.OverwritePolicy.MultiSet
+            )
 
         self.__AcqTriggerMode = {
-            "INTERNAL_TRIGGER": Core.IntTrig,
-            "EXTERNAL_TRIGGER": Core.ExtTrigSingle,
-            "EXTERNAL_TRIGGER_MULTI": Core.ExtTrigMult,
-            "EXTERNAL_GATE": Core.ExtGate,
-            "EXTERNAL_START_STOP": Core.ExtStartStop,
+            "INTERNAL_TRIGGER": Core.TrigMode.IntTrig,
+            "EXTERNAL_TRIGGER": Core.TrigMode.ExtTrigSingle,
+            "EXTERNAL_TRIGGER_MULTI": Core.TrigMode.ExtTrigMult,
+            "EXTERNAL_GATE": Core.TrigMode.ExtGate,
+            "EXTERNAL_START_STOP": Core.TrigMode.ExtStartStop,
         }
 
-        if SystemHasFeature("Core.IntTrigMult"):
-            self.__AcqTriggerMode["INTERNAL_TRIGGER_MULTI"] = Core.IntTrigMult
+        if SystemHasFeature("Core.TrigMode.IntTrigMult"):
+            self.__AcqTriggerMode["INTERNAL_TRIGGER_MULTI"] = (
+                Core.TrigMode.IntTrigMult
+            )
 
-        if SystemHasFeature("Core.ExtTrigReadout"):
-            self.__AcqTriggerMode["EXTERNAL_TRIGGER_READOUT"] = Core.ExtTrigReadout
+        if SystemHasFeature("Core.TrigMode.ExtTrigReadout"):
+            self.__AcqTriggerMode["EXTERNAL_TRIGGER_READOUT"] = (
+                Core.TrigMode.ExtTrigReadout
+            )
 
-        if SystemHasFeature("Core.Rotation_0"):
+        if SystemHasFeature("Core.RotationMode.Rotation_0"):
             self.__ImageRotation = {
-                "NONE": Core.Rotation_0,
-                "90": Core.Rotation_90,
-                "180": Core.Rotation_180,
-                "270": Core.Rotation_270,
+                "NONE": Core.RotationMode.Rotation_0,
+                "90": Core.RotationMode.Rotation_90,
+                "180": Core.RotationMode.Rotation_180,
+                "270": Core.RotationMode.Rotation_270,
             }
 
-        if SystemHasFeature("Core.Bin_Sum"):
+        if SystemHasFeature("Core.BinMode.Bin_Sum"):
             self.__ImageBinMode = {
-                "SUM": Core.Bin_Sum,
-                "MEAN": Core.Bin_Mean,
+                "SUM": Core.BinMode.Bin_Sum,
+                "MEAN": Core.BinMode.Bin_Mean,
             }
 
-        if SystemHasFeature("Core.CtAccumulation.Parameters.STANDARD"):
+        if SystemHasFeature("Core.CtAccumulation.Parameters.Mode.STANDARD"):
             self.__AccMode = {
-                "STANDARD": Core.CtAccumulation.Parameters.STANDARD,
-                "THRESHOLD_BEFORE": Core.CtAccumulation.Parameters.THRESHOLD_BEFORE,
-                "OFFSET_THEN_THRESHOLD_BEFORE": Core.CtAccumulation.Parameters.OFFSET_THEN_THRESHOLD_BEFORE,
+                "STANDARD": Core.CtAccumulation.Parameters.Mode.STANDARD,
+                "THRESHOLD_BEFORE": Core.CtAccumulation.Parameters.Mode.THRESHOLD_BEFORE,
+                "OFFSET_THEN_THRESHOLD_BEFORE": Core.CtAccumulation.Parameters.Mode.OFFSET_THEN_THRESHOLD_BEFORE,
             }
 
-        if SystemHasFeature("Core.CtAccumulation.FILTER_NONE"):
+        if SystemHasFeature("Core.CtAccumulation.Filter.FILTER_NONE"):
             self.__AccFilter = {
-                "FILTER_NONE": Core.CtAccumulation.FILTER_NONE,
-                "FILTER_THRESHOLD_MIN": Core.CtAccumulation.FILTER_THRESHOLD_MIN,
-                "FILTER_OFFSET_THEN_THRESHOLD_MIN": Core.CtAccumulation.FILTER_OFFSET_THEN_THRESHOLD_MIN,
+                "FILTER_NONE": Core.CtAccumulation.Filter.FILTER_NONE,
+                "FILTER_THRESHOLD_MIN": Core.CtAccumulation.Filter.FILTER_THRESHOLD_MIN,
+                "FILTER_OFFSET_THEN_THRESHOLD_MIN": Core.CtAccumulation.Filter.FILTER_OFFSET_THEN_THRESHOLD_MIN,
             }
 
-        if SystemHasFeature("Core.CtAccumulation.ACC_SUM"):
+        if SystemHasFeature("Core.CtAccumulation.Operation.ACC_SUM"):
             self.__AccOperation = {
-                "ACC_SUM": Core.CtAccumulation.ACC_SUM,
-                "ACC_MEAN": Core.CtAccumulation.ACC_MEAN,
-                "ACC_MEDIAN": Core.CtAccumulation.ACC_MEDIAN,
+                "ACC_SUM": Core.CtAccumulation.Operation.ACC_SUM,
+                "ACC_MEAN": Core.CtAccumulation.Operation.ACC_MEAN,
+                "ACC_MEDIAN": Core.CtAccumulation.Operation.ACC_MEDIAN,
             }
 
         try:
             self.__VideoMode = {
-                "Y8": Core.Y8,
-                "Y16": Core.Y16,
-                "Y32": Core.Y32,
-                "Y64": Core.Y64,
-                "RGB555": Core.RGB555,
-                "RGB565": Core.RGB565,
-                "RGB24": Core.RGB24,
-                "RGB32": Core.RGB32,
-                "BGR24": Core.BGR24,
-                "BGR32": Core.BGR32,
-                "BAYER_RG8": Core.BAYER_RG8,
-                "BAYER_RG16": Core.BAYER_RG16,
-                "I420": Core.I420,
-                "YUV411": Core.YUV411,
-                "YUV422": Core.YUV422,
-                "YUV444": Core.YUV444,
+                "Y8": Core.VideoMode.Y8,
+                "Y16": Core.VideoMode.Y16,
+                "Y32": Core.VideoMode.Y32,
+                "Y64": Core.VideoMode.Y64,
+                "RGB555": Core.VideoMode.RGB555,
+                "RGB565": Core.VideoMode.RGB565,
+                "RGB24": Core.VideoMode.RGB24,
+                "RGB32": Core.VideoMode.RGB32,
+                "BGR24": Core.VideoMode.BGR24,
+                "BGR32": Core.VideoMode.BGR32,
+                "BAYER_RG8": Core.VideoMode.BAYER_RG8,
+                "BAYER_RG16": Core.VideoMode.BAYER_RG16,
+                "I420": Core.VideoMode.I420,
+                "YUV411": Core.VideoMode.YUV411,
+                "YUV422": Core.VideoMode.YUV422,
+                "YUV444": Core.VideoMode.YUV444,
             }
         except AttributeError:
             import traceback
 
             traceback.print_exc()
 
-        if SystemHasFeature("Core.BAYER_BG8"):
-            self.__VideoMode["BAYER_BG8"] = Core.BAYER_BG8
-            self.__VideoMode["BAYER_BG16"] = Core.BAYER_BG16
+        if SystemHasFeature("Core.VideoMode.BAYER_BG8"):
+            self.__VideoMode["BAYER_BG8"] = Core.VideoMode.BAYER_BG8
+            self.__VideoMode["BAYER_BG16"] = Core.VideoMode.BAYER_BG16
 
         # new formats added in core 1.7
-        if SystemHasFeature("Core.YUV411PACKED"):
-            self.__VideoMode["YUV411PACKED"] = Core.YUV411PACKED
-            self.__VideoMode["YUV422PACKED"] = Core.YUV422PACKED
-            self.__VideoMode["YUV444PACKED"] = Core.YUV444PACKED
+        if SystemHasFeature("Core.VideoMode.YUV411PACKED"):
+            self.__VideoMode["YUV411PACKED"] = Core.VideoMode.YUV411PACKED
+            self.__VideoMode["YUV422PACKED"] = Core.VideoMode.YUV422PACKED
+            self.__VideoMode["YUV444PACKED"] = Core.VideoMode.YUV444PACKED
 
         self.__VideoSource = {}
-        if SystemHasFeature("Core.CtVideo.BASE_IMAGE"):
+        if SystemHasFeature("Core.CtVideo.VideoSource.BASE_IMAGE"):
             self.__VideoSource = {
-                "BASE_IMAGE": Core.CtVideo.BASE_IMAGE,
-                "LAST_IMAGE": Core.CtVideo.LAST_IMAGE,
+                "BASE_IMAGE": Core.CtVideo.VideoSource.BASE_IMAGE,
+                "LAST_IMAGE": Core.CtVideo.VideoSource.LAST_IMAGE,
             }
 
-        if SystemHasFeature("Core.BufferHelper.Parameters"):
+        if SystemHasFeature("Core.BufferHelper.Parameters.DurationPolicy"):
             self.__BufferHelperEnums = {
                 "durationPolicy": {
-                    "EPHEMERAL": Core.BufferHelper.Parameters.Ephemeral,
-                    "PERSISTENT": Core.BufferHelper.Parameters.Persistent,
+                    "EPHEMERAL": Core.BufferHelper.Parameters.DurationPolicy.Ephemeral,
+                    "PERSISTENT": Core.BufferHelper.Parameters.DurationPolicy.Persistent,
                 },
                 "sizePolicy": {
-                    "AUTOMATIC": Core.BufferHelper.Parameters.Automatic,
-                    "FIXED": Core.BufferHelper.Parameters.Fixed,
+                    "AUTOMATIC": Core.BufferHelper.Parameters.PersistentSizePolicy.Automatic,
+                    "FIXED": Core.BufferHelper.Parameters.PersistentSizePolicy.Fixed,
                 },
             }
             self.__BufferParamData = {
@@ -975,16 +981,16 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     def read_acq_status_fault_error(self, attr):
         status = self.__control.getStatus()
         state2string = {
-            Core.CtControl.NoError: "No error",
-            Core.CtControl.SaveUnknownError: "Saving: unknown error",
-            Core.CtControl.SaveOpenError: "Saving: file open error",
-            Core.CtControl.SaveCloseError: "Saving: file close error",
-            Core.CtControl.SaveAccessError: "Saving: access error",
-            Core.CtControl.SaveOverwriteError: "Saving: overwrite error",
-            Core.CtControl.SaveDiskFull: "Saving: disk full",
-            Core.CtControl.SaveOverun: "Saving: overun",
-            Core.CtControl.ProcessingOverun: "Processing: overun",
-            Core.CtControl.CameraError: "Camera: error",
+            Core.CtControl.ErrorCode.NoError: "No error",
+            Core.CtControl.ErrorCode.SaveUnknownError: "Saving: unknown error",
+            Core.CtControl.ErrorCode.SaveOpenError: "Saving: file open error",
+            Core.CtControl.ErrorCode.SaveCloseError: "Saving: file close error",
+            Core.CtControl.ErrorCode.SaveAccessError: "Saving: access error",
+            Core.CtControl.ErrorCode.SaveOverwriteError: "Saving: overwrite error",
+            Core.CtControl.ErrorCode.SaveDiskFull: "Saving: disk full",
+            Core.CtControl.ErrorCode.SaveOverun: "Saving: overun",
+            Core.CtControl.ErrorCode.ProcessingOverun: "Processing: overun",
+            Core.CtControl.ErrorCode.CameraError: "Camera: error",
         }
         attr.set_value(state2string.get(status.Error, "?"))
 
@@ -1220,7 +1226,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     @Core.DEB_MEMBER_FUNCT
     def read_valid_ranges(self, attr):
         interface = self.__control.hwInterface()
-        sync = interface.getHwCtrlObj(Core.HwCap.Sync)
+        sync = interface.getHwCtrlObj(Core.HwCap.Type.Sync)
         ranges = sync.getValidRanges()
         attr.set_value(
             [
@@ -1499,7 +1505,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     @Core.DEB_MEMBER_FUNCT
     def read_ready_for_next_acq(self, attr):
         status = self.__control.getStatus()
-        attr.set_value(status.AcquisitionStatus == Core.AcqReady)
+        attr.set_value(status.AcquisitionStatus == Core.AcqStatus.AcqReady)
 
     ## @brief read write statistic
     #
@@ -1549,8 +1555,8 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
         shutter = self.__control.shutter()
         if (
-            shutter.getModeList().count(Core.ShutterManual)
-            and shutter.getMode() == Core.ShutterManual
+            shutter.getModeList().count(Core.ShutterMode.ShutterManual)
+            and shutter.getMode() == Core.ShutterMode.ShutterManual
             and state in ["OPEN", "CLOSE"]
         ):
             shutter.setState(state == "OPEN")
@@ -1564,8 +1570,8 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         shutter = self.__control.shutter()
 
         if (
-            shutter.getModeList().count(Core.ShutterManual)
-            and shutter.getMode() == Core.ShutterManual
+            shutter.getModeList().count(Core.ShutterMode.ShutterManual)
+            and shutter.getMode() == Core.ShutterMode.ShutterManual
         ):
             if shutter.getState():
                 state = "OPEN"
@@ -1576,7 +1582,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
         attr.set_value(state)
 
-    ## @brief Read shutter mode 
+    ## @brief Read shutter mode
     @Core.DEB_MEMBER_FUNCT
     def read_shutter_mode(self, attr):
         shutter = self.__control.shutter()
@@ -1584,7 +1590,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         mode = getDictKey(self.__ShutterMode, value)
         attr.set_value(mode)
 
-    ## @brief Write shutter mode 
+    ## @brief Write shutter mode
     @Core.DEB_MEMBER_FUNCT
     def write_shutter_mode(self, attr):
         data = attr.get_write_value()
@@ -1662,7 +1668,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         directory = saving.getDirectory(self.__SavingStream)
         suffix = saving.getSuffix(self.__SavingStream)
         overwritePolicy = saving.getOverwritePolicy(self.__SavingStream)
-        if overwritePolicy == Core.CtSaving.Abort:
+        if overwritePolicy == Core.CtSaving.OverwritePolicy.Abort:
             matchFiles = glob.glob(os.path.join(directory, "%s*%s" % (prefix, suffix)))
             lastnumber = _getLastFileNumber(prefix, suffix, matchFiles)
         else:
@@ -3040,9 +3046,9 @@ def _video_image_2_struct(image):
 
 def _acqstate2string(state):
     state2string = {
-        Core.AcqReady: "Ready",
-        Core.AcqRunning: "Running",
-        Core.AcqFault: "Fault",
+        Core.AcqStatus.AcqReady: "Ready",
+        Core.AcqStatus.AcqRunning: "Running",
+        Core.AcqStatus.AcqFault: "Fault",
     }
     if SystemHasFeature("Core.AcqConfig"):
         state2string[Core.AcqConfig] = "Configuration"

@@ -39,7 +39,7 @@ computing_modes_list = ["MAXIMUM", "CM"]
 
 
 class PeakFinderDeviceServer(BasePostProcess):
-
+    Core.DEB_CLASS(Core.DebModule.DebModApplication, "PeakFinderDeviceServer")
     # --------- Add you global variables here --------------------------
     PEAK_FINDER_TASK_NAME = "PeakFinderTask"
 
@@ -66,7 +66,7 @@ class PeakFinderDeviceServer(BasePostProcess):
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__peakFinderMgr = extOpt.addOp(
-                    Core.PEAKFINDER, self.PEAK_FINDER_TASK_NAME, self._runLevel
+                    Core.SoftOpId.PEAKFINDER, self.PEAK_FINDER_TASK_NAME, self._runLevel
                 )
             self.__peakFinderMgr.clearCounterStatus()
 
@@ -75,6 +75,7 @@ class PeakFinderDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read BufferSize attribute
     # ------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def read_BufferSize(self, attr):
         value_read = self.__peakFinderMgr.getBufferSize()
         attr.set_value(value_read)
@@ -82,6 +83,7 @@ class PeakFinderDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Write BufferSize attribute
     # ------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def write_BufferSize(self, attr):
         data = attr.get_write_value()
         self.__peakFinderMgr.setBufferSize(data)
@@ -89,6 +91,7 @@ class PeakFinderDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read ComputingMode attribute
     # ------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def read_ComputingMode(self, attr):
         value_read = self.__peakFinderMgr.getComputingMode()
         attr.set_value(AttrHelper.getDictKey(self.__ComputingMode, value_read))
@@ -96,6 +99,7 @@ class PeakFinderDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Write ComputingMode attribute
     # ------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def write_ComputingMode(self, attr):
         data = attr.get_write_value()
         t = AttrHelper.getDictValue(self.__ComputingMode, data)
@@ -104,6 +108,7 @@ class PeakFinderDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read CounterStatus attribute
     # ------------------------------------------------------------------
+    @Core.DEB_MEMBER_FUNCT
     def read_CounterStatus(self, attr):
         value_read = self.__peakFinderMgr.getCounterStatus()
         attr.set_value(value_read)
@@ -114,10 +119,12 @@ class PeakFinderDeviceServer(BasePostProcess):
     #
     # ==================================================================
 
+    @Core.DEB_MEMBER_FUNCT
     def setMaskFile(self, argin):
         mask = getDataFromFile(*argin)
         self.__peakFinderMgr.setMask(mask)
 
+    @Core.DEB_MEMBER_FUNCT
     def readPeaks(self):
         peakResultCounterList = self.__peakFinderMgr.readPeaks()
         if peakResultCounterList:

@@ -68,7 +68,7 @@ class MyImageAttr(PyTango.ImageAttr):
 
 
 class LiveViewer(PyTango.LatestDeviceImpl):
-    Core.DEB_CLASS(Core.DebModApplication, "LimaCCDs")
+    Core.DEB_CLASS(Core.DebModule.DebModApplication, "LimaCCDs")
 
     attr_Exposure_Time = 1
     attr_Nb_Frame = 1
@@ -126,23 +126,27 @@ class LiveViewer(PyTango.LatestDeviceImpl):
     @Core.DEB_MEMBER_FUNCT
     def get_ImageType(self):
         imageType2NbBytes = {
-            Core.Bpp8: (1, 0, PyTango.DevUChar),
-            Core.Bpp8S: (1, 1, PyTango.DevUChar),  # no signed char in Tango !!!
-            Core.Bpp10: (2, 0, PyTango.DevUShort),
-            Core.Bpp10S: (2, 1, PyTango.DevShort),
-            Core.Bpp12: (2, 0, PyTango.DevUShort),
-            Core.Bpp12S: (2, 1, PyTango.DevShort),
-            Core.Bpp14: (2, 0, PyTango.DevUShort),
-            Core.Bpp14S: (2, 1, PyTango.DevShort),
-            Core.Bpp16: (2, 0, PyTango.DevUShort),
-            Core.Bpp16S: (2, 1, PyTango.DevShort),
-            Core.Bpp24: (4, 0, PyTango.DevULong),
-            Core.Bpp24S: (4, 1, PyTango.DevLong),
-            Core.Bpp32: (4, 0, PyTango.DevULong),
-            Core.Bpp32S: (4, 1, PyTango.DevLong),
+            Core.ImageType.Bpp8: (1, 0, PyTango.DevUChar),
+            Core.ImageType.Bpp8S: (
+                1,
+                1,
+                PyTango.DevUChar,
+            ),  # no signed char in Tango !!!
+            Core.ImageType.Bpp10: (2, 0, PyTango.DevUShort),
+            Core.ImageType.Bpp10S: (2, 1, PyTango.DevShort),
+            Core.ImageType.Bpp12: (2, 0, PyTango.DevUShort),
+            Core.ImageType.Bpp12S: (2, 1, PyTango.DevShort),
+            Core.ImageType.Bpp14: (2, 0, PyTango.DevUShort),
+            Core.ImageType.Bpp14S: (2, 1, PyTango.DevShort),
+            Core.ImageType.Bpp16: (2, 0, PyTango.DevUShort),
+            Core.ImageType.Bpp16S: (2, 1, PyTango.DevShort),
+            Core.ImageType.Bpp24: (4, 0, PyTango.DevULong),
+            Core.ImageType.Bpp24S: (4, 1, PyTango.DevLong),
+            Core.ImageType.Bpp32: (4, 0, PyTango.DevULong),
+            Core.ImageType.Bpp32S: (4, 1, PyTango.DevLong),
         }
         try:
-            imageType2NbBytes[Core.Bpp32F] = (4, 1, PyTango.DevFloat)
+            imageType2NbBytes[Core.ImageType.Bpp32F] = (4, 1, PyTango.DevFloat)
         except AttributeError:
             pass
 
@@ -298,7 +302,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
     @Core.DEB_MEMBER_FUNCT
     def read_ExternalTrigger(self, attr):
         trigMode = self.acquisition.getTriggerMode()
-        if trigMode == Core.IntTrig:
+        if trigMode == Core.TrigMode.IntTrig:
             value = False
         else:
             value = True
@@ -311,9 +315,9 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
         data = attr.get_write_value()
         if data:
-            trigMode = Core.ExtTrigSingle
+            trigMode = Core.TrigMode.ExtTrigSingle
         else:
-            trigMode = Core.IntTrig
+            trigMode = Core.TrigMode.IntTrig
         state = self.dev_state()
         self.Stop()
 
@@ -398,9 +402,9 @@ class LiveViewer(PyTango.LatestDeviceImpl):
     def dev_state(self):
         ct_status = self.control.getStatus()
         acq_status = ct_status.AcquisitionStatus
-        if acq_status == Core.AcqReady:
+        if acq_status == Core.AcqStatus.AcqReady:
             state = PyTango.DevState.OFF
-        elif acq_status == Core.AcqRunning:
+        elif acq_status == Core.AcqStatus.AcqRunning:
             state = PyTango.DevState.ON
         else:
             state = PyTango.DevState.FAULT
@@ -569,6 +573,7 @@ class LiveViewerClass(PyTango.DeviceClass):
             },
         ],
     }
+
     # ------------------------------------------------------------------
     #    LiveViewerClass Constructor
     # ------------------------------------------------------------------

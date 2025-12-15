@@ -29,7 +29,7 @@ from Lima import Core
 # LimaCCD device to "AccThresholdExample".
 # AccThresholdCallbackModule should be the filename of your plugin.
 class _ExampleThreshold(Core.CtAccumulation.ThresholdCallback):
-    Core.DEB_CLASS(Core.DebModApplication, "_ExampleThreshold")
+    Core.DEB_CLASS(Core.DebModule.DebModApplication, "_ExampleThreshold")
 
     def __init__(self):
         Core.CtAccumulation.ThresholdCallback.__init__(self)
