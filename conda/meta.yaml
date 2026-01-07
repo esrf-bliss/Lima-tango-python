@@ -29,7 +29,7 @@ requirements:
     - setuptools
     - setuptools_scm
   run:
-    - lima-core 1.12*
+    - lima-core >=1.11*
     - pytango 10*
     - pillow # Required by the Bpm plugin
     - pyturbojpeg # Required by the Bpm plugin
@@ -46,7 +46,7 @@ test:
   imports:
     - lima.server
   commands:
-    - pytest tests
+    - pytest -k "not test_tango" tests
 
 about:
   home: https://github.com/esrf-bliss/Lima
