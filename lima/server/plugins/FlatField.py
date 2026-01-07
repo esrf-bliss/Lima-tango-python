@@ -23,26 +23,26 @@
 ############################################################################
 import PyTango
 
-from Lima import Core
-from Lima.Server.plugins.Utils import getDataFromFile, BasePostProcess
+from lima import core
+from lima.server.plugins.Utils import getDataFromFile, BasePostProcess
 
 
 class FlatfieldDeviceServer(BasePostProcess):
     FLATFIELD_TASK_NAME = "FlatField"
-    Core.DEB_CLASS(Core.DebModule.DebModApplication, "FlatfieldDeviceServer")
+    core.DEB_CLASS(core.DebModule.DebModApplication, "FlatfieldDeviceServer")
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def __init__(self, cl, name):
         self.__flatFieldTask = None
         self.__normalize = True
         self.__flatFieldFile = None
 
-        self.__flatFieldImage = Core.Processlib.Data()
+        self.__flatFieldImage = core.Processlib.Data()
 
         BasePostProcess.__init__(self, cl, name)
         FlatfieldDeviceServer.init_device(self)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def set_state(self, state):
         if state == PyTango.DevState.OFF:
             if self.__flatFieldTask:
@@ -55,7 +55,7 @@ class FlatfieldDeviceServer(BasePostProcess):
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__flatFieldTask = extOpt.addOp(
-                    Core.SoftOpId.FLATFIELDCORRECTION,
+                    core.SoftOpId.FLATFIELDCORRECTION,
                     self.FLATFIELD_TASK_NAME,
                     self._runLevel,
                 )
@@ -73,11 +73,11 @@ class FlatfieldDeviceServer(BasePostProcess):
     #  normalize attribute
     # ------------------------------------------------------------------
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_normalize(self, attr):
         attr.set_value(self.__normalize)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_normalize(self, attr):
         data = attr.get_write_value()
         self.__normalize = data
@@ -91,7 +91,7 @@ class FlatfieldDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read MaskFile attribute
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_FlatFieldFile(self, attr):
         if self.__flatFieldFile is not None:
             attr.set_value(self.__flatFieldFile)
@@ -101,7 +101,7 @@ class FlatfieldDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Write MaskFile attribute
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_FlatFieldFile(self, attr):
         filename = attr.get_write_value()
         self.setFlatFieldFile(filename)
@@ -115,14 +115,14 @@ class FlatfieldDeviceServer(BasePostProcess):
     #
     # ==================================================================
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def setFlatFieldImage(self, filepath):
         self.__flatFieldImage = getDataFromFile(filepath)
         self.__flatFieldFile = filepath
         if self.__flatFieldTask:
             self.__flatFieldTask.setFlatFieldImage(self.__flatFieldImage)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def setFlatFieldFile(self, filepath):
         """new command to fit with other correction plugin api"""
         self.setFlatFieldImage(filepath)

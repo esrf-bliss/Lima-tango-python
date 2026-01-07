@@ -1,7 +1,7 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2022
+# Copyright (C) : 2009-2026
 # European Synchrotron Radiation Facility
 # CS40220 38043 Grenoble Cedex 9
 # FRANCE
@@ -34,7 +34,7 @@ import functools
 import PyTango
 
 
-ModDepend = ["Core", "Espia"]
+ModDepend = ["core", "espia"]
 Debug = 0
 LimaDir = None
 StrictVersionPolicy = None
@@ -157,9 +157,9 @@ def setup_lima_env(argv):
     cfile = open(cfile_name, "rt")
     h = "^[ \t]*"
     p = "(?P<plugin>[A-Za-z0-9_]+)"
-    s1 = h + "import[ ]+Lima\\." + p
-    s2 = h + "from[ ]+Lima[ ]+import[ ]+" + p
-    s3 = h + "from[ ]+Lima\\." + p + "(\\.([A-Za-z0-9_]+))*[ ]+import[ ]+"
+    s1 = h + "import[ ]+lima\\." + p
+    s2 = h + "from[ ]+lima[ ]+import[ ]+" + p
+    s3 = h + "from[ ]+lima\\." + p + "(\\.([A-Za-z0-9_]+))*[ ]+import[ ]+"
     o1, o2, o3 = re.compile(s1), re.compile(s2), re.compile(s3)
     for line in cfile.readlines():
         m = o1.match(line) or o2.match(line) or o3.match(line)
@@ -167,7 +167,7 @@ def setup_lima_env(argv):
             continue
         pname = m.group("plugin")
         print_debug("Found %s import in %s" % (pname, cfile_name))
-        if pname not in ["Core"]:
+        if pname not in ["core"]:
             setup_env(pname)
     for k, v in os.environ.items():
         if "LIMA_" in k and "_VERSION" in k and k not in ["LIMA_LINK_STRICT_VERSION"]:
@@ -194,7 +194,7 @@ def check_args(argv):
 def check_link_strict_version():
     global StrictVersionPolicy
 
-    cmd = "from Lima import Core; "
+    cmd = "from lima import core; "
     cmd += 'import os; print (os.environ["LIMA_LINK_STRICT_VERSION"])'
     args = ["python", "-c", cmd]
     pobj = Popen(args, stdout=PIPE)
@@ -229,7 +229,7 @@ def setup_env(mod):
     for dname, dver in deps.items():
         env_var_name = "LIMA_%s_VERSION" % dname.upper()
         os.environ[env_var_name] = set_env_version_depth(dver)
-        if dname != "Core":
+        if dname != "core":
             setup_env(dname)
 
 
@@ -266,7 +266,7 @@ def check_lima_dir():
     global LimaDir
     if LimaDir is not None:
         return LimaDir
-    args = ["python", "-c", "from Lima import Core; print (Core.__file__)"]
+    args = ["python", "-c", "from lima import core; print (core.__file__)"]
     pobj = Popen(args, stdout=PIPE)
     core_init_dir = pobj.stdout.readline().strip()
     core_dir = os.path.dirname(core_init_dir)
@@ -289,7 +289,7 @@ def print_debug(msg):
 
 
 def __get_ct_classes():
-    import Lima.Core
+    import lima.core
 
     global CT_KLASSES
     try:
@@ -298,10 +298,10 @@ def __get_ct_classes():
         pass
 
     classes = {}
-    for member_name in dir(Lima.Core):
+    for member_name in dir(lima.core):
         if not member_name.startswith("Ct"):
             continue
-        member = getattr(Lima.Core, member_name)
+        member = getattr(lima.core, member_name)
         if not inspect.isclass(member):
             continue
         classes[member_name] = member
@@ -310,10 +310,10 @@ def __get_ct_classes():
 
 
 def __filter(obj, tango_class_name, member_name, member):
-    import Lima.Core
+    import lima.core
 
     # Avoid enumerations
-    is_enum = type(type(member)) is type(Lima.Core.CtControl.CameraErrorCode)
+    is_enum = type(type(member)) is type(lima.core.CtControl.CameraErrorCode)
     if is_enum and member_name[0].isupper():
         return False
     return True
@@ -461,7 +461,7 @@ def get_camera_module(name: str):
     entry_point = get_entry_point("Lima_tango_camera", name)
     if entry_point is None:
         # fallback to search in local camera directory
-        mod_name = "Lima.Server.camera.{}".format(name)
+        mod_name = "lima.server.camera.{}".format(name)
         return _import(mod_name)
     return entry_point.load()
 
@@ -471,6 +471,6 @@ def get_plugin_module(name: str):
     entry_point = get_entry_point("Lima_tango_plugin", name)
     if entry_point is None:
         # fallback to search in local plugins directory
-        mod_name = "Lima.Server.plugins.{}".format(name)
+        mod_name = "lima.server.plugins.{}".format(name)
         return _import(mod_name)
     return entry_point.load()

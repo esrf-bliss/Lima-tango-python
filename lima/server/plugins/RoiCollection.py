@@ -24,17 +24,17 @@
 import itertools
 import PyTango
 import numpy
-from Lima import Core
-from Lima.Server.plugins.Utils import BasePostProcess
+from lima import core
+from lima.server.plugins.Utils import BasePostProcess
 
 
 def grouper(n, iterable, padvalue=None):
     return zip(*[itertools.chain(iterable, itertools.repeat(padvalue, n - 1))] * n)
 
 
-class AcqCallback(Core.SoftCallback):
+class AcqCallback(core.SoftCallback):
     def __init__(self, container):
-        Core.SoftCallback.__init__(self)
+        core.SoftCallback.__init__(self)
         self._container = container
 
     def prepare(self):
@@ -51,7 +51,7 @@ class AcqCallback(Core.SoftCallback):
 
 
 class RoiCollectionDeviceServer(BasePostProcess):
-    Core.DEB_CLASS(Core.DebModule.DebModApplication, "RoiCollectionDeviceServer")
+    core.DEB_CLASS(core.DebModule.DebModApplication, "RoiCollectionDeviceServer")
 
     # --------- Add you global variables here --------------------------
     ROI_COLLECTION_TASK_NAME = "RoiCollectionTask"
@@ -59,13 +59,13 @@ class RoiCollectionDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Device constructor
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def __init__(self, cl, name):
         self._mgr = None
         self._maskFile = None
         self._maskData = None
-        self._roiCollectionMgr = Core.Processlib.Tasks.RoiCollectionManager()
-        self._roiCollectionTask = Core.Processlib.Tasks.RoiCollectionTask(
+        self._roiCollectionMgr = core.Processlib.Tasks.RoiCollectionManager()
+        self._roiCollectionTask = core.Processlib.Tasks.RoiCollectionTask(
             self._roiCollectionMgr
         )
         self._acq_callback = AcqCallback(self)
@@ -77,7 +77,7 @@ class RoiCollectionDeviceServer(BasePostProcess):
         self.setMaskFile(self.MaskFile)
         self._roiCollectionMgr.resizeHistory(self.BufferSize)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def set_state(self, state):
         if state == PyTango.DevState.OFF:
             if self._mgr:
@@ -90,7 +90,7 @@ class RoiCollectionDeviceServer(BasePostProcess):
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self._mgr = extOpt.addOp(
-                    Core.USER_SINK_TASK, self.ROI_COLLECTION_TASK_NAME, self._runLevel
+                    core.USER_SINK_TASK, self.ROI_COLLECTION_TASK_NAME, self._runLevel
                 )
                 self._mgr.setSinkTask(self._roiCollectionTask)
                 self._mgr.registerCallback(self._acq_callback)
@@ -100,7 +100,7 @@ class RoiCollectionDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read BufferSize attribute
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_BufferSize(self, attr):
         value_read = self._roiCollectionMgr.historySize()
         attr.set_value(value_read)
@@ -108,7 +108,7 @@ class RoiCollectionDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Write BufferSize attribute
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_BufferSize(self, attr):
         data = attr.get_write_value()
         self._roiCollectionMgr.resizeHistory(data)
@@ -119,7 +119,7 @@ class RoiCollectionDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read CounterStatus attribute
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_CounterStatus(self, attr):
         value_read = self._roiCollectionMgr.lastFrameNumber()
         attr.set_value(value_read)
@@ -127,7 +127,7 @@ class RoiCollectionDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read MaskFile attribute
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_MaskFile(self, attr):
         if self._maskFile is not None:
             attr.set_value(self._maskFile)
@@ -137,7 +137,7 @@ class RoiCollectionDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Write MaskFile attribute
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_MaskFile(self, attr):
         filename = attr.get_write_value()
         self.setMaskFile(filename)
@@ -169,7 +169,7 @@ class RoiCollectionDeviceServer(BasePostProcess):
     #
     # ==================================================================
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def setMaskFile(self, argin):
         if len(argin):
             try:
@@ -183,16 +183,16 @@ class RoiCollectionDeviceServer(BasePostProcess):
             if self._maskData is not None:
                 # reset the mask if needed
                 if self._roiCollectionMgr is not None:
-                    emptyData = Core.Processlib.Data()
+                    emptyData = core.Processlib.Data()
                     self._roiCollectionMgr.setMask(emptyData)
             self._maskData = None
             self._maskFile = None
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def clearAllRois(self):
         self._roiCollectionMgr.clearRois()
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def setRois(self, argin):
         if not len(argin) % 4:
             roi_list = (
@@ -204,7 +204,7 @@ class RoiCollectionDeviceServer(BasePostProcess):
                 "should be a vector as follow [x0,y0,width0,height0,..."
             )
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def readSpectrum(self, argin):
         result_counters = self._roiCollectionMgr.getHistory(argin)
         if result_counters:
@@ -231,7 +231,7 @@ class RoiCollectionDeviceServer(BasePostProcess):
 #
 # ==================================================================
 class RoiCollectionDeviceServerClass(PyTango.DeviceClass):
-    Core.DEB_CLASS(Core.DebModule.DebModApplication, "RoiCollectionDeviceServerClass")
+    core.DEB_CLASS(core.DebModule.DebModApplication, "RoiCollectionDeviceServerClass")
     # 	 Class Properties
     class_property_list = {}
 
@@ -278,7 +278,7 @@ class RoiCollectionDeviceServerClass(PyTango.DeviceClass):
     # ------------------------------------------------------------------
     #    RoiCollectionDeviceServerClass Constructor
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def __init__(self, name):
         PyTango.DeviceClass.__init__(self, name)
         self.set_type(name)

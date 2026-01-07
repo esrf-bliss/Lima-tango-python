@@ -35,8 +35,8 @@ import bloscpack
 from collections import namedtuple
 from pymemcache.client.base import Client
 
-from Lima import Core
-from Lima.Server.plugins.Utils import BasePostProcess
+from lima import core
+from lima.server.plugins.Utils import BasePostProcess
 
 # ==================================================================
 #   MemcachedSinkTask SinkTask
@@ -54,7 +54,7 @@ def _key_repr(self):
 Key.__repr__ = _key_repr
 
 
-class MemcachedSinkTask(Core.Processlib.SinkTaskBase):
+class MemcachedSinkTask(core.Processlib.SinkTaskBase):
     def __init__(self, client, acquisitionID, detectorID=0, blosc_args=None):
         """
         :param client: A memcached client
@@ -122,7 +122,7 @@ class MemcachedDeviceServer(BasePostProcess):
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__memcachedOpInstance = extOpt.addOp(
-                    Core.SoftOpId.USER_SINK_TASK,
+                    core.SoftOpId.USER_SINK_TASK,
                     self.MEMCACHED_TASK_NAME,
                     self._runLevel,
                 )
@@ -130,7 +130,7 @@ class MemcachedDeviceServer(BasePostProcess):
 
                 # Get detector model
                 hw = ctControl.hwInterface()
-                detinfo = hw.getHwCtrlObj(Core.HwCap.Type.DetInfo)
+                detinfo = hw.getHwCtrlObj(core.HwCap.Type.DetInfo)
                 detectorID = detinfo.getDetectorModel()
 
                 # Get image size

@@ -27,8 +27,8 @@ import struct
 import threading
 import weakref
 
-from Lima import Core
-from Lima.Server.plugins.Utils import BasePostProcess
+from lima import core
+from lima.server.plugins.Utils import BasePostProcess
 
 
 # PIL an StringIO, py2 vs. py3
@@ -62,31 +62,31 @@ import base64
 
 
 class BpmDeviceServer(BasePostProcess):
-    Core.DEB_CLASS(Core.DebModule.DebModApplication, "BpmDeviceServer")
+    core.DEB_CLASS(core.DebModule.DebModApplication, "BpmDeviceServer")
 
     # --------- Add you global variables here --------------------------
     BPM_TASK_NAME = "BpmTask"
     BVDATA_TASK_NAME = "BVDataTask"
 
     ImageType2Bpp = {
-        Core.ImageType.Bpp8: 8,
-        Core.ImageType.Bpp10: 10,
-        Core.ImageType.Bpp12: 12,
-        Core.ImageType.Bpp14: 14,
-        Core.ImageType.Bpp16: 16,
-        Core.ImageType.Bpp32: 32,
-        Core.ImageType.Bpp8S: 7,
-        Core.ImageType.Bpp10S: 9,
-        Core.ImageType.Bpp12S: 11,
-        Core.ImageType.Bpp14S: 13,
-        Core.ImageType.Bpp16S: 15,
-        Core.ImageType.Bpp32S: 31,
+        core.ImageType.Bpp8: 8,
+        core.ImageType.Bpp10: 10,
+        core.ImageType.Bpp12: 12,
+        core.ImageType.Bpp14: 14,
+        core.ImageType.Bpp16: 16,
+        core.ImageType.Bpp32: 32,
+        core.ImageType.Bpp8S: 7,
+        core.ImageType.Bpp10S: 9,
+        core.ImageType.Bpp12S: 11,
+        core.ImageType.Bpp14S: 13,
+        core.ImageType.Bpp16S: 15,
+        core.ImageType.Bpp32S: 31,
     }
 
     # ------------------------------------------------------------------
     #    Device constructor
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def __init__(self, cl, name):
         self._softOp = None
         self._bpmManager = None
@@ -102,14 +102,14 @@ class BpmDeviceServer(BasePostProcess):
         BasePostProcess.__init__(self, cl, name)
         self.init_device()
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def init_device(self):
         BasePostProcess.init_device(self)
         if self.enable_tango_event:
             # enable event push for bvdata attribute
             self.set_change_event("bvdata", True, False)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def set_state(self, state):
         if state == PyTango.DevState.OFF:
             if self._softOp:
@@ -134,13 +134,13 @@ class BpmDeviceServer(BasePostProcess):
             extOpt = ctControl.externalOperation()
             if self.enable_bpm_calc and not self._bpmManager:
                 self._softOp = extOpt.addOp(
-                    Core.SoftOpId.BPM, self.BPM_TASK_NAME, self._runLevel + 1
+                    core.SoftOpId.BPM, self.BPM_TASK_NAME, self._runLevel + 1
                 )
                 self._bpmManager = self._softOp.getManager()
             if self.enable_tango_event and not self._BVDataTask:
                 self._BVDataTask = BVDataTask(self)
                 handler = extOpt.addOp(
-                    Core.SoftOpId.USER_SINK_TASK,
+                    core.SoftOpId.USER_SINK_TASK,
                     self.BVDATA_TASK_NAME,
                     self._runLevel + 2,
                 )
@@ -247,7 +247,7 @@ class BpmDeviceServer(BasePostProcess):
             extOpt.delOp("bkg")
         im = ctControl.ReadImage()
         self.bkg_substraction_handler = extOpt.addOp(
-            Core.SoftOpId.BACKGROUNDSUBSTRACTION, "bkg", self._runLevel
+            core.SoftOpId.BACKGROUNDSUBSTRACTION, "bkg", self._runLevel
         )
         self.bkg_substraction_handler.setBackgroundImage(im)
 
@@ -649,11 +649,11 @@ class BpmDeviceServerClass(PyTango.DeviceClass):
         self.set_type(name)
 
 
-class BVDataTask(Core.Processlib.SinkTaskBase):
-    Core.DEB_CLASS(Core.DebModule.DebModApplication, "BVDataTask")
+class BVDataTask(core.Processlib.SinkTaskBase):
+    core.DEB_CLASS(core.DebModule.DebModApplication, "BVDataTask")
 
     class _PushingThread(threading.Thread):
-        Core.DEB_CLASS(Core.DebModule.DebModApplication, "_PushingThread")
+        core.DEB_CLASS(core.DebModule.DebModApplication, "_PushingThread")
 
         def __init__(self, task):
             threading.Thread.__init__(self)
@@ -681,7 +681,7 @@ class BVDataTask(Core.Processlib.SinkTaskBase):
                     self.timestamp = time.time()
 
     def __init__(self, bpm_device):
-        Core.Processlib.SinkTaskBase.__init__(self)
+        core.Processlib.SinkTaskBase.__init__(self)
         self._bpm_device = bpm_device
         self._lock = threading.Condition()
         self._new_frame_ready = False
