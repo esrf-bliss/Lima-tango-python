@@ -10,6 +10,7 @@ build-noarch:
     paths:
       - dist/
   tags:
+    - conda
     - linux
 
 deploy-devel:
@@ -24,6 +25,7 @@ deploy-devel:
     - conda index --channeldata /conda-devel/
   tags:
     - linux
+    - conda
   only:
     - branches
   except:
@@ -42,6 +44,7 @@ deploy-stable:
     - conda index --channeldata /conda/
   tags:
     - linux
+    - conda
   only:
     - tags
     - stable
