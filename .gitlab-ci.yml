@@ -5,7 +5,7 @@ stages:
 build-noarch:
   stage: build
   script:
-    - conda mambabuild --output-folder=dist -c conda-forge -c http://bcu-ci.esrf.fr/stable conda
+    - conda mambabuild ./conda --output-folder=dist -c conda-forge --channel=http://bcu-ci.esrf.fr/stable
   artifacts:
     paths:
       - dist/
