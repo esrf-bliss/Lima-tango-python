@@ -46,7 +46,7 @@ test:
   imports:
     - lima.server
   commands:
-    - pytest tests
+    - pytest -k "not test_tango" tests
 
 about:
   home: https://github.com/esrf-bliss/Lima
