@@ -38,7 +38,7 @@ class MaskDeviceServer(BasePostProcess):
         self.__maskFile = None
         self.__maskImage = core.Processlib.Data()
 
-        self.__Type = {"STANDARD": 0, "DUMMY": 1}
+        self.__Type = {"STANDARD": core.SoftOpMask.Type.STANDARD, "DUMMY": core.SoftOpMask.Type.DUMMY}
 
         BasePostProcess.__init__(self, cl, name)
         MaskDeviceServer.init_device(self)

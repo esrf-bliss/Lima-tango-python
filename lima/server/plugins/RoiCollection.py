@@ -90,7 +90,7 @@ class RoiCollectionDeviceServer(BasePostProcess):
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self._mgr = extOpt.addOp(
-                    core.USER_SINK_TASK, self.ROI_COLLECTION_TASK_NAME, self._runLevel
+                    core.SoftOpId.USER_SINK_TASK, self.ROI_COLLECTION_TASK_NAME, self._runLevel
                 )
                 self._mgr.setSinkTask(self._roiCollectionTask)
                 self._mgr.registerCallback(self._acq_callback)

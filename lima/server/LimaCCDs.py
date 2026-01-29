@@ -1338,7 +1338,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     @core.DEB_MEMBER_FUNCT
     def write_image_flip(self, attr):
         data = attr.get_write_value()
-        flip = core.Flip(*data)
+        flip = core.Flip(bool(data[0]), bool(data[1]))
         image = self.__control.image()
         image.setFlip(flip)
 
@@ -3030,7 +3030,7 @@ def _video_image_2_struct(image):
         VIDEO_HEADER_FORMAT,
         0x5644454F,  # Magic
         1,  # header version
-        image.mode(),  # image mode (Y8,Y16...)
+        image.mode().value,  # image mode (Y8,Y16...)
         image.frameNumber(),  # frame number
         image.width(),  # width
         image.height(),  # height
