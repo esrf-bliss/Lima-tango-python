@@ -1,7 +1,7 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2022
+# Copyright (C) : 2009-2026
 # European Synchrotron Radiation Facility
 # CS40220 38043 Grenoble Cedex 9
 # FRANCE
@@ -20,7 +20,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 ############################################################################
-from Lima import Core
+from lima import core
 
 
 ##@brief this is an plugin example for accumulation saturation callback
@@ -28,14 +28,14 @@ from Lima import Core
 # To use this plugin, you have to set AccThresholdCallbackModule property in
 # LimaCCD device to "AccThresholdExample".
 # AccThresholdCallbackModule should be the filename of your plugin.
-class _ExampleThreshold(Core.CtAccumulation.ThresholdCallback):
-    Core.DEB_CLASS(Core.DebModApplication, "_ExampleThreshold")
+class _ExampleThreshold(core.CtAccumulation.ThresholdCallback):
+    core.DEB_CLASS(core.DebModule.DebModApplication, "_ExampleThreshold")
 
     def __init__(self):
-        Core.CtAccumulation.ThresholdCallback.__init__(self)
+        core.CtAccumulation.ThresholdCallback.__init__(self)
 
     ##@brief the effective callback methode
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def aboveMax(self, data, value):
         deb.Trace("aboveMax: data=%s, value=%s" % (data, value))
 

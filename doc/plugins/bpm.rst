@@ -63,7 +63,7 @@ getResults              DevLong              DevVarDoubleArray        Take a num
                                                                       frame number ask until there is no more image.
 GetPixelIntensity       DevVarLongArray      DevLong                  Return the intensity of pixel (x,y) passed as parameters
 HasBackground           DevVoid              DevBoolean               Is there a background already in place ?
-TakeBackground          DevVoid              DevVoid                  Take the current image and set it as Background, using the Core.BACKGROUNDSUBSTRACTION module.
+TakeBackground          DevVoid              DevVoid                  Take the current image and set it as Background, using the Core.SoftOpId.BACKGROUNDSUBSTRACTION module.
 ResetBackground         DevVoid              DevVoid                  Reset the Background.
 ====================    ==================== ====================     ================================================================================================================
 

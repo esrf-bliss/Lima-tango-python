@@ -1,7 +1,7 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2022
+# Copyright (C) : 2009-2026
 # European Synchrotron Radiation Facility
 # CS40220 38043 Grenoble Cedex 9
 # FRANCE
@@ -23,15 +23,15 @@
 
 import itertools
 import PyTango
-from Lima import Core
-from Lima.Server.plugins.Utils import getMaskFromFile, BasePostProcess
+from lima import core
+from lima.server.plugins.Utils import getMaskFromFile, BasePostProcess
 
 
 def grouper(n, iterable, padvalue=None):
     return zip(*[itertools.chain(iterable, itertools.repeat(padvalue, n - 1))] * n)
 
 
-Roi2SpectrumTask = Core.Processlib.Tasks.Roi2SpectrumTask
+Roi2SpectrumTask = core.Processlib.Tasks.Roi2SpectrumTask
 
 # ==================================================================
 #   Roi2spectrum Class Description:
@@ -43,12 +43,12 @@ Roi2SpectrumTask = Core.Processlib.Tasks.Roi2SpectrumTask
 class Roi2spectrumDeviceServer(BasePostProcess):
     # --------- Add you global variables here --------------------------
     ROI_SPECTRUM_TASK_NAME = "Roi2SpectrumTask"
-    Core.DEB_CLASS(Core.DebModApplication, "Roi2spectrumDeviceServer")
+    core.DEB_CLASS(core.DebModule.DebModApplication, "Roi2spectrumDeviceServer")
 
     # ------------------------------------------------------------------
     #    Device constructor
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def __init__(self, cl, name):
         self.__roi2spectrumMgr = None
         self.__roiName2ID = {}
@@ -60,7 +60,7 @@ class Roi2spectrumDeviceServer(BasePostProcess):
         Roi2spectrumDeviceServer.init_device(self)
         self.setMaskFile(self.MaskFile)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def set_state(self, state):
         if state == PyTango.DevState.OFF:
             if self.__roi2spectrumMgr:
@@ -73,7 +73,9 @@ class Roi2spectrumDeviceServer(BasePostProcess):
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__roi2spectrumMgr = extOpt.addOp(
-                    Core.ROI2SPECTRUM, self.ROI_SPECTRUM_TASK_NAME, self._runLevel
+                    core.SoftOpId.ROI2SPECTRUM,
+                    self.ROI_SPECTRUM_TASK_NAME,
+                    self._runLevel,
                 )
                 self.__roi2spectrumMgr.setBufferSize(int(self.BufferSize))
                 if self.__maskData is not None:
@@ -85,14 +87,14 @@ class Roi2spectrumDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read BufferSize attribute
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_BufferSize(self, attr):
         attr.set_value(self.BufferSize)
 
     # ------------------------------------------------------------------
     #    Write BufferSize attribute
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_BufferSize(self, attr):
         data = attr.get_write_value()
         self.BufferSize = int(data)
@@ -105,7 +107,7 @@ class Roi2spectrumDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read CounterStatus attribute
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_CounterStatus(self, attr):
         value_read = self.__roi2spectrumMgr.getCounterStatus()
         attr.set_value(value_read)
@@ -113,7 +115,7 @@ class Roi2spectrumDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read MaskFile attribute
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_MaskFile(self, attr):
         if self.__maskFile is not None:
             attr.set_value(self.__maskFile)
@@ -123,7 +125,7 @@ class Roi2spectrumDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Write MaskFile attribute
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_MaskFile(self, attr):
         filename = attr.get_write_value()
         self.setMaskFile(filename)
@@ -136,7 +138,7 @@ class Roi2spectrumDeviceServer(BasePostProcess):
     #    Roi2spectrum command methods
     #
     # ==================================================================
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def addNames(self, argin):
         roi_id = []
         for roi_name in argin:
@@ -149,7 +151,7 @@ class Roi2spectrumDeviceServer(BasePostProcess):
                 roi_id.append(self.__roiName2ID[roi_name])
         return roi_id
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def removeRois(self, argin):
         if self.__roi2spectrumMgr:
             self.__roi2spectrumMgr.removeRois(argin)
@@ -157,7 +159,7 @@ class Roi2spectrumDeviceServer(BasePostProcess):
             roi_id = self.__roiName2ID.pop(roi_name, None)
             self.__roiID2Name.pop(roi_id, None)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def setRois(self, argin):
         if self.__roi2spectrumMgr is None:
             raise RuntimeError("should start the device first")
@@ -168,20 +170,20 @@ class Roi2spectrumDeviceServer(BasePostProcess):
                 roi_name = self.__roiID2Name.get(roi_id, None)
                 if roi_name is None:
                     raise RuntimeError("should call add method before setRoi")
-                roi_list.append((roi_name.encode(), Core.Roi(x, y, width, height)))
+                roi_list.append((roi_name.encode(), core.Roi(x, y, width, height)))
             self.__roi2spectrumMgr.updateRois(roi_list)
         else:
             raise AttributeError(
                 "should be a vector as follow [roi_id0,x0,y0,width0,height0,..."
             )
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def getNames(self):
         if self.__roi2spectrumMgr is None:
             raise RuntimeError("should start the device first")
         return self.__roi2spectrumMgr.getNames()
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def getRois(self, argin):
         if self.__roi2spectrumMgr is None:
             raise RuntimeError("should start the device first")
@@ -199,7 +201,7 @@ class Roi2spectrumDeviceServer(BasePostProcess):
             roi_list.append((roi_id, x, y, w, h))
         return list(itertools.chain(*roi_list))
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def getRoiModes(self, argin):
         if self.__roi2spectrumMgr is None:
             raise RuntimeError("should start the device first")
@@ -212,26 +214,26 @@ class Roi2spectrumDeviceServer(BasePostProcess):
             else:
                 raise ValueError("Roi %s not defined yet" % roi_name)
             roi_mode_map = {
-                Roi2SpectrumTask.COLUMN_SUM: "COLUMN_SUM",
-                Roi2SpectrumTask.LINES_SUM: "LINES_SUM",
+                Roi2SpectrumTask.Mode.COLUMN_SUM: "COLUMN_SUM",
+                Roi2SpectrumTask.Mode.LINES_SUM: "LINES_SUM",
             }
             roi_mode_list.append(roi_mode_map[roi_mode])
         return roi_mode_list
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def setRoiModes(self, argin):
         roi_mode_map = {
-            "COLUMN_SUM": Roi2SpectrumTask.COLUMN_SUM,
-            "LINES_SUM": Roi2SpectrumTask.LINES_SUM,
+            "COLUMN_SUM": Roi2SpectrumTask.Mode.COLUMN_SUM.value,
+            "LINES_SUM": Roi2SpectrumTask.Mode.LINES_SUM.value,
         }
         rois_modes = [(n, roi_mode_map[m]) for n, m in grouper(2, argin)]
         self.__roi2spectrumMgr.setRoiModes(rois_modes)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def clearAllRois(self):
         self.__roi2spectrumMgr.clearAllRois()
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def setMaskFile(self, argin):
         if len(argin):
             try:
@@ -246,12 +248,12 @@ class Roi2spectrumDeviceServer(BasePostProcess):
             if self.__maskData is not None:
                 # reset the mask if needed
                 if self.__roi2spectrumMgr is not None:
-                    emptyData = Core.Processlib.Data()
+                    emptyData = core.Processlib.Data()
                     self.__roi2spectrumMgr.setMask(emptyData)
             self.__maskData = None
             self.__maskFile = None
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def readImage(self, argin):
         roiId, fromImageId = argin
         roi_name = self.__roiID2Name.get(roiId, None)

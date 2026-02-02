@@ -3,7 +3,7 @@ import numpy
 import contextlib
 import pytest
 
-from Lima.Server.plugins import Utils
+from lima.server.plugins import Utils
 
 
 class ImageFactory():

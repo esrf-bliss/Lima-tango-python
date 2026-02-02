@@ -1,7 +1,7 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2022
+# Copyright (C) : 2009-2026
 # European Synchrotron Radiation Facility
 # CS40220 38043 Grenoble Cedex 9
 # FRANCE
@@ -50,7 +50,7 @@ __docformat__ = "restructuredtext"
 import PyTango
 
 # Add additional import
-from Lima import Core
+from lima import core
 
 
 # ------------------------------------------------------------------
@@ -68,7 +68,7 @@ class MyImageAttr(PyTango.ImageAttr):
 
 
 class LiveViewer(PyTango.LatestDeviceImpl):
-    Core.DEB_CLASS(Core.DebModApplication, "LimaCCDs")
+    core.DEB_CLASS(core.DebModule.DebModApplication, "LimaCCDs")
 
     attr_Exposure_Time = 1
     attr_Nb_Frame = 1
@@ -78,7 +78,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
     # ------------------------------------------------------------------
     #    Device constructor
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def __init__(self, cl, name):
         PyTango.LatestDeviceImpl.__init__(self, cl, name)
         self.init_device()
@@ -86,7 +86,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
     # ------------------------------------------------------------------
     #    Device destructor
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def delete_device(self):
         self.debug_stream("In delete_device()")
 
@@ -95,7 +95,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
     # ------------------------------------------------------------------
     #    Device initialization
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def init_device(self):
         self.get_device_properties(self.get_device_class())
         self.attr_Image_ccd_read = [[0]]
@@ -123,26 +123,30 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief helper to convert lima image type to Tango type
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def get_ImageType(self):
         imageType2NbBytes = {
-            Core.Bpp8: (1, 0, PyTango.DevUChar),
-            Core.Bpp8S: (1, 1, PyTango.DevUChar),  # no signed char in Tango !!!
-            Core.Bpp10: (2, 0, PyTango.DevUShort),
-            Core.Bpp10S: (2, 1, PyTango.DevShort),
-            Core.Bpp12: (2, 0, PyTango.DevUShort),
-            Core.Bpp12S: (2, 1, PyTango.DevShort),
-            Core.Bpp14: (2, 0, PyTango.DevUShort),
-            Core.Bpp14S: (2, 1, PyTango.DevShort),
-            Core.Bpp16: (2, 0, PyTango.DevUShort),
-            Core.Bpp16S: (2, 1, PyTango.DevShort),
-            Core.Bpp24: (4, 0, PyTango.DevULong),
-            Core.Bpp24S: (4, 1, PyTango.DevLong),
-            Core.Bpp32: (4, 0, PyTango.DevULong),
-            Core.Bpp32S: (4, 1, PyTango.DevLong),
+            core.ImageType.Bpp8: (1, 0, PyTango.DevUChar),
+            core.ImageType.Bpp8S: (
+                1,
+                1,
+                PyTango.DevUChar,
+            ),  # no signed char in Tango !!!
+            core.ImageType.Bpp10: (2, 0, PyTango.DevUShort),
+            core.ImageType.Bpp10S: (2, 1, PyTango.DevShort),
+            core.ImageType.Bpp12: (2, 0, PyTango.DevUShort),
+            core.ImageType.Bpp12S: (2, 1, PyTango.DevShort),
+            core.ImageType.Bpp14: (2, 0, PyTango.DevUShort),
+            core.ImageType.Bpp14S: (2, 1, PyTango.DevShort),
+            core.ImageType.Bpp16: (2, 0, PyTango.DevUShort),
+            core.ImageType.Bpp16S: (2, 1, PyTango.DevShort),
+            core.ImageType.Bpp24: (4, 0, PyTango.DevULong),
+            core.ImageType.Bpp24S: (4, 1, PyTango.DevLong),
+            core.ImageType.Bpp32: (4, 0, PyTango.DevULong),
+            core.ImageType.Bpp32S: (4, 1, PyTango.DevLong),
         }
         try:
-            imageType2NbBytes[Core.Bpp32F] = (4, 1, PyTango.DevFloat)
+            imageType2NbBytes[core.ImageType.Bpp32F] = (4, 1, PyTango.DevFloat)
         except AttributeError:
             pass
 
@@ -151,7 +155,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief private method which creates dynamically some attributes
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def initialize_dynamic_attributes(self):
 
         imageType, imageSign, imageTgType = self.get_ImageType()
@@ -172,7 +176,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Read acquisition exposure time
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_Exposure(self, attr):
         value = self.acquisition.getAcqExpoTime()
         if value is None:
@@ -182,7 +186,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Write the acquisition exposure time
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_Exposure(self, attr):
 
         data = attr.get_write_value()
@@ -198,7 +202,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Read the gain
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_Gain(self, attr):
         gain = 0
         try:
@@ -209,7 +213,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Write the gain
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_Gain(self, attr):
 
         data = attr.get_write_value()
@@ -220,7 +224,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Read Frame rate
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_FrameRate(self, attr):
         fRate = -1
         try:
@@ -232,7 +236,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Write the frame rate
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_FrameRate(self, attr):
 
         data = attr.get_write_value()
@@ -244,14 +248,14 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Read acquisition number of frames
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_Frames(self, attr):
         value = self.acquisition.getAcqNbFrames()
         attr.set_value(value)
 
     ## @brief Write acquisition number of frames
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_Frames(self, attr):
         data = attr.get_write_value()
         state = self.dev_state()
@@ -262,7 +266,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Read last image acquire number
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_ImageCounter(self, attr):
         status = self.control.getStatus()
         imageCounter = status.ImageCounters
@@ -272,14 +276,14 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Read image depth in byte
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_Depth(self, attr):
         depth, signed, tg_type = self.get_ImageType()
         attr.set_value(depth)
 
     ## @brief Read JPEG quality factor in %
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_JpegQuality(self, attr):
         value = self.attr_JPeg_Quality
 
@@ -287,7 +291,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Write the JPEG quality factor in %
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_JpegQuality(self, attr):
 
         data = attr.get_write_value()
@@ -295,10 +299,10 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Read external trigger flag
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_ExternalTrigger(self, attr):
         trigMode = self.acquisition.getTriggerMode()
-        if trigMode == Core.IntTrig:
+        if trigMode == core.TrigMode.IntTrig:
             value = False
         else:
             value = True
@@ -306,14 +310,14 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Write the external trigger flag
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_ExternalTrigger(self, attr):
 
         data = attr.get_write_value()
         if data:
-            trigMode = Core.ExtTrigSingle
+            trigMode = core.TrigMode.ExtTrigSingle
         else:
-            trigMode = Core.IntTrig
+            trigMode = core.TrigMode.IntTrig
         state = self.dev_state()
         self.Stop()
 
@@ -323,7 +327,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Read ROI definition
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_Roi(self, attr):
         roi = self.image.getRoi()
         p0 = roi.getTopLeft()
@@ -334,16 +338,16 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Write the ROI definition
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_Roi(self, attr):
 
         data = attr.get_write_value()
         state = self.dev_state()
         self.Stop()
 
-        roi = Core.Roi()
-        roi.setTopLeft(Core.Point(data[0], data[1]))
-        roi.setSize(Core.Size(data[2], data[3]))
+        roi = core.Roi()
+        roi.setTopLeft(core.Point(data[0], data[1]))
+        roi.setSize(core.Size(data[2], data[3]))
         self.image.setRoi(roi)
 
         if state == PyTango.DevState.ON:
@@ -351,7 +355,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Read the last Image
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_Image(self, attr):
 
         dim = self.image.getImageDim()
@@ -368,7 +372,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Read the last Image in JPEG format (DevEncoded)
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_JpegImage(self, attr):
 
         depth, signed, tgType = self.get_ImageType()
@@ -394,13 +398,13 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief State command: try to return a "simple" Lima state of the camera
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def dev_state(self):
         ct_status = self.control.getStatus()
         acq_status = ct_status.AcquisitionStatus
-        if acq_status == Core.AcqReady:
+        if acq_status == core.AcqStatus.AcqReady:
             state = PyTango.DevState.OFF
-        elif acq_status == Core.AcqRunning:
+        elif acq_status == core.AcqStatus.AcqRunning:
             state = PyTango.DevState.ON
         else:
             state = PyTango.DevState.FAULT
@@ -409,14 +413,14 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Reset command: try to reset the camera after a fault start
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def Reset(self):
         self.Stop()
         self.control.reset()
 
     ## @brief ResetRoi command: reset the camera to full image size
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def ResetRoi(self):
         self.Stop()
         self.image.resetRoi()
@@ -424,7 +428,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Start command: start the acquisition
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def Start(self):
         # kind of state machine !!!!
         if self.dev_state() != PyTango.DevState.ON:
@@ -434,7 +438,7 @@ class LiveViewer(PyTango.LatestDeviceImpl):
 
     ## @brief Stop command: stop the acquisition
     #
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def Stop(self):
         self.control.stopAcq()
 
@@ -569,6 +573,7 @@ class LiveViewerClass(PyTango.DeviceClass):
             },
         ],
     }
+
     # ------------------------------------------------------------------
     #    LiveViewerClass Constructor
     # ------------------------------------------------------------------

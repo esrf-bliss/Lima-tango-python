@@ -3,14 +3,14 @@
 from setuptools import setup
 
 packages = [
-    'Lima.Server',
-    'Lima.Server.plugins',
-    'Lima.Server.camera'
+    'lima.server',
+    'lima.server.plugins',
+    'lima.server.camera'
 ]
 
 console_scripts_entry_points = [
-    "LimaCCDs = Lima.Server.LimaCCDs:main",
-    "LimaViewer = Lima.Server.LimaViewer:main",
+    "LimaCCDs = lima.server.LimaCCDs:main",
+    "LimaViewer = lima.server.LimaViewer:main",
 ]
 
 setup(name='lima-tango-server',

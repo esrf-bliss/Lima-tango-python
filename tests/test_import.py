@@ -1,4 +1,4 @@
 
 
 def test_import():
-    import Lima.Server.plugins.Utils
+    import lima.server.plugins.Utils

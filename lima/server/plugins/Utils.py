@@ -1,7 +1,7 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2022
+# Copyright (C) : 2009-2026
 # European Synchrotron Radiation Facility
 # CS40220 38043 Grenoble Cedex 9
 # FRANCE
@@ -23,8 +23,8 @@
 import PyTango
 
 
-from Lima import Core
-from Lima.Server import EdfFile
+from lima import core
+from lima.server import EdfFile
 
 
 def getDataFromFile(filepath, index=0):
@@ -35,7 +35,7 @@ def getDataFromFile(filepath, index=0):
         import traceback
 
         traceback.print_exc()
-        return Core.Processlib.Data()  # empty
+        return core.Processlib.Data()  # empty
 
 
 ##@brief the function read all known data file
@@ -50,7 +50,7 @@ def getDatasFromFile(filepath, fromIndex=0, toIndex=-1):
         for i in range(fromIndex, toIndex):
             a = f.GetData(i)
             header = f.GetHeader(i)
-            rData = Core.Processlib.Data()
+            rData = core.Processlib.Data()
             rData.buffer = a
             try:
                 rData.header.update(header)
@@ -84,7 +84,7 @@ def getMaskFromFile(filepath):
         filename: File name
 
     Returns:
-        A Core.Processlib.Data object
+        A core.Processlib.Data object
     """
     maskImage = getDataFromFile(filepath)
     # Check masking convention

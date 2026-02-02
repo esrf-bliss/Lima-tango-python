@@ -5,11 +5,12 @@ stages:
 build-noarch:
   stage: build
   script:
-    - conda mambabuild --output-folder=dist -c http://bcu-ci.esrf.fr/stable conda
+    - conda mambabuild ./conda --output-folder=dist -c conda-forge --channel=http://bcu-ci.esrf.fr/stable
   artifacts:
     paths:
       - dist/
   tags:
+    - conda
     - linux
 
 deploy-devel:
@@ -21,9 +22,10 @@ deploy-devel:
     - build-noarch
   script:
     - cp -Rf dist/* /conda-devel/
-    - conda index /conda-devel/
+    - conda index --channeldata /conda-devel/
   tags:
     - linux
+    - conda
   only:
     - branches
   except:
@@ -39,9 +41,10 @@ deploy-stable:
     - build-noarch
   script:
     - cp -Rf dist/* /conda/
-    - conda index /conda/
+    - conda index --channeldata /conda/
   tags:
     - linux
+    - conda
   only:
     - tags
     - stable

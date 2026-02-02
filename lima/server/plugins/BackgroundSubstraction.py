@@ -1,7 +1,7 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2022
+# Copyright (C) : 2009-2026
 # European Synchrotron Radiation Facility
 # CS40220 38043 Grenoble Cedex 9
 # FRANCE
@@ -24,20 +24,22 @@
 import os
 import PyTango
 
-from Lima import Core
-from Lima.Server.plugins.Utils import getDataFromFile, BasePostProcess
+from lima import core
+from lima.server.plugins.Utils import getDataFromFile, BasePostProcess
 
 
 class BackgroundSubstractionDeviceServer(BasePostProcess):
     BACKGROUND_TASK_NAME = "BackGroundTask"
     GET_BACKGROUND_IMAGE = "TMP_GET_BACKGROUND_IMAGE"
-    Core.DEB_CLASS(Core.DebModApplication, "BackgroundSubstractionDeviceServer")
+    core.DEB_CLASS(
+        core.DebModule.DebModApplication, "BackgroundSubstractionDeviceServer"
+    )
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def __init__(self, cl, name):
         self.__background_op = None
         self.__backgroundFile = None
-        self.__backgroundImage = Core.Processlib.Data()
+        self.__backgroundImage = core.Processlib.Data()
         self.get_device_properties(self.get_device_class())
         self.__deleteDarkAfterRead = False
         self.__offset = 0
@@ -45,7 +47,7 @@ class BackgroundSubstractionDeviceServer(BasePostProcess):
         BasePostProcess.__init__(self, cl, name)
         BackgroundSubstractionDeviceServer.init_device(self)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def set_state(self, state):
         if state == PyTango.DevState.OFF:
             if self.__background_op:
@@ -64,14 +66,16 @@ class BackgroundSubstractionDeviceServer(BasePostProcess):
                     # first create and add the task to update the background_image at level runLevel
                     # This task update the image only on demand from takeNextAcquisitionAsBackground() command
                     self.__get_image_op = extOpt.addOp(
-                        Core.USER_SINK_TASK, self.GET_BACKGROUND_IMAGE, self._runLevel
+                        core.SoftOpId.USER_SINK_TASK,
+                        self.GET_BACKGROUND_IMAGE,
+                        self._runLevel,
                     )
                     self.__get_image_task = GetBackgroundImageTask(self, _control_ref)
                     self.__get_image_op.setSinkTask(self.__get_image_task)
 
                     # now add the background correction task at level runLevel+1
                     self.__background_op = extOpt.addOp(
-                        Core.BACKGROUNDSUBSTRACTION,
+                        core.SoftOpId.BACKGROUNDSUBSTRACTION,
                         self.BACKGROUND_TASK_NAME,
                         self._runLevel + 1,
                     )
@@ -86,11 +90,11 @@ class BackgroundSubstractionDeviceServer(BasePostProcess):
                     return
         PyTango.LatestDeviceImpl.set_state(self, state)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_delete_dark_after_read(self, attr):
         attr.set_value(self.__deleteDarkAfterRead)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_delete_dark_after_read(self, attr):
         data = attr.get_write_value()
         self.__deleteDarkAfterRead = data
@@ -98,11 +102,11 @@ class BackgroundSubstractionDeviceServer(BasePostProcess):
     def is_delete_dark_after_read_allowed(self, mode):
         return True
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_offset(self, attr):
         attr.set_value(self.__offset)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_offset(self, attr):
         offset = attr.get_write_value()
         self.__offset = offset
@@ -119,7 +123,7 @@ class BackgroundSubstractionDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read MaskFile attribute
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_BackgroundFile(self, attr):
         if self.__backgroundFile is not None:
             attr.set_value(self.__backgroundFile)
@@ -129,7 +133,7 @@ class BackgroundSubstractionDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Write MaskFile attribute
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_BackgroundFile(self, attr):
         filename = attr.get_write_value()
         self.setBackgroundImageFile(filename)
@@ -143,7 +147,7 @@ class BackgroundSubstractionDeviceServer(BasePostProcess):
     #
     # ==================================================================
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def setBackgroundImage(self, filepath):
         deb.Param("filepath=%s" % filepath)
         image = getDataFromFile(filepath)
@@ -157,20 +161,19 @@ class BackgroundSubstractionDeviceServer(BasePostProcess):
         if self.__background_op:
             self.__background_op.setBackgroundImage(image)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def setBackgroundFile(self, filepath):
-        """ new command to fit with other correction plugin api
-        """
+        """new command to fit with other correction plugin api"""
         self.setBackgroundImage(filepath)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def takeNextAcquisitionAsBackground(self):
         self.__get_image_task.updateBackgroundImage()
 
 
-class GetBackgroundImageTask(Core.Processlib.SinkTaskBase):
+class GetBackgroundImageTask(core.Processlib.SinkTaskBase):
     def __init__(self, cnt, control_ref):
-        Core.Processlib.SinkTaskBase.__init__(self)
+        core.Processlib.SinkTaskBase.__init__(self)
         self.__control_ref = control_ref
         ctControl = _control_ref()
         saving = ctControl.saving()
@@ -182,7 +185,7 @@ class GetBackgroundImageTask(Core.Processlib.SinkTaskBase):
 
     def process(self, data):
         if self.__update_background_image:
-            background = Core.Processlib.Data()
+            background = core.Processlib.Data()
             background.buffer = data.buffer
             self.__cnt._setBackgroundImage(background)
             self.__update_background_image = False

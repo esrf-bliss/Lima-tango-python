@@ -7,8 +7,8 @@ import time
 import logging
 from unittest import mock
 import pytest
-from Lima import Core
-from Lima.Server import LimaCCDs
+from lima import core
+from lima.server import LimaCCDs
 
 
 _logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class MockedLimaCCDs(LimaCCDs.LimaCCDs):
             setattr(self, k, v)
         with mock.patch('PyTango.LatestDeviceImpl.__init__'):
             with mock.patch('PyTango.Database'):
-                with mock.patch('Lima.Server.LimaCCDs._get_control') as control:
+                with mock.patch('lima.server.LimaCCDs._get_control') as control:
                     super(MockedLimaCCDs, self).__init__()
 
     def add_attribute(self, prop, getter, setter):
@@ -60,7 +60,7 @@ def test_imageopmode_device_prop():
     control = tango._LimaCCDs__control
     assert control is not None
     assert control.image().setMode.call_count == 1
-    assert control.image().setMode.call_args[0][0] == Core.CtImage.SoftOnly
+    assert control.image().setMode.call_args[0][0] == core.CtImage.ImageOpMode.SoftOnly
 
 
 def test_imageopmode_wrong_prop():

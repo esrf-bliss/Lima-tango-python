@@ -1,7 +1,7 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2022
+# Copyright (C) : 2009-2026
 # European Synchrotron Radiation Facility
 # CS40220 38043 Grenoble Cedex 9
 # FRANCE
@@ -23,27 +23,27 @@
 ############################################################################
 import PyTango
 
-from Lima import Core
-from Lima.Server.plugins.Utils import getMaskFromFile, BasePostProcess
-from Lima.Server import AttrHelper
+from lima import core
+from lima.server.plugins.Utils import getMaskFromFile, BasePostProcess
+from lima.server import AttrHelper
 
 
 class MaskDeviceServer(BasePostProcess):
     MASK_TASK_NAME = "MaskTask"
-    Core.DEB_CLASS(Core.DebModApplication, "MaskDeviceServer")
+    core.DEB_CLASS(core.DebModule.DebModApplication, "MaskDeviceServer")
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def __init__(self, cl, name):
         self.__maskTask = None
         self.__maskFile = None
-        self.__maskImage = Core.Processlib.Data()
+        self.__maskImage = core.Processlib.Data()
 
-        self.__Type = {"STANDARD": 0, "DUMMY": 1}
+        self.__Type = {"STANDARD": core.SoftOpMask.Type.STANDARD, "DUMMY": core.SoftOpMask.Type.DUMMY}
 
         BasePostProcess.__init__(self, cl, name)
         MaskDeviceServer.init_device(self)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def set_state(self, state):
         if state == PyTango.DevState.OFF:
             if self.__maskTask:
@@ -56,7 +56,7 @@ class MaskDeviceServer(BasePostProcess):
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__maskTask = extOpt.addOp(
-                    Core.MASK, self.MASK_TASK_NAME, self._runLevel
+                    core.SoftOpId.MASK, self.MASK_TASK_NAME, self._runLevel
                 )
                 self.__maskTask.setMaskImage(self.__maskImage)
         PyTango.LatestDeviceImpl.set_state(self, state)
@@ -64,7 +64,7 @@ class MaskDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read MaskFile attribute
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_MaskFile(self, attr):
         if self.__maskFile is not None:
             attr.set_value(self.__maskFile)
@@ -74,7 +74,7 @@ class MaskDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Write MaskFile attribute
     # ------------------------------------------------------------------
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_MaskFile(self, attr):
         filename = attr.get_write_value()
         self.setMaskFile(filename)
@@ -87,7 +87,7 @@ class MaskDeviceServer(BasePostProcess):
     #    Mask command methods
     #
     # ==================================================================
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def setMaskImage(self, filepath):
         """Set a mask image from a EDF filename.
 
@@ -107,10 +107,9 @@ class MaskDeviceServer(BasePostProcess):
         if self.__maskTask:
             self.__maskTask.setMaskImage(self.__maskImage)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def setMaskFile(self, filepath):
-        """ new command to fit with other correction plugin api
-        """
+        """new command to fit with other correction plugin api"""
         self.setMaskImage(filepath)
 
     # ------------------------------------------------------------------

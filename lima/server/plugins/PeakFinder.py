@@ -1,7 +1,7 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2022
+# Copyright (C) : 2009-2026
 # European Synchrotron Radiation Facility
 # CS40220 38043 Grenoble Cedex 9
 # FRANCE
@@ -23,13 +23,13 @@
 
 import PyTango
 import numpy
-from Lima import Core
-from Lima.Server.plugins.Utils import getDataFromFile, BasePostProcess
-from Lima.Server import AttrHelper
+from lima import core
+from lima.server.plugins.Utils import getDataFromFile, BasePostProcess
+from lima.server import AttrHelper
 
 computing_modes_list = ["MAXIMUM", "CM"]
 
-# PeakFinderTask = Core.Processlib.Tasks.PeakFinderTask
+# PeakFinderTask = core.Processlib.Tasks.PeakFinderTask
 
 # ==================================================================
 #   PeakFinder Class Description:
@@ -39,7 +39,7 @@ computing_modes_list = ["MAXIMUM", "CM"]
 
 
 class PeakFinderDeviceServer(BasePostProcess):
-
+    core.DEB_CLASS(core.DebModule.DebModApplication, "PeakFinderDeviceServer")
     # --------- Add you global variables here --------------------------
     PEAK_FINDER_TASK_NAME = "PeakFinderTask"
 
@@ -66,7 +66,7 @@ class PeakFinderDeviceServer(BasePostProcess):
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__peakFinderMgr = extOpt.addOp(
-                    Core.PEAKFINDER, self.PEAK_FINDER_TASK_NAME, self._runLevel
+                    core.SoftOpId.PEAKFINDER, self.PEAK_FINDER_TASK_NAME, self._runLevel
                 )
             self.__peakFinderMgr.clearCounterStatus()
 
@@ -75,6 +75,7 @@ class PeakFinderDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read BufferSize attribute
     # ------------------------------------------------------------------
+    @core.DEB_MEMBER_FUNCT
     def read_BufferSize(self, attr):
         value_read = self.__peakFinderMgr.getBufferSize()
         attr.set_value(value_read)
@@ -82,6 +83,7 @@ class PeakFinderDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Write BufferSize attribute
     # ------------------------------------------------------------------
+    @core.DEB_MEMBER_FUNCT
     def write_BufferSize(self, attr):
         data = attr.get_write_value()
         self.__peakFinderMgr.setBufferSize(data)
@@ -89,6 +91,7 @@ class PeakFinderDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read ComputingMode attribute
     # ------------------------------------------------------------------
+    @core.DEB_MEMBER_FUNCT
     def read_ComputingMode(self, attr):
         value_read = self.__peakFinderMgr.getComputingMode()
         attr.set_value(AttrHelper.getDictKey(self.__ComputingMode, value_read))
@@ -96,6 +99,7 @@ class PeakFinderDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Write ComputingMode attribute
     # ------------------------------------------------------------------
+    @core.DEB_MEMBER_FUNCT
     def write_ComputingMode(self, attr):
         data = attr.get_write_value()
         t = AttrHelper.getDictValue(self.__ComputingMode, data)
@@ -104,6 +108,7 @@ class PeakFinderDeviceServer(BasePostProcess):
     # ------------------------------------------------------------------
     #    Read CounterStatus attribute
     # ------------------------------------------------------------------
+    @core.DEB_MEMBER_FUNCT
     def read_CounterStatus(self, attr):
         value_read = self.__peakFinderMgr.getCounterStatus()
         attr.set_value(value_read)
@@ -114,10 +119,12 @@ class PeakFinderDeviceServer(BasePostProcess):
     #
     # ==================================================================
 
+    @core.DEB_MEMBER_FUNCT
     def setMaskFile(self, argin):
         mask = getDataFromFile(*argin)
         self.__peakFinderMgr.setMask(mask)
 
+    @core.DEB_MEMBER_FUNCT
     def readPeaks(self):
         peakResultCounterList = self.__peakFinderMgr.readPeaks()
         if peakResultCounterList:

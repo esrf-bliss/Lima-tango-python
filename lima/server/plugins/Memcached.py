@@ -1,7 +1,7 @@
 ############################################################################
 # This file is part of LImA, a Library for Image Acquisition
 #
-# Copyright (C) : 2009-2022
+# Copyright (C) : 2009-2026
 # European Synchrotron Radiation Facility
 # CS40220 38043 Grenoble Cedex 9
 # FRANCE
@@ -28,14 +28,15 @@ import json
 # Workaround https://github.com/Blosc/bloscpack/issues/119
 if sys.version_info.major == 3 and sys.version_info.minor >= 10:
     import collections
+
     setattr(collections, "MutableMapping", collections.abc.MutableMapping)
 import bloscpack
 
 from collections import namedtuple
 from pymemcache.client.base import Client
 
-from Lima import Core
-from Lima.Server.plugins.Utils import BasePostProcess
+from lima import core
+from lima.server.plugins.Utils import BasePostProcess
 
 # ==================================================================
 #   MemcachedSinkTask SinkTask
@@ -53,7 +54,7 @@ def _key_repr(self):
 Key.__repr__ = _key_repr
 
 
-class MemcachedSinkTask(Core.Processlib.SinkTaskBase):
+class MemcachedSinkTask(core.Processlib.SinkTaskBase):
     def __init__(self, client, acquisitionID, detectorID=0, blosc_args=None):
         """
         :param client: A memcached client
@@ -121,13 +122,15 @@ class MemcachedDeviceServer(BasePostProcess):
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 self.__memcachedOpInstance = extOpt.addOp(
-                    Core.USER_SINK_TASK, self.MEMCACHED_TASK_NAME, self._runLevel
+                    core.SoftOpId.USER_SINK_TASK,
+                    self.MEMCACHED_TASK_NAME,
+                    self._runLevel,
                 )
                 self.__client = Client((self.ServerIP, self.ServerPort))
 
                 # Get detector model
                 hw = ctControl.hwInterface()
-                detinfo = hw.getHwCtrlObj(Core.HwCap.DetInfo)
+                detinfo = hw.getHwCtrlObj(core.HwCap.Type.DetInfo)
                 detectorID = detinfo.getDetectorModel()
 
                 # Get image size
