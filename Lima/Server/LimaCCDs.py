@@ -2026,7 +2026,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
         link_task_act, sink_task_act = extOp.isTaskActive()
         if link_task_act:
-            buffer_info["ext_op_max_number"] = 16
+            buffer_info["ext_op_max_number"] = 1024
             buffer_info["readout_max_number"] = buffer_info["ext_op_max_number"]
 
         if SystemHasFeature("Core.CtSaving.getNbZBuffers"):
