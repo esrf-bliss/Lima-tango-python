@@ -52,7 +52,7 @@ def _init_module():
     else:
         eps = entry_points()
         for entry_point in eps.select(group="Lima_tango_camera"):
-            cameras.append(entry_point.value)
+            cameras.append(entry_point.name)
 
     return cameras
 

@@ -54,7 +54,7 @@ def _init_module() -> list[str]:
     else:
         eps = entry_points()
         for entry_point in eps.select(group="Lima_tango_plugin"):
-            plugins.append(entry_point.value)
+            plugins.append(entry_point.name)
 
     return plugins
 
