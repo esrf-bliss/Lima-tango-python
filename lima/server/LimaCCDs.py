@@ -398,7 +398,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     #    Device constructor
     # ------------------------------------------------------------------
     def __init__(self, *args):
-        PyTango.LatestDeviceImpl.__init__(self, *args)
+        super().__init__(*args)
         self.__className2deviceName = {}
         self.init_device()
         self.__lima_control = None
