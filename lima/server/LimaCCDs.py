@@ -758,7 +758,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             deb.Trace("Feature %s %s present" % (feature, is_not))
 
         # Setup the BufferMallocTrimPad
-        if SystemHasFeature("Core.CtBuffer.setMallocTrimPad"):
+        if SystemHasFeature("core.CtBuffer.setMallocTrimPad"):
             buffer = self.__control.buffer()
             buffer.setMallocTrimPad(self.BufferMallocTrimPad)
 
@@ -2010,9 +2010,9 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         setattr(buffer_param, param_name, val)
         setter(buffer_param)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def read_buffer_malloc_trim_pad(self, attr):
-        if not SystemHasFeature("Core.CtBuffer.getMallocTrimPad"):
+        if not SystemHasFeature("core.CtBuffer.getMallocTrimPad"):
             raise RuntimeError("buffer_malloc_trim_pad not supported in "
                                "this version")
         buffer = self.__control.buffer()
@@ -2020,9 +2020,9 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         deb.Return("malloc_trim_pad=%s" % malloc_trim_pad)
         attr.set_value(malloc_trim_pad)
 
-    @Core.DEB_MEMBER_FUNCT
+    @core.DEB_MEMBER_FUNCT
     def write_buffer_malloc_trim_pad(self, attr):
-        if not SystemHasFeature("Core.CtBuffer.setMallocTrimPad"):
+        if not SystemHasFeature("core.CtBuffer.setMallocTrimPad"):
             raise RuntimeError("buffer_malloc_trim_pad not supported in "
                                "this version")
         malloc_trim_pad = attr.get_write_value()
