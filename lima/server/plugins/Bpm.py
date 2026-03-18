@@ -280,7 +280,7 @@ class BpmDeviceServer(BasePostProcess):
             dim = _control_ref().image().getImageDim().getSize()
             max_width = dim.getWidth()
             max_height = dim.getHeight()
-            if result.errorCode != self._bpmManager.OK:
+            if result.errorCode != self._bpmManager.ErrorCode.OK:
                 x = -1
                 y = -1
                 intensity = -1

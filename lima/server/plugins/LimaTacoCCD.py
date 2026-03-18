@@ -1024,7 +1024,7 @@ class LimaTacoCCDs(PyTango.LatestDeviceImpl, object):
         if release:
             release()
         bpm_pars = self.__bpm_mgr.getResult(1)
-        if bpm_pars.errorCode != self.__bpm_mgr.OK:
+        if bpm_pars.errorCode != self.__bpm_mgr.ErrorCode.OK:
             raise core.Exception(
                 "Error calculating beam params: %d" % bpm_pars.errorCode
             )
