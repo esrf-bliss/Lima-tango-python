@@ -2664,7 +2664,7 @@ class LimaCCDsClass(PyTango.DeviceClass):
             [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "acc_saturated_threshold": [
-            [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
+            [PyTango.DevLong64, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "acc_saturated_cblevel": [
             [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
