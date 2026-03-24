@@ -440,37 +440,24 @@ def get_entry_point(group: str, name: str):
             return None
         elif len(plugins) > 1:
             raise ValueError("found more than one entry point matching {}".format(name))
-        return plugins[0]
-
-    # Here is the old way to import plugins
-    try:
-        import pkg_resources
-    except ImportError:
-        return None
-
-    entry_points = tuple(pkg_resources.iter_entry_points(group, name))
-    if not entry_points:
-        return None
-    elif len(entry_points) > 1:
-        raise ValueError("found more than one entry point matching {}".format(name))
-    return entry_points[0]
+        return plugins
 
 
 def get_camera_module(name: str):
     """Returns the python module for the given camera type"""
-    entry_point = get_entry_point("Lima_tango_camera", name)
-    if entry_point is None:
+    entry_points = get_entry_point("Lima_tango_camera", name)
+    if entry_points is None:
         # fallback to search in local camera directory
         mod_name = "lima.server.camera.{}".format(name)
         return _import(mod_name)
-    return entry_point.load()
+    return entry_points[name].load()
 
 
 def get_plugin_module(name: str):
     """Returns the python module for the given plugin type"""
-    entry_point = get_entry_point("Lima_tango_plugin", name)
-    if entry_point is None:
+    entry_points = get_entry_point("Lima_tango_plugin", name)
+    if entry_points is None:
         # fallback to search in local plugins directory
         mod_name = "lima.server.plugins.{}".format(name)
         return _import(mod_name)
-    return entry_point.load()
+    return entry_points[name].load()
