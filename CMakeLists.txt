@@ -28,5 +28,7 @@ project(tango-python)
 
 if (LIMA_ENABLE_PYTHON)
     install(PROGRAMS scripts/LimaCCDs  DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
-    install(DIRECTORY Lima  DESTINATION "${PYTHON_SITE_PACKAGES_DIR}")
+    install(
+    DIRECTORY Lima
+    DESTINATION "$<PATH:CMAKE_PATH,NORMALIZE,${Python3_SITEARCH}>")
 endif()
