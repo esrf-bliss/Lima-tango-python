@@ -200,6 +200,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         Core.Bpp16S: "Bpp16S",
         Core.Bpp32: "Bpp32",
         Core.Bpp32S: "Bpp32S",
+        Core.Bpp32F: "Bpp32F",
     }
 
     String2ImageType = {v: k for k, v in ImageType2String.items()}
