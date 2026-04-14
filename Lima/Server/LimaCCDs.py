@@ -698,11 +698,11 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             self.__video_image_cbk = self.VideoImageCallback(self)
             self.__control.video().registerImageCallback(self.__video_image_cbk)
 
-        # INIT events on last_image_ready
-        self.__image_status_cbk = self.ImageStatusCallback(
-            self, self.__control, events=self.TangoEvent
-        )
-        self.__control.registerImageStatusCallback(self.__image_status_cbk)
+            # INIT events on last_image_ready
+            self.__image_status_cbk = self.ImageStatusCallback(
+                self, self.__control, events=self.TangoEvent
+            )
+            self.__control.registerImageStatusCallback(self.__image_status_cbk)
 
         # Setup a user-defined detector name if it exists
         if self.UserInstrumentName:
