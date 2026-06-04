@@ -1854,6 +1854,23 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         else:
             saving.setJp2kCompressionCodec(value)
 
+    ## @brief set the maximum number of task for concurrent writing (saving)
+    #
+    @RequiresSystemFeature("core.CtSaving.getJp2kCompressionRatio")
+    @core.DEB_MEMBER_FUNCT
+    def read_saving_jp2k_comp_ratio(self, attr):
+        saving = self.__control.saving()
+        attr.set_value(saving.getJp2kCompressionRatio())
+
+    ## @brief set the maximum number of task for concurrent writing (saving)
+    #
+    @RequiresSystemFeature("core.CtSaving.setJp2kCompressionRatio")
+    @core.DEB_MEMBER_FUNCT
+    def write_saving_jp2k_comp_ratio(self, attr):
+        data = attr.get_write_value()
+        saving = self.__control.saving()
+
+        saving.setJp2kCompressionRatio(data)
 
     ##@brief Read possible modules
     #
@@ -2843,6 +2860,9 @@ class LimaCCDsClass(PyTango.DeviceClass):
         ],
         "saving_jp2k_codec": [
             [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "saving_jp2k_comp_ratio": [
+            [PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "debug_modules_possible": [
             [
