@@ -362,7 +362,7 @@ saving_every_n_frames        rw      DevLong                 If positive it does
 saving_use_hw_comp           rw      DevBoolean              Try to use the compressed image blob injected by the HW plugin (like the Dectris/Eiger)
 saving_zbuffer_<field>	     rw	     ...                     The allocation parameters for saving compression buffers
 saving_jp2k_codec     	     rw	     DevString               The codec used for compression
-                                                               - :code:`OPENJPEG`, the open source jp2k implementation
+                                                               - :code:`OPENJPEG`, the open source jp2k implementation (default)
                                                                - :code:`KAKADU`, a propriatary implementation of the jp2k algorithm
 saving_jp2k_comp_ratio	     rw	     DevDouble               The allocation parameters for saving compression buffers [0. - 10.]
 ============================ ======= ======================= =======================================================================================
