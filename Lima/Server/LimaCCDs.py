@@ -492,7 +492,10 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
                 self.ImageType2String[Bpp_type] = Bpp_name
                 self.ImageType2DataArrayType[Bpp_type] = Bpp_size
 
-        self.__Name2SubClass = {"acc_time_mode": self.__control.acquisition}
+        self.__Name2SubClass = {
+            "acc_time_mode": self.__control.acquisition,
+            "acc_real_with_fixed_expo_n_latency": self.__control.acquisition,
+        }
 
         # Tango Enum to Lima Enum
         self.__Prefix2SubClass = {
@@ -2637,6 +2640,9 @@ class LimaCCDsClass(PyTango.DeviceClass):
         ],
         "acc_buffer_req_mem_size_percent": [
             [PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]
+        ],
+        "acc_real_with_fixed_expo_n_latency":  [
+            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
         ],
         "acq_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
         "acc_time_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
