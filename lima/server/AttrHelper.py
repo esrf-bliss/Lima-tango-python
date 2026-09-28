@@ -279,10 +279,10 @@ def make_fget_fset(attr_name, *interfaces, enum=None):
 
     def fget(device_self):
         value = getattr(_resolve_target(device_self), get_name)()
-        return getDictKey(enum, value) if enum is not None else value
+        return getDictKey(enum, value) if enum else value
 
     def fset(device_self, value):
-        if enum is not None:
+        if enum:
             resolved = getDictValue(enum, value.upper())
             if resolved is None:
                 import tango

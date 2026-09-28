@@ -70,7 +70,7 @@ from .EnvHelper import get_sub_devices
 from .EnvHelper import get_lima_camera_type, get_lima_device_name
 from .EnvHelper import get_camera_module, get_plugin_module
 from .AttrHelper import get_attr_4u
-from lima.server.AttrHelper import getDictKey, getDictValue
+from lima.server.AttrHelper import getDictKey, getDictValue, make_fget_fset
 from lima import core
 
 from lima.server import plugins
@@ -1054,37 +1054,124 @@ class LimaCCDs(Device):
         deb.Param("acq_tag=%s (0x%08x)" % (acq_tag, acq_tag))
         self._acq_tag = acq_tag
 
-    ## @brief read the number of frame for an acquisition
-    #
+    # ------------------------------------------------------------------
+    #    Acquisition domain (Phase 3 slice 4)
+    # ------------------------------------------------------------------
+    # acq_mode, acc_time_mode and acq_trigger_mode had no explicit
+    # read_X/write_X in the legacy code - they went through the
+    # __getattr__ + get_attr_4u naming-convention dispatch instead
+    # (acq_trigger_mode via its __Attribute2FunctionBase override to
+    # "TriggerMode"). Written out directly here rather than through
+    # make_fget_fset() since the enum dicts are per-instance state set in
+    # init_device, not fixed class-level constants like AttrHelper expects.
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_acq_nb_frames(self, attr):
-        acquisition = self.__control.acquisition()
-        nb_frames = acquisition.getAcqNbFrames()
-        attr.set_value(nb_frames)
+    def acq_mode(self):
+        return getDictKey(self.__AcqMode, self.__control.acquisition().getAcqMode())
 
-    ## @brief write the number of frame for an acquisition
-    #
+    @acq_mode.setter
     @core.DEB_MEMBER_FUNCT
-    def write_acq_nb_frames(self, attr):
-        data = attr.get_write_value()
-        acquisition = self.__control.acquisition()
-        acquisition.setAcqNbFrames(data)
+    def acq_mode(self, data):
+        value = getDictValue(self.__AcqMode, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value acq_mode: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.acquisition().setAcqMode(value)
 
-    ## @brief read the number of frame for an acquisition
-    #
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_acq_expo_time(self, attr):
-        acquisition = self.__control.acquisition()
-        expo_time = acquisition.getAcqExpoTime()
-        attr.set_value(expo_time)
+    def acc_time_mode(self):
+        return getDictKey(self.__AccTimeMode, self.__control.acquisition().getAccTimeMode())
 
-    ## @brief write the number of frame for an acquisition
-    #
+    @acc_time_mode.setter
     @core.DEB_MEMBER_FUNCT
-    def write_acq_expo_time(self, attr):
-        data = attr.get_write_value()
-        acquisition = self.__control.acquisition()
-        acquisition.setAcqExpoTime(data)
+    def acc_time_mode(self, data):
+        value = getDictValue(self.__AccTimeMode, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value acc_time_mode: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.acquisition().setAccTimeMode(value)
+
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def acq_trigger_mode(self):
+        return getDictKey(self.__AcqTriggerMode, self.__control.acquisition().getTriggerMode())
+
+    @acq_trigger_mode.setter
+    @core.DEB_MEMBER_FUNCT
+    def acq_trigger_mode(self, data):
+        value = getDictValue(self.__AcqTriggerMode, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value acq_trigger_mode: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.acquisition().setTriggerMode(value)
+
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def acq_nb_frames(self):
+        return self.__control.acquisition().getAcqNbFrames()
+
+    @acq_nb_frames.setter
+    @core.DEB_MEMBER_FUNCT
+    def acq_nb_frames(self, data):
+        self.__control.acquisition().setAcqNbFrames(data)
+
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def acq_expo_time(self):
+        return self.__control.acquisition().getAcqExpoTime()
+
+    @acq_expo_time.setter
+    @core.DEB_MEMBER_FUNCT
+    def acq_expo_time(self, data):
+        self.__control.acquisition().setAcqExpoTime(data)
+
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def concat_nb_frames(self):
+        return self.__control.acquisition().getConcatNbFrames()
+
+    @concat_nb_frames.setter
+    @core.DEB_MEMBER_FUNCT
+    def concat_nb_frames(self, data):
+        self.__control.acquisition().setConcatNbFrames(data)
+
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def latency_time(self):
+        value = self.__control.acquisition().getLatencyTime()
+        return -1 if value is None else value
+
+    @latency_time.setter
+    @core.DEB_MEMBER_FUNCT
+    def latency_time(self, data):
+        self.__control.acquisition().setLatencyTime(data)
+
+    @attribute(
+        dtype=(float,),
+        max_dim_x=4,
+        access=AttrWriteType.READ,
+        label="valid time ranges: min_exposure, max_exposure, min_latency, max_latency",
+        unit="second",
+        standard_unit="second",
+        display_unit="second",
+        format="%f",
+        doc="min_exposure, max_exposure, min_latency, max_latency",
+    )
+    @core.DEB_MEMBER_FUNCT
+    def valid_ranges(self):
+        interface = self.__control.hwInterface()
+        sync = interface.getHwCtrlObj(core.HwCap.Type.Sync)
+        ranges = sync.getValidRanges()
+        return [
+            ranges.min_exp_time,
+            ranges.max_exp_time,
+            ranges.min_lat_time,
+            ranges.max_lat_time,
+        ]
 
     ## @brief Read maximum accumulation exposure time
     #
