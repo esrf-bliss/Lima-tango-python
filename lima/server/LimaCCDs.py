@@ -1173,25 +1173,176 @@ class LimaCCDs(Device):
             ranges.max_lat_time,
         ]
 
-    ## @brief Read maximum accumulation exposure time
-    #
+    # ------------------------------------------------------------------
+    #    Accumulation domain (Phase 3 slice 5)
+    # ------------------------------------------------------------------
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_acc_max_expo_time(self, attr):
-        acq = self.__control.acquisition()
+    def acc_max_expo_time(self):
+        value = self.__control.acquisition().getAccMaxExpoTime()
+        return -1 if value is None else value
 
-        value = acq.getAccMaxExpoTime()
+    @acc_max_expo_time.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_max_expo_time(self, data):
+        self.__control.acquisition().setAccMaxExpoTime(data)
+
+    # acc_mode/acc_filter/acc_operation/acc_threshold_before/
+    # acc_offset_before/acc_hw_nb_buffers had no explicit read_X/write_X in
+    # the legacy code - see __Attribute2FunctionBase's overrides
+    # ("acc_mode" -> "Mode" etc.) and the per-instance enum dicts set in
+    # init_device (empty/absent on old Lima core versions, in which case
+    # they behave as plain passthrough values, same as get_attr_4u's
+    # `if d:` fallback - see AttrHelper.make_fget_fset's enum handling).
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def acc_mode(self):
+        return getDictKey(self.__AccMode, self.__control.accumulation().getMode())
+
+    @acc_mode.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_mode(self, data):
+        value = getDictValue(self.__AccMode, data.upper())
         if value is None:
-            value = -1
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value acc_mode: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.accumulation().setMode(value)
 
-        attr.set_value(value)
-
-    ## @brief Write the accumulation max exposure time
-    #
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def write_acc_max_expo_time(self, attr):
-        data = attr.get_write_value()
-        acq = self.__control.acquisition()
-        acq.setAccMaxExpoTime(data)
+    def acc_filter(self):
+        return getDictKey(self.__AccFilter, self.__control.accumulation().getFilter())
+
+    @acc_filter.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_filter(self, data):
+        value = getDictValue(self.__AccFilter, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value acc_filter: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.accumulation().setFilter(value)
+
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def acc_operation(self):
+        return getDictKey(self.__AccOperation, self.__control.accumulation().getOperation())
+
+    @acc_operation.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_operation(self, data):
+        value = getDictValue(self.__AccOperation, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value acc_operation: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.accumulation().setOperation(value)
+
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def acc_threshold_before(self):
+        return self.__control.accumulation().getThresholdBefore()
+
+    @acc_threshold_before.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_threshold_before(self, data):
+        self.__control.accumulation().setThresholdBefore(data)
+
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def acc_offset_before(self):
+        return self.__control.accumulation().getOffsetBefore()
+
+    @acc_offset_before.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_offset_before(self, data):
+        self.__control.accumulation().setOffsetBefore(data)
+
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def acc_hw_nb_buffers(self):
+        return self.__control.accumulation().getHwNbBuffers()
+
+    @acc_hw_nb_buffers.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_hw_nb_buffers(self, data):
+        self.__control.accumulation().setHwNbBuffers(data)
+
+    @attribute(dtype=float, access=AttrWriteType.READ)
+    @core.DEB_MEMBER_FUNCT
+    def acc_expo_time(self):
+        value = self.__control.acquisition().getAccExpoTime()
+        return -1 if value is None else value
+
+    @attribute(dtype=int, access=AttrWriteType.READ)
+    @core.DEB_MEMBER_FUNCT
+    def acc_nb_frames(self):
+        value = self.__control.acquisition().getAccNbFrames()
+        return -1 if value is None else value
+
+    @attribute(dtype=float, access=AttrWriteType.READ)
+    @core.DEB_MEMBER_FUNCT
+    def acc_dead_time(self):
+        return self.__control.acquisition().getAccDeadTime()
+
+    @attribute(dtype=float, access=AttrWriteType.READ)
+    @core.DEB_MEMBER_FUNCT
+    def acc_live_time(self):
+        return self.__control.acquisition().getAccLiveTime()
+
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def acc_saturated_active(self):
+        return self.__control.accumulation().getActive()
+
+    @acc_saturated_active.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_saturated_active(self, data):
+        self.__control.accumulation().setActive(data)
+
+    @attribute(dtype=tango.CmdArgType.DevLong64, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def acc_saturated_threshold(self):
+        return self.__control.accumulation().getPixelThresholdValue()
+
+    @acc_saturated_threshold.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_saturated_threshold(self, data):
+        self.__control.accumulation().setPixelThresholdValue(data)
+
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def acc_saturated_cblevel(self):
+        if self.__accThresholdCallback is not None:
+            return self.__accThresholdCallback.m_max
+        return -1
+
+    @acc_saturated_cblevel.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_saturated_cblevel(self, data):
+        if self.__accThresholdCallback is not None:
+            self.__accThresholdCallback.m_max = data
+        else:
+            deb.Error("Accumulation threshold plugins not loaded")
+
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def acc_out_type(self):
+        imageType = self.__control.accumulation().getOutputType()
+        return self.ImageType2String.get(imageType, "?")
+
+    @acc_out_type.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_out_type(self, stringType):
+        imageType = self.String2ImageType.get(stringType)
+        if imageType is None:
+            PyTango.Except.throw_exception(
+                "WrongData",
+                "Wrong value %s: %s" % ("acc_out_type", stringType),
+                "LimaCCD Class",
+            )
+        self.__control.accumulation().setOutputType(imageType)
 
     ## @brief Read maximum accumulation exposure time
     #
