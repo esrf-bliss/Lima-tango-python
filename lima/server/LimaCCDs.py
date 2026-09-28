@@ -935,6 +935,7 @@ class LimaCCDs(Device):
             return functools.partial(method, param=param, getter=getter, setter=setter)
         return None
 
+    @command
     def gc(self):
         import gc
 
@@ -2614,6 +2615,7 @@ class LimaCCDs(Device):
     #    Description: return a list of authorized values if any
     #    argout: DevVarStringArray
     # ------------------------------------------------------------------
+    @command(dtype_in=str, dtype_out=(str,))
     @core.DEB_MEMBER_FUNCT
     def getAttrStringValueList(self, attr_name):
         valueList = []
@@ -2651,6 +2653,7 @@ class LimaCCDs(Device):
 
     ##@brief prepare an acquisition
     #
+    @command
     @core.DEB_MEMBER_FUNCT
     def prepareAcq(self):
         self.__control.prepareAcq()
@@ -2673,6 +2676,7 @@ class LimaCCDs(Device):
 
     ##@brief start an acquisition
     #
+    @command
     @core.DEB_MEMBER_FUNCT
     def startAcq(self):
         self.__control.startAcq()
@@ -2680,6 +2684,7 @@ class LimaCCDs(Device):
 
     ##@brief stop an acquisition
     #
+    @command
     @core.DEB_MEMBER_FUNCT
     def stopAcq(self):
         self.__control.stopAcq()
@@ -2687,6 +2692,7 @@ class LimaCCDs(Device):
 
     ##@brief abort an acquisition
     #
+    @command
     @core.DEB_MEMBER_FUNCT
     def abortAcq(self):
         self.__control.abortAcq()
@@ -2694,6 +2700,7 @@ class LimaCCDs(Device):
 
     ##@brief reset acquisition
     #
+    @command
     @core.DEB_MEMBER_FUNCT
     def reset(self):
         self.__control.reset()
@@ -2705,6 +2712,7 @@ class LimaCCDs(Device):
 
     ##@brief set images heaaders
     #
+    @command(dtype_in=(str,))
     @core.DEB_MEMBER_FUNCT
     def setImageHeader(self, headers_str):
         control = self.__control
@@ -2731,6 +2739,7 @@ class LimaCCDs(Device):
 
     ##@brief reset common header
     #
+    @command
     @core.DEB_MEMBER_FUNCT
     def resetCommonHeader(self):
         control = self.__control
@@ -2739,6 +2748,7 @@ class LimaCCDs(Device):
 
     ##@brief reset frames header
     #
+    @command
     @core.DEB_MEMBER_FUNCT
     def resetFrameHeaders(self):
         control = self.__control
@@ -2747,6 +2757,7 @@ class LimaCCDs(Device):
 
     ##@brief get image data
     #
+    @command(dtype_in=int, dtype_out=tango.CmdArgType.DevVarCharArray)
     @core.DEB_MEMBER_FUNCT
     def getImage(self, image_id):
         data = self.__control.ReadImage(image_id)
@@ -2836,6 +2847,7 @@ class LimaCCDs(Device):
 
     ##@brief get image data
     #
+    @command(dtype_in=int, dtype_out=tango.CmdArgType.DevEncoded)
     @core.DEB_MEMBER_FUNCT
     def readImage(self, frame_number):
         deb.Param("readImage: frame_number=%d" % frame_number)
@@ -2847,6 +2859,7 @@ class LimaCCDs(Device):
     ##@brief get last image data (if new image since last_frame_number)
     #
     # @returns Image if new image available since last_frame_number else None
+    @command(dtype_in=int, dtype_out=tango.CmdArgType.DevEncoded)
     @core.DEB_MEMBER_FUNCT
     def readLastImage(self, last_frame_number=-1):
         deb.Param("readLastImage: last_frame_number=%d" % last_frame_number)
@@ -2870,6 +2883,7 @@ class LimaCCDs(Device):
     ##@brief get the data for an image sequence
     #
     # @params start,end[,step[,acq_tag]]
+    @command(dtype_in=tango.CmdArgType.DevVarLong64Array, dtype_out=tango.CmdArgType.DevEncoded)
     @core.DEB_MEMBER_FUNCT
     def readImageSeq(self, frame_seq):
         deb.Param("frame_seq=%s" % frame_seq)
@@ -2904,6 +2918,7 @@ class LimaCCDs(Device):
     ##@brief get base image data
     #
     # image before post processing
+    @command(dtype_in=int, dtype_out=tango.CmdArgType.DevVarCharArray)
     @core.DEB_MEMBER_FUNCT
     def getBaseImage(self, image_id):
         data = self.__control.ReadBaseImage(image_id)
@@ -2914,6 +2929,7 @@ class LimaCCDs(Device):
     ##@brief manual write image
     #
     #
+    @command(dtype_in=int)
     @core.DEB_MEMBER_FUNCT
     def writeImage(self, image_id):
         saving = self.__control.saving()
@@ -2922,6 +2938,7 @@ class LimaCCDs(Device):
     ##@brief get saturated images
     #
     # @params image_id if < 0 read the last image
+    @command(dtype_in=int, dtype_out=tango.CmdArgType.DevVarUShortArray)
     @core.DEB_MEMBER_FUNCT
     def readAccSaturatedImageCounter(self, image_id):
         acc = self.__control.accumulation()
@@ -2935,6 +2952,7 @@ class LimaCCDs(Device):
     ##@brief get saturated sum counter
     #
     # @params from_image_id the starting image id
+    @command(dtype_in=int, dtype_out=tango.CmdArgType.DevVarLongArray)
     @core.DEB_MEMBER_FUNCT
     def readAccSaturatedSumCounter(self, from_image_id):
         acc = self.__control.accumulation()
@@ -2949,6 +2967,7 @@ class LimaCCDs(Device):
     ##@brief set the mask file for saturated counters
     #
     # @params file_path the full path of mask image or '' -> unset Mask
+    @command(dtype_in=str)
     @core.DEB_MEMBER_FUNCT
     def setAccSaturatedMask(self, file_path):
         if file_path:
@@ -2967,6 +2986,7 @@ class LimaCCDs(Device):
     #    Description: Close the shutter manual
     #    argout: DevVoid
     # ------------------------------------------------------------------
+    @command
     @core.DEB_MEMBER_FUNCT
     def closeShutterManual(self):
         shutter = self.__control.shutter()
@@ -2980,6 +3000,7 @@ class LimaCCDs(Device):
     #    Description: Open the shutter manual
     #    argout: DevVoid
     # ------------------------------------------------------------------
+    @command
     @core.DEB_MEMBER_FUNCT
     def openShutterManual(self):
         shutter = self.__control.shutter()
@@ -2987,6 +3008,7 @@ class LimaCCDs(Device):
         if shutter.getModeList().count(core.ShutterManual):
             shutter.setState(True)
 
+    @command(dtype_in=str, dtype_out=str)
     @core.DEB_MEMBER_FUNCT
     def getPluginDeviceNameFromType(self, pluginType):
         pluginType2deviceName = dict(
@@ -3000,37 +3022,44 @@ class LimaCCDs(Device):
     # ----------------------------------------------------------------------------
     #                         Configuration Mgt
     # ----------------------------------------------------------------------------
+    @command(dtype_in=(str,))
     @core.DEB_MEMBER_FUNCT
     def configStore(self, args):
         config_name = args.pop(0)
         config = self.__control.config()
         config.store(config_name, args)
 
+    @command(dtype_in=str)
     @core.DEB_MEMBER_FUNCT
     def configApply(self, config_name):
         config = self.__control.config()
         config.apply(config_name)
 
+    @command(dtype_in=str)
     @core.DEB_MEMBER_FUNCT
     def configPop(self, config_name):
         config = self.__control.config()
         config.pop(config_name)
 
+    @command(dtype_in=str)
     @core.DEB_MEMBER_FUNCT
     def configDelete(self, config_name):
         config = self.__control.config()
         config.remove(config_name)
 
+    @command
     @core.DEB_MEMBER_FUNCT
     def configFileSave(self):
         config = self.__control.config()
         config.save()
 
+    @command
     @core.DEB_MEMBER_FUNCT
     def configFileLoad(self):
         config = self.__control.config()
         config.load()
 
+    @command(dtype_in=int)
     @core.DEB_MEMBER_FUNCT
     def setSavingStream(self, streamNb):
         self.__SavingStream = streamNb
