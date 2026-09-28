@@ -1121,21 +1121,6 @@ class LimaCCDs(Device):
 
     @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def acc_time_mode(self):
-        return getDictKey(self.__AccTimeMode, self.__control.acquisition().getAccTimeMode())
-
-    @acc_time_mode.setter
-    @core.DEB_MEMBER_FUNCT
-    def acc_time_mode(self, data):
-        value = getDictValue(self.__AccTimeMode, data.upper())
-        if value is None:
-            PyTango.Except.throw_exception(
-                "WrongData", "Wrong value acc_time_mode: %s" % data.upper(), "LimaCCD Class"
-            )
-        self.__control.acquisition().setAccTimeMode(value)
-
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
-    @core.DEB_MEMBER_FUNCT
     def acq_trigger_mode(self):
         return getDictKey(self.__AcqTriggerMode, self.__control.acquisition().getTriggerMode())
 
@@ -1216,6 +1201,24 @@ class LimaCCDs(Device):
     # ------------------------------------------------------------------
     #    Accumulation domain (Phase 3 slice 5)
     # ------------------------------------------------------------------
+    # acc_time_mode routes to CtAcquisition, not CtAccumulation (see
+    # __Name2SubClass in init_device) - grouped here with the other acc_*
+    # attributes by name for readability, not by dispatch target.
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def acc_time_mode(self):
+        return getDictKey(self.__AccTimeMode, self.__control.acquisition().getAccTimeMode())
+
+    @acc_time_mode.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_time_mode(self, data):
+        value = getDictValue(self.__AccTimeMode, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value acc_time_mode: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.acquisition().setAccTimeMode(value)
+
     @attribute(dtype=float, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
     def acc_max_expo_time(self):
@@ -1383,6 +1386,40 @@ class LimaCCDs(Device):
                 "LimaCCD Class",
             )
         self.__control.accumulation().setOutputType(imageType)
+
+    # acc_buffer_* built with _make_buffer_param_fget_fset() - see the
+    # buffer domain section below for the helper and buffer_alloc_*.
+    _acc_buffer_init_mem_fget, _acc_buffer_init_mem_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.accumulation(), "Buffer", "initMem"
+    )
+    acc_buffer_init_mem = attribute(
+        dtype=bool, access=AttrWriteType.READ_WRITE,
+        fget=_acc_buffer_init_mem_fget, fset=_acc_buffer_init_mem_fset,
+    )
+
+    _acc_buffer_duration_policy_fget, _acc_buffer_duration_policy_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.accumulation(), "Buffer", "durationPolicy", enum_key="durationPolicy"
+    )
+    acc_buffer_duration_policy = attribute(
+        dtype=str, access=AttrWriteType.READ_WRITE,
+        fget=_acc_buffer_duration_policy_fget, fset=_acc_buffer_duration_policy_fset,
+    )
+
+    _acc_buffer_size_policy_fget, _acc_buffer_size_policy_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.accumulation(), "Buffer", "sizePolicy", enum_key="sizePolicy"
+    )
+    acc_buffer_size_policy = attribute(
+        dtype=str, access=AttrWriteType.READ_WRITE,
+        fget=_acc_buffer_size_policy_fget, fset=_acc_buffer_size_policy_fset,
+    )
+
+    _acc_buffer_req_mem_size_percent_fget, _acc_buffer_req_mem_size_percent_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.accumulation(), "Buffer", "reqMemSizePercent"
+    )
+    acc_buffer_req_mem_size_percent = attribute(
+        dtype=float, access=AttrWriteType.READ_WRITE,
+        fget=_acc_buffer_req_mem_size_percent_fget, fset=_acc_buffer_req_mem_size_percent_fset,
+    )
 
     # ------------------------------------------------------------------
     #    Image domain (Phase 3 slice 6)
@@ -1644,102 +1681,6 @@ class LimaCCDs(Device):
     def saving_statistics_log_enable(self, flag):
         self.__control.saving().setEnableLogStat(flag)
 
-    ## @brief Write current shutter state if in manual mode
-    # True-Open, False-Close
-    @core.DEB_MEMBER_FUNCT
-    def write_shutter_manual_state(self, attr):
-        state = attr.get_write_value()
-        if state not in ["OPEN", "CLOSE", "NO_MANUAL_MODE"]:
-            raise Exception("Invalid shutter state")
-
-        shutter = self.__control.shutter()
-        if (
-            shutter.getModeList().count(core.ShutterMode.ShutterManual)
-            and shutter.getMode() == core.ShutterMode.ShutterManual
-            and state in ["OPEN", "CLOSE"]
-        ):
-            shutter.setState(state == "OPEN")
-        else:
-            raise Exception("Shutter not in manual mode")
-
-    ## @brief Read current shutter state if in manual mode
-    # True-Open, False-Close
-    @core.DEB_MEMBER_FUNCT
-    def read_shutter_manual_state(self, attr):
-        shutter = self.__control.shutter()
-
-        if (
-            shutter.getModeList().count(core.ShutterMode.ShutterManual)
-            and shutter.getMode() == core.ShutterMode.ShutterManual
-        ):
-            if shutter.getState():
-                state = "OPEN"
-            else:
-                state = "CLOSED"
-        else:
-            state = "NO_MANUAL_MODE"
-
-        attr.set_value(state)
-
-    ## @brief Read shutter mode
-    @core.DEB_MEMBER_FUNCT
-    def read_shutter_mode(self, attr):
-        shutter = self.__control.shutter()
-        value = shutter.getMode()
-        mode = getDictKey(self.__ShutterMode, value)
-        attr.set_value(mode)
-
-    ## @brief Write shutter mode
-    @core.DEB_MEMBER_FUNCT
-    def write_shutter_mode(self, attr):
-        data = attr.get_write_value()
-        shutter = self.__control.shutter()
-
-        mode = self.__ShutterMode[data.upper()]
-        shutter.setMode(mode)
-
-    ## @brief Read shutter open time
-    # True-Open, False-Close
-    @core.DEB_MEMBER_FUNCT
-    def read_shutter_open_time(self, attr):
-        shutter = self.__control.shutter()
-
-        value = shutter.getOpenTime()
-        if value is None:
-            value = -1
-
-        attr.set_value(value)
-
-    ## @brief Write shutter open time
-    #
-    @core.DEB_MEMBER_FUNCT
-    def write_shutter_open_time(self, attr):
-        data = attr.get_write_value()
-        shutter = self.__control.shutter()
-
-        shutter.setOpenTime(data)
-
-    ## @brief Read shutter close time
-    # in seconds
-    @core.DEB_MEMBER_FUNCT
-    def read_shutter_close_time(self, attr):
-        shutter = self.__control.shutter()
-
-        value = shutter.getCloseTime()
-        if value is None:
-            value = -1
-
-        attr.set_value(value)
-
-    ## @brief Write shutter close time
-    # in seconds
-    @core.DEB_MEMBER_FUNCT
-    def write_shutter_close_time(self, attr):
-        data = attr.get_write_value()
-        shutter = self.__control.shutter()
-
-        shutter.setCloseTime(data)
-
     @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
     def saving_directory(self):
@@ -1947,6 +1888,40 @@ class LimaCCDs(Device):
     @core.DEB_MEMBER_FUNCT
     def saving_jp2k_comp_ratio(self, data):
         self.__control.saving().setJp2kCompressionRatio(data)
+
+    # saving_zbuffer_* built with _make_buffer_param_fget_fset() - see the
+    # buffer domain section below for the helper and buffer_alloc_*.
+    _saving_zbuffer_init_mem_fget, _saving_zbuffer_init_mem_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.saving(), "ZBuffer", "initMem"
+    )
+    saving_zbuffer_init_mem = attribute(
+        dtype=bool, access=AttrWriteType.READ_WRITE,
+        fget=_saving_zbuffer_init_mem_fget, fset=_saving_zbuffer_init_mem_fset,
+    )
+
+    _saving_zbuffer_duration_policy_fget, _saving_zbuffer_duration_policy_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.saving(), "ZBuffer", "durationPolicy", enum_key="durationPolicy"
+    )
+    saving_zbuffer_duration_policy = attribute(
+        dtype=str, access=AttrWriteType.READ_WRITE,
+        fget=_saving_zbuffer_duration_policy_fget, fset=_saving_zbuffer_duration_policy_fset,
+    )
+
+    _saving_zbuffer_size_policy_fget, _saving_zbuffer_size_policy_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.saving(), "ZBuffer", "sizePolicy", enum_key="sizePolicy"
+    )
+    saving_zbuffer_size_policy = attribute(
+        dtype=str, access=AttrWriteType.READ_WRITE,
+        fget=_saving_zbuffer_size_policy_fget, fset=_saving_zbuffer_size_policy_fset,
+    )
+
+    _saving_zbuffer_req_mem_size_percent_fget, _saving_zbuffer_req_mem_size_percent_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.saving(), "ZBuffer", "reqMemSizePercent"
+    )
+    saving_zbuffer_req_mem_size_percent = attribute(
+        dtype=float, access=AttrWriteType.READ_WRITE,
+        fget=_saving_zbuffer_req_mem_size_percent_fget, fset=_saving_zbuffer_req_mem_size_percent_fset,
+    )
 
     # ------------------------------------------------------------------
     #    Debug domain (Phase 3 slice 2)
@@ -2160,17 +2135,114 @@ class LimaCCDs(Device):
     # ------------------------------------------------------------------
     #    Shutter domain (Phase 3 slice 11)
     # ------------------------------------------------------------------
-    # shutter_close_time/manual_state/mode/open_time are NOT here: they're
-    # added dynamically at runtime (init_device, only if the hardware
-    # actually has shutter capability) via self.add_attribute(...), which
-    # always uses the old-style (self, attr) callback signature regardless
-    # of the device class being high- or low-level - verified against a
-    # real DeviceTestContext. Their read_X/write_X methods further down
-    # need no change at all and are left as-is.
+    # shutter_close_time/manual_state/mode/open_time (read_X/write_X methods
+    # right below) are NOT `@attribute`-decorated: they're added dynamically
+    # at runtime (init_device, only if the hardware actually has shutter
+    # capability) via self.add_attribute(...), which always uses the
+    # old-style (self, attr) callback signature regardless of the device
+    # class being high- or low-level - verified against a real
+    # DeviceTestContext. Their bodies need no change at all and are left
+    # as-is; only their position moved, to sit next to shutter_ctrl_is_available.
     @attribute(dtype=bool, access=AttrWriteType.READ)
     @core.DEB_MEMBER_FUNCT
     def shutter_ctrl_is_available(self):
         return self.__control.shutter().hasCapability()
+
+    ## @brief Write current shutter state if in manual mode
+    # True-Open, False-Close
+    @core.DEB_MEMBER_FUNCT
+    def write_shutter_manual_state(self, attr):
+        state = attr.get_write_value()
+        if state not in ["OPEN", "CLOSE", "NO_MANUAL_MODE"]:
+            raise Exception("Invalid shutter state")
+
+        shutter = self.__control.shutter()
+        if (
+            shutter.getModeList().count(core.ShutterMode.ShutterManual)
+            and shutter.getMode() == core.ShutterMode.ShutterManual
+            and state in ["OPEN", "CLOSE"]
+        ):
+            shutter.setState(state == "OPEN")
+        else:
+            raise Exception("Shutter not in manual mode")
+
+    ## @brief Read current shutter state if in manual mode
+    # True-Open, False-Close
+    @core.DEB_MEMBER_FUNCT
+    def read_shutter_manual_state(self, attr):
+        shutter = self.__control.shutter()
+
+        if (
+            shutter.getModeList().count(core.ShutterMode.ShutterManual)
+            and shutter.getMode() == core.ShutterMode.ShutterManual
+        ):
+            if shutter.getState():
+                state = "OPEN"
+            else:
+                state = "CLOSED"
+        else:
+            state = "NO_MANUAL_MODE"
+
+        attr.set_value(state)
+
+    ## @brief Read shutter mode
+    @core.DEB_MEMBER_FUNCT
+    def read_shutter_mode(self, attr):
+        shutter = self.__control.shutter()
+        value = shutter.getMode()
+        mode = getDictKey(self.__ShutterMode, value)
+        attr.set_value(mode)
+
+    ## @brief Write shutter mode
+    @core.DEB_MEMBER_FUNCT
+    def write_shutter_mode(self, attr):
+        data = attr.get_write_value()
+        shutter = self.__control.shutter()
+
+        mode = self.__ShutterMode[data.upper()]
+        shutter.setMode(mode)
+
+    ## @brief Read shutter open time
+    # True-Open, False-Close
+    @core.DEB_MEMBER_FUNCT
+    def read_shutter_open_time(self, attr):
+        shutter = self.__control.shutter()
+
+        value = shutter.getOpenTime()
+        if value is None:
+            value = -1
+
+        attr.set_value(value)
+
+    ## @brief Write shutter open time
+    #
+    @core.DEB_MEMBER_FUNCT
+    def write_shutter_open_time(self, attr):
+        data = attr.get_write_value()
+        shutter = self.__control.shutter()
+
+        shutter.setOpenTime(data)
+
+    ## @brief Read shutter close time
+    # in seconds
+    @core.DEB_MEMBER_FUNCT
+    def read_shutter_close_time(self, attr):
+        shutter = self.__control.shutter()
+
+        value = shutter.getCloseTime()
+        if value is None:
+            value = -1
+
+        attr.set_value(value)
+
+    ## @brief Write shutter close time
+    # in seconds
+    @core.DEB_MEMBER_FUNCT
+    def write_shutter_close_time(self, attr):
+        data = attr.get_write_value()
+        shutter = self.__control.shutter()
+
+        shutter.setCloseTime(data)
 
     @RequiresSystemFeature("core.BufferHelper.Parameters")
     def readBufferParam(self, attr, param=None, getter=None, setter=None):
@@ -2197,7 +2269,10 @@ class LimaCCDs(Device):
     # ------------------------------------------------------------------
     # buffer_alloc_*/acc_buffer_*/saving_zbuffer_* had no explicit
     # read_X/write_X in the legacy code - see _make_buffer_param_fget_fset's
-    # docstring above the class.
+    # docstring above the class. acc_buffer_*/saving_zbuffer_* are grouped
+    # with the other acc_*/saving_* attributes by name instead of here, even
+    # though they're built with the same helper - see the accumulation and
+    # saving domain sections.
     _buffer_alloc_init_mem_fget, _buffer_alloc_init_mem_fset = _make_buffer_param_fget_fset(
         lambda self: self.__control.buffer(), "Alloc", "initMem"
     )
@@ -2228,70 +2303,6 @@ class LimaCCDs(Device):
     buffer_alloc_req_mem_size_percent = attribute(
         dtype=float, access=AttrWriteType.READ_WRITE,
         fget=_buffer_alloc_req_mem_size_percent_fget, fset=_buffer_alloc_req_mem_size_percent_fset,
-    )
-
-    _acc_buffer_init_mem_fget, _acc_buffer_init_mem_fset = _make_buffer_param_fget_fset(
-        lambda self: self.__control.accumulation(), "Buffer", "initMem"
-    )
-    acc_buffer_init_mem = attribute(
-        dtype=bool, access=AttrWriteType.READ_WRITE,
-        fget=_acc_buffer_init_mem_fget, fset=_acc_buffer_init_mem_fset,
-    )
-
-    _acc_buffer_duration_policy_fget, _acc_buffer_duration_policy_fset = _make_buffer_param_fget_fset(
-        lambda self: self.__control.accumulation(), "Buffer", "durationPolicy", enum_key="durationPolicy"
-    )
-    acc_buffer_duration_policy = attribute(
-        dtype=str, access=AttrWriteType.READ_WRITE,
-        fget=_acc_buffer_duration_policy_fget, fset=_acc_buffer_duration_policy_fset,
-    )
-
-    _acc_buffer_size_policy_fget, _acc_buffer_size_policy_fset = _make_buffer_param_fget_fset(
-        lambda self: self.__control.accumulation(), "Buffer", "sizePolicy", enum_key="sizePolicy"
-    )
-    acc_buffer_size_policy = attribute(
-        dtype=str, access=AttrWriteType.READ_WRITE,
-        fget=_acc_buffer_size_policy_fget, fset=_acc_buffer_size_policy_fset,
-    )
-
-    _acc_buffer_req_mem_size_percent_fget, _acc_buffer_req_mem_size_percent_fset = _make_buffer_param_fget_fset(
-        lambda self: self.__control.accumulation(), "Buffer", "reqMemSizePercent"
-    )
-    acc_buffer_req_mem_size_percent = attribute(
-        dtype=float, access=AttrWriteType.READ_WRITE,
-        fget=_acc_buffer_req_mem_size_percent_fget, fset=_acc_buffer_req_mem_size_percent_fset,
-    )
-
-    _saving_zbuffer_init_mem_fget, _saving_zbuffer_init_mem_fset = _make_buffer_param_fget_fset(
-        lambda self: self.__control.saving(), "ZBuffer", "initMem"
-    )
-    saving_zbuffer_init_mem = attribute(
-        dtype=bool, access=AttrWriteType.READ_WRITE,
-        fget=_saving_zbuffer_init_mem_fget, fset=_saving_zbuffer_init_mem_fset,
-    )
-
-    _saving_zbuffer_duration_policy_fget, _saving_zbuffer_duration_policy_fset = _make_buffer_param_fget_fset(
-        lambda self: self.__control.saving(), "ZBuffer", "durationPolicy", enum_key="durationPolicy"
-    )
-    saving_zbuffer_duration_policy = attribute(
-        dtype=str, access=AttrWriteType.READ_WRITE,
-        fget=_saving_zbuffer_duration_policy_fget, fset=_saving_zbuffer_duration_policy_fset,
-    )
-
-    _saving_zbuffer_size_policy_fget, _saving_zbuffer_size_policy_fset = _make_buffer_param_fget_fset(
-        lambda self: self.__control.saving(), "ZBuffer", "sizePolicy", enum_key="sizePolicy"
-    )
-    saving_zbuffer_size_policy = attribute(
-        dtype=str, access=AttrWriteType.READ_WRITE,
-        fget=_saving_zbuffer_size_policy_fget, fset=_saving_zbuffer_size_policy_fset,
-    )
-
-    _saving_zbuffer_req_mem_size_percent_fget, _saving_zbuffer_req_mem_size_percent_fset = _make_buffer_param_fget_fset(
-        lambda self: self.__control.saving(), "ZBuffer", "reqMemSizePercent"
-    )
-    saving_zbuffer_req_mem_size_percent = attribute(
-        dtype=float, access=AttrWriteType.READ_WRITE,
-        fget=_saving_zbuffer_req_mem_size_percent_fget, fset=_saving_zbuffer_req_mem_size_percent_fset,
     )
 
     # buffer_max_number: dispatched via __Attribute2FunctionBase's
