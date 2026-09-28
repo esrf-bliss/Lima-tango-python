@@ -65,6 +65,25 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
       `declare_camera_n_commun_to_tango_world()`, `export_default_plugins()`, and the other module-level
       helpers, since they operate on `PyTango.Util`/`PyTango.Database` generically, not on `LimaCCDs`'s
       base class.
+      - [x] Skeleton + device properties + `init_device` (merged with the old `__init__`).
+      - [x] Identification domain: lima_version, lima_type, camera_type, camera_model,
+            user_detector_name, user_instrument_name, camera_pixelsize.
+      - [x] Debug domain: debug_modules(_possible), debug_types(_possible).
+      - [x] Acquisition-status domain: acq_status, acq_status_fault_error, acq_tag (storage renamed to
+            `self._acq_tag` - collided with the new attribute descriptor; fixed the other reader,
+            `prepareAcq`, too, not yet migrated itself but affected by the rename).
+      - [ ] Acquisition domain (acq_mode, acq_nb_frames, acq_expo_time, acq_trigger_mode,
+            concat_nb_frames, latency_time, valid_ranges, acc_time_mode).
+      - [ ] Image domain (image_*, last_image*, ready_for_next_*).
+      - [ ] Accumulation domain (acc_*).
+      - [ ] Saving domain (saving_*).
+      - [ ] Video domain (video_*).
+      - [ ] Buffer domain (buffer_*) - needs the prefix-routed `__getattr__`/`__Prefix2SubClass`
+            dispatch generalized (LimaCCDs-specific, doesn't reuse Phase 2's `make_fget_fset`).
+      - [ ] Shutter domain (shutter_ctrl_is_available + the dynamically-`add_attribute`'d shutter_*).
+      - [ ] Plugin/config domain (plugin_*, config_*, shared_memory_*) + the ~29 commands.
+      - [ ] Delete the orphaned `LimaCCDsClass`; update `main()`'s `add_TgClass` call; full BLISS
+            baseline run.
 - [ ] **Phase 4 — Camera ecosystem**: `camera/simulator` (done in Phase 2) → 1-2 representative cameras
       (e.g. `camera/pilatus`) as proof → long tail migrated at each maintainer's own pace.
 - [ ] **Phase 5 — Cleanup**: remove `AttrHelper.py`; replace the mocked `tests/test_tango.py`.
