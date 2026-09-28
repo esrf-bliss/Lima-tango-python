@@ -2991,7 +2991,7 @@ class LimaCCDs(Device):
     def closeShutterManual(self):
         shutter = self.__control.shutter()
 
-        if shutter.getModeList().count(core.ShutterManual):
+        if shutter.getModeList().count(core.ShutterMode.ShutterManual):
             shutter.setState(False)
 
     # ------------------------------------------------------------------
@@ -3005,7 +3005,7 @@ class LimaCCDs(Device):
     def openShutterManual(self):
         shutter = self.__control.shutter()
 
-        if shutter.getModeList().count(core.ShutterManual):
+        if shutter.getModeList().count(core.ShutterMode.ShutterManual):
             shutter.setState(True)
 
     @command(dtype_in=str, dtype_out=str)
