@@ -140,6 +140,45 @@ def RequiresSystemFeature(feature):
     return method_decorator
 
 
+def _make_buffer_param_fget_fset(control_sub, params_base, field, enum_key=None):
+    """Build (fget, fset) for one BufferHelper.Parameters sub-field attribute
+    (buffer_alloc_*/acc_buffer_*/saving_zbuffer_*) - the high-level equivalent
+    of the legacy get_buffer_param_attr()/readBufferParam()/writeBufferParam()
+    dynamic dispatch (see __getattr__/__BufferParamData/__BufferHelperEnums
+    in init_device). Not reused outside LimaCCDs, no camera plugin has this
+    BufferHelper.Parameters group pattern.
+
+    Arguments:
+        control_sub: f(self) -> CtControl sub-object (buffer()/accumulation()/
+            saving())
+        params_base: e.g. "Alloc"/"Buffer"/"ZBuffer" -> get/set<Base>Parameters
+        field: BufferHelper.Parameters field name, e.g. "initMem"
+        enum_key: if set, looks up self.__BufferHelperEnums[enum_key] for the
+            string<->value translation (only "durationPolicy"/"sizePolicy")
+    """
+    get_params = "get" + params_base + "Parameters"
+    set_params = "set" + params_base + "Parameters"
+
+    @RequiresSystemFeature("core.BufferHelper.Parameters")
+    def fget(self):
+        params = getattr(control_sub(self), get_params)()
+        val = getattr(params, field)
+        if enum_key is not None:
+            val = getDictKey(self._LimaCCDs__BufferHelperEnums[enum_key], val)
+        return val
+
+    @RequiresSystemFeature("core.BufferHelper.Parameters")
+    def fset(self, value):
+        sub = control_sub(self)
+        params = getattr(sub, get_params)()
+        if enum_key is not None:
+            value = getDictValue(self._LimaCCDs__BufferHelperEnums[enum_key], value)
+        setattr(params, field, value)
+        getattr(sub, set_params)(params)
+
+    return fget, fset
+
+
 class LimaCCDs(Device):
     core.DEB_CLASS(core.DebModule.DebModApplication, "LimaCCDs")
 
@@ -2426,25 +2465,129 @@ class LimaCCDs(Device):
         setattr(buffer_param, param_name, val)
         setter(buffer_param)
 
-    @core.DEB_MEMBER_FUNCT
-    def read_buffer_malloc_trim_pad(self, attr):
-        if not SystemHasFeature("core.CtBuffer.getMallocTrimPad"):
-            raise RuntimeError("buffer_malloc_trim_pad not supported in "
-                               "this version")
-        buffer = self.__control.buffer()
-        malloc_trim_pad = buffer.getMallocTrimPad()
-        deb.Return("malloc_trim_pad=%s" % malloc_trim_pad)
-        attr.set_value(malloc_trim_pad)
+    # ------------------------------------------------------------------
+    #    Buffer domain (Phase 3 slice 10)
+    # ------------------------------------------------------------------
+    # buffer_alloc_*/acc_buffer_*/saving_zbuffer_* had no explicit
+    # read_X/write_X in the legacy code - see _make_buffer_param_fget_fset's
+    # docstring above the class.
+    _buffer_alloc_init_mem_fget, _buffer_alloc_init_mem_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.buffer(), "Alloc", "initMem"
+    )
+    buffer_alloc_init_mem = attribute(
+        dtype=bool, access=AttrWriteType.READ_WRITE,
+        fget=_buffer_alloc_init_mem_fget, fset=_buffer_alloc_init_mem_fset,
+    )
 
+    _buffer_alloc_duration_policy_fget, _buffer_alloc_duration_policy_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.buffer(), "Alloc", "durationPolicy", enum_key="durationPolicy"
+    )
+    buffer_alloc_duration_policy = attribute(
+        dtype=str, access=AttrWriteType.READ_WRITE,
+        fget=_buffer_alloc_duration_policy_fget, fset=_buffer_alloc_duration_policy_fset,
+    )
+
+    _buffer_alloc_size_policy_fget, _buffer_alloc_size_policy_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.buffer(), "Alloc", "sizePolicy", enum_key="sizePolicy"
+    )
+    buffer_alloc_size_policy = attribute(
+        dtype=str, access=AttrWriteType.READ_WRITE,
+        fget=_buffer_alloc_size_policy_fget, fset=_buffer_alloc_size_policy_fset,
+    )
+
+    _buffer_alloc_req_mem_size_percent_fget, _buffer_alloc_req_mem_size_percent_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.buffer(), "Alloc", "reqMemSizePercent"
+    )
+    buffer_alloc_req_mem_size_percent = attribute(
+        dtype=float, access=AttrWriteType.READ_WRITE,
+        fget=_buffer_alloc_req_mem_size_percent_fget, fset=_buffer_alloc_req_mem_size_percent_fset,
+    )
+
+    _acc_buffer_init_mem_fget, _acc_buffer_init_mem_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.accumulation(), "Buffer", "initMem"
+    )
+    acc_buffer_init_mem = attribute(
+        dtype=bool, access=AttrWriteType.READ_WRITE,
+        fget=_acc_buffer_init_mem_fget, fset=_acc_buffer_init_mem_fset,
+    )
+
+    _acc_buffer_duration_policy_fget, _acc_buffer_duration_policy_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.accumulation(), "Buffer", "durationPolicy", enum_key="durationPolicy"
+    )
+    acc_buffer_duration_policy = attribute(
+        dtype=str, access=AttrWriteType.READ_WRITE,
+        fget=_acc_buffer_duration_policy_fget, fset=_acc_buffer_duration_policy_fset,
+    )
+
+    _acc_buffer_size_policy_fget, _acc_buffer_size_policy_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.accumulation(), "Buffer", "sizePolicy", enum_key="sizePolicy"
+    )
+    acc_buffer_size_policy = attribute(
+        dtype=str, access=AttrWriteType.READ_WRITE,
+        fget=_acc_buffer_size_policy_fget, fset=_acc_buffer_size_policy_fset,
+    )
+
+    _acc_buffer_req_mem_size_percent_fget, _acc_buffer_req_mem_size_percent_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.accumulation(), "Buffer", "reqMemSizePercent"
+    )
+    acc_buffer_req_mem_size_percent = attribute(
+        dtype=float, access=AttrWriteType.READ_WRITE,
+        fget=_acc_buffer_req_mem_size_percent_fget, fset=_acc_buffer_req_mem_size_percent_fset,
+    )
+
+    _saving_zbuffer_init_mem_fget, _saving_zbuffer_init_mem_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.saving(), "ZBuffer", "initMem"
+    )
+    saving_zbuffer_init_mem = attribute(
+        dtype=bool, access=AttrWriteType.READ_WRITE,
+        fget=_saving_zbuffer_init_mem_fget, fset=_saving_zbuffer_init_mem_fset,
+    )
+
+    _saving_zbuffer_duration_policy_fget, _saving_zbuffer_duration_policy_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.saving(), "ZBuffer", "durationPolicy", enum_key="durationPolicy"
+    )
+    saving_zbuffer_duration_policy = attribute(
+        dtype=str, access=AttrWriteType.READ_WRITE,
+        fget=_saving_zbuffer_duration_policy_fget, fset=_saving_zbuffer_duration_policy_fset,
+    )
+
+    _saving_zbuffer_size_policy_fget, _saving_zbuffer_size_policy_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.saving(), "ZBuffer", "sizePolicy", enum_key="sizePolicy"
+    )
+    saving_zbuffer_size_policy = attribute(
+        dtype=str, access=AttrWriteType.READ_WRITE,
+        fget=_saving_zbuffer_size_policy_fget, fset=_saving_zbuffer_size_policy_fset,
+    )
+
+    _saving_zbuffer_req_mem_size_percent_fget, _saving_zbuffer_req_mem_size_percent_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.saving(), "ZBuffer", "reqMemSizePercent"
+    )
+    saving_zbuffer_req_mem_size_percent = attribute(
+        dtype=float, access=AttrWriteType.READ_WRITE,
+        fget=_saving_zbuffer_req_mem_size_percent_fget, fset=_saving_zbuffer_req_mem_size_percent_fset,
+    )
+
+    # buffer_max_number: dispatched via __Attribute2FunctionBase's
+    # "MaxNumber" override in the legacy code (read-only, no enum).
+    @attribute(dtype=int, access=AttrWriteType.READ)
     @core.DEB_MEMBER_FUNCT
-    def write_buffer_malloc_trim_pad(self, attr):
-        if not SystemHasFeature("core.CtBuffer.setMallocTrimPad"):
-            raise RuntimeError("buffer_malloc_trim_pad not supported in "
-                               "this version")
-        malloc_trim_pad = attr.get_write_value()
+    def buffer_max_number(self):
+        return self.__control.buffer().getMaxNumber()
+
+    @attribute(dtype=tango.CmdArgType.DevULong64, access=AttrWriteType.READ_WRITE)
+    @RequiresSystemFeature("core.CtBuffer.getMallocTrimPad")
+    @core.DEB_MEMBER_FUNCT
+    def buffer_malloc_trim_pad(self):
+        malloc_trim_pad = self.__control.buffer().getMallocTrimPad()
+        deb.Return("malloc_trim_pad=%s" % malloc_trim_pad)
+        return malloc_trim_pad
+
+    @buffer_malloc_trim_pad.setter
+    @RequiresSystemFeature("core.CtBuffer.setMallocTrimPad")
+    @core.DEB_MEMBER_FUNCT
+    def buffer_malloc_trim_pad(self, malloc_trim_pad):
         deb.Param("malloc_trim_pad=%s" % malloc_trim_pad)
-        buffer = self.__control.buffer()
-        buffer.setMallocTrimPad(malloc_trim_pad)
+        self.__control.buffer().setMallocTrimPad(malloc_trim_pad)
 
     # ==================================================================
     #
