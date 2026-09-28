@@ -109,7 +109,13 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
       - [x] Plugin/config domain (last attribute domain): plugin_type_list, plugin_list,
             shared_memory_names, shared_memory_active, config_available_module,
             config_available_name. **All 141 attributes are now migrated.**
-      - [ ] The ~29 commands.
+      - [x] The ~29 commands: bodies needed zero changes (commands already used the modern return-based
+            convention, unlike attributes), just `@command(dtype_in=, dtype_out=)` decorators, explicit
+            `tango.CmdArgType.*` for the array types. **All attributes and commands are now migrated.**
+            Found another pre-existing bug verifying against real core: `closeShutterManual`/
+            `openShutterManual` reference `core.ShutterManual`, which doesn't exist
+            (`core.ShutterMode.ShutterManual` does) - both have always raised `AttributeError`, before
+            and after. Left unchanged, out of scope.
       - [ ] Delete the orphaned `LimaCCDsClass` and every now-dead old `read_X`/`write_X` method left
             behind by each slice above (each domain's migration leaves its old methods in place,
             unused, rather than deleting them mid-flight); update `main()`'s `add_TgClass` call; full
