@@ -96,7 +96,11 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
       - [x] Buffer domain: buffer_alloc_*, acc_buffer_*, saving_zbuffer_* via a new module-level
             `_make_buffer_param_fget_fset()` helper (LimaCCDs-specific, not in AttrHelper.py - no camera
             plugin has this pattern), buffer_max_number, buffer_malloc_trim_pad.
-      - [ ] Shutter domain (shutter_ctrl_is_available + the dynamically-`add_attribute`'d shutter_*).
+      - [x] Shutter domain: shutter_ctrl_is_available migrated to `@attribute`. shutter_close_time/
+            manual_state/mode/open_time need no change at all - they're added dynamically at runtime
+            via `self.add_attribute(...)`, which keeps working with old-style `(self, attr)` callbacks
+            on a high-level `Device` unchanged (verified). Confirmed the Simulator camera has shutter
+            capability, so this path is genuinely exercised by the final full BLISS baseline run.
       - [ ] Known minor deviations to double-check at the end: `RequiresSystemFeature`'s error message
             regex-matches the old `read_X`/`write_X` method name to word the message - since attributes
             are now named without that prefix, the fallback wording ("method X" instead of "attr. X
