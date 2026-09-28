@@ -2390,56 +2390,59 @@ class LimaCCDs(Device):
     def video_last_image_counter(self):
         return self.__control.video().getLastImageCounter()
 
-    def read_plugin_type_list(self, attr):
+    # ------------------------------------------------------------------
+    #    Plugin/config domain (Phase 3 slice 12 - last attribute domain)
+    # ------------------------------------------------------------------
+    @attribute(dtype=(str,), max_dim_x=256, access=AttrWriteType.READ)
+    def plugin_type_list(self):
         className2deviceName = get_sub_devices()
-        attr.set_value(
-            [x.lower().replace("deviceserver", "") for x in className2deviceName.keys()]
-        )
+        return [x.lower().replace("deviceserver", "") for x in className2deviceName.keys()]
 
-    def read_plugin_list(self, attr):
+    @attribute(dtype=(str,), max_dim_x=256, access=AttrWriteType.READ)
+    def plugin_list(self):
         returnList = []
         for key, value in get_sub_devices().items():
             returnList.append(key.lower().replace("deviceserver", ""))
             returnList.append(value)
-        attr.set_value(returnList)
+        return returnList
 
-    def read_shared_memory_names(self, attr):
+    @attribute(dtype=(str,), max_dim_x=2, access=AttrWriteType.READ_WRITE)
+    def shared_memory_names(self):
         try:
-            shared_memory = self.__control.display()
-            shared_memory_names = shared_memory.getNames()
+            shared_memory_names = self.__control.display().getNames()
         except Exception:
             shared_memory_names = ["", ""]
-        attr.set_value(shared_memory_names)
+        return shared_memory_names
 
-    def write_shared_memory_names(self, attr):
-        self.__shared_memory_names = attr.get_write_value()
+    @shared_memory_names.setter
+    def shared_memory_names(self, data):
+        self.__shared_memory_names = data
         try:
-            shared_memory = self.__control.display()
-            shared_memory.setNames(*self.__shared_memory_names)
+            self.__control.display().setNames(*self.__shared_memory_names)
         except Exception:
             pass
 
-    def read_shared_memory_active(self, attr):
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE)
+    def shared_memory_active(self):
         try:
-            shared_memory = self.__control.display().isActive()
+            return self.__control.display().isActive()
         except Exception:
-            shared_memory = False
-        attr.set_value(shared_memory)
+            return False
 
-    def write_shared_memory_active(self, attr):
-        data = attr.get_write_value()
+    @shared_memory_active.setter
+    def shared_memory_active(self, data):
         try:
             self.__control.display().setActive(data)
         except Exception:
             pass
 
-    def read_config_available_module(self, attr):
-        config = self.__control.config()
-        attr.set_value(config.getAvailableModule())
+    @attribute(dtype=(str,), max_dim_x=1024, access=AttrWriteType.READ)
+    def config_available_module(self):
+        return self.__control.config().getAvailableModule()
 
-    def read_config_available_name(self, attr):
-        config = self.__control.config()
-        attr.set_value(config.getAlias())
+    @attribute(dtype=(str,), max_dim_x=1024, access=AttrWriteType.READ)
+    def config_available_name(self):
+        return self.__control.config().getAlias()
 
     # ------------------------------------------------------------------
     #    Shutter domain (Phase 3 slice 11)
