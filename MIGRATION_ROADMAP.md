@@ -117,10 +117,17 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
             exist (`core.ShutterMode.ShutterManual` does) - both had always raised `AttributeError`,
             before and after the migration itself. This one fix is a deliberate, requested exception to
             the "preserve pre-existing bugs" rule applied everywhere else in this migration.
-      - [ ] Delete the orphaned `LimaCCDsClass` and every now-dead old `read_X`/`write_X` method left
-            behind by each slice above (each domain's migration leaves its old methods in place,
-            unused, rather than deleting them mid-flight); update `main()`'s `add_TgClass` call; full
-            BLISS baseline run.
+      - [x] Deleted `LimaCCDsClass` (the ~430-line orphaned low-level companion class) and the two
+            orphaned duplicate method blocks (accumulation/latency/valid_ranges, last_image*/
+            image_events_*/ready_for_next_*) left behind mid-migration. Updated `main()`:
+            `py.add_TgClass(LimaCCDs.TangoClassClass, LimaCCDs, "LimaCCDs")`.
+      - [ ] Still dead but deliberately left alone (low risk, low value to chase further right now):
+            `__getattr__`, `get_buffer_param_attr`, `readBufferParam`, `writeBufferParam` - only ever
+            reachable through the old `read_X`/`write_X` naming-convention lookup, which no
+            longer happens now that every attribute is a real descriptor. `tests/test_tango.py` also
+            breaks (was already excluded from the conda CI recipe's test run) - `LimaCCDs.LimaCCDsClass`
+            no longer exists; folds into the Phase 5 test rewrite already planned.
+      - [ ] Full BLISS baseline run against the completely migrated class.
 - [ ] **Phase 4 — Camera ecosystem**: `camera/simulator` (done in Phase 2) → 1-2 representative cameras
       (e.g. `camera/pilatus`) as proof → long tail migrated at each maintainer's own pace.
 - [ ] **Phase 5 — Cleanup**: remove `AttrHelper.py`; replace the mocked `tests/test_tango.py`.
