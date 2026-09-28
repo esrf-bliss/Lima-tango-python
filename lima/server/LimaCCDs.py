@@ -1710,53 +1710,44 @@ class LimaCCDs(Device):
     def ready_for_next_acq(self):
         return self.__control.getStatus().AcquisitionStatus == core.AcqStatus.AcqReady
 
-    ## @brief Read common header
-    #
+    # ------------------------------------------------------------------
+    #    Saving domain (Phase 3 slice 7)
+    # ------------------------------------------------------------------
+    @attribute(dtype=(str,), max_dim_x=65535, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_saving_common_header(self, attr):
-        saving = self.__control.saving()
-        header = saving.getCommonHeader()
-        headerArr = [
+    def saving_common_header(self):
+        header = self.__control.saving().getCommonHeader()
+        return [
             "%s%s%s" % (k, self.__key_header_delimiter, v) for k, v in header.items()
         ]
-        attr.set_value(headerArr)
 
-    ## @brief Write common header
-    #
+    @saving_common_header.setter
     @core.DEB_MEMBER_FUNCT
-    def write_saving_common_header(self, attr):
-        data = attr.get_write_value()
+    def saving_common_header(self, data):
         header = dict([x.split(self.__key_header_delimiter, 1) for x in data])
-        saving = self.__control.saving()
-        saving.setCommonHeader(header)
+        self.__control.saving().setCommonHeader(header)
 
-    ## @brief Read header delimiter
-    #
+    @attribute(dtype=(str,), max_dim_x=3, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_saving_header_delimiter(self, attr):
-        attr.set_value(
-            [
-                self.__key_header_delimiter,
-                self.__entry_header_delimiter,
-                self.__image_number_header_delimiter,
-            ],
-        )
+    def saving_header_delimiter(self):
+        return [
+            self.__key_header_delimiter,
+            self.__entry_header_delimiter,
+            self.__image_number_header_delimiter,
+        ]
 
-    ##@brief Write header delimiter
-    #
-    def write_saving_header_delimiter(self, attr):
-        data = attr.get_write_value()
+    @saving_header_delimiter.setter
+    def saving_header_delimiter(self, data):
         self.__key_header_delimiter = data[0]
         self.__entry_header_delimiter = data[1]
         self.__image_number_header_delimiter = data[2]
 
-    def read_saving_index_format(self, attr):
-        saving = self.__control.saving()
-        params = saving.getParameters()
-        attr.set_value(params.indexFormat)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    def saving_index_format(self):
+        return self.__control.saving().getParameters().indexFormat
 
-    def write_saving_index_format(self, attr):
-        data = attr.get_write_value()
+    @saving_index_format.setter
+    def saving_index_format(self, data):
         saving = self.__control.saving()
         params = saving.getParameters()
         params.indexFormat = data
@@ -1875,43 +1866,31 @@ class LimaCCDs(Device):
         status = self.__control.getStatus()
         attr.set_value(status.AcquisitionStatus == core.AcqStatus.AcqReady)
 
-    ## @brief read write statistic
-    #
-    # return saving_speed,compression_speed, compression_ratio,incoming_speed
+    @attribute(dtype=(float,), max_dim_x=4, access=AttrWriteType.READ)
     @core.DEB_MEMBER_FUNCT
-    def read_saving_statistics(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(saving.getStatisticCounters())
+    def saving_statistics(self):
+        # saving_speed, compression_speed, compression_ratio, incoming_speed
+        return self.__control.saving().getStatisticCounters()
 
-    ## @brief get the write statistics history size
-    #
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_saving_statistics_history(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(saving.getStatisticHistorySize())
+    def saving_statistics_history(self):
+        return self.__control.saving().getStatisticHistorySize()
 
-    ## @brief set the write statistics history size
-    #
+    @saving_statistics_history.setter
     @core.DEB_MEMBER_FUNCT
-    def write_saving_statistics_history(self, attr):
-        stat_size = attr.get_write_value()
-        saving = self.__control.saving()
-        saving.setStatisticHistorySize(stat_size)
+    def saving_statistics_history(self, stat_size):
+        self.__control.saving().setStatisticHistorySize(stat_size)
 
-    ## @brief get statistics log enabled flag
-    #
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_saving_statistics_log_enable(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(saving.getEnableLogStat())
+    def saving_statistics_log_enable(self):
+        return self.__control.saving().getEnableLogStat()
 
-    ## @brief set statistics log enable flag
-    #
+    @saving_statistics_log_enable.setter
     @core.DEB_MEMBER_FUNCT
-    def write_saving_statistics_log_enable(self, attr):
-        flag = attr.get_write_value()
-        saving = self.__control.saving()
-        saving.setEnableLogStat(flag)
+    def saving_statistics_log_enable(self, flag):
+        self.__control.saving().setEnableLogStat(flag)
 
     ## @brief Write current shutter state if in manual mode
     # True-Open, False-Close
@@ -2009,27 +1988,24 @@ class LimaCCDs(Device):
 
         shutter.setCloseTime(data)
 
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_saving_directory(self, attr):
-        saving = self.__control.saving()
+    def saving_directory(self):
+        return self.__control.saving().getDirectory(self.__SavingStream)
 
-        attr.set_value(saving.getDirectory(self.__SavingStream))
-
+    @saving_directory.setter
     @core.DEB_MEMBER_FUNCT
-    def write_saving_directory(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-        saving.setDirectory(data, self.__SavingStream)
+    def saving_directory(self, data):
+        self.__control.saving().setDirectory(data, self.__SavingStream)
 
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_saving_prefix(self, attr):
-        saving = self.__control.saving()
+    def saving_prefix(self):
+        return self.__control.saving().getPrefix(self.__SavingStream)
 
-        attr.set_value(saving.getPrefix(self.__SavingStream))
-
+    @saving_prefix.setter
     @core.DEB_MEMBER_FUNCT
-    def write_saving_prefix(self, attr):
-        data = attr.get_write_value()
+    def saving_prefix(self, data):
         saving = self.__control.saving()
         prefix = data
 
@@ -2044,93 +2020,109 @@ class LimaCCDs(Device):
         saving.setPrefix(prefix, self.__SavingStream)
         saving.setNextNumber(lastnumber + 1, self.__SavingStream)
 
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_saving_suffix(self, attr):
-        saving = self.__control.saving()
+    def saving_suffix(self):
+        return self.__control.saving().getSuffix(self.__SavingStream)
 
-        attr.set_value(saving.getSuffix(self.__SavingStream))
-
+    @saving_suffix.setter
     @core.DEB_MEMBER_FUNCT
-    def write_saving_suffix(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
+    def saving_suffix(self, data):
+        self.__control.saving().setSuffix(data, self.__SavingStream)
 
-        saving.setSuffix(data, self.__SavingStream)
-
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_saving_next_number(self, attr):
-        saving = self.__control.saving()
+    def saving_next_number(self):
+        return self.__control.saving().getNextNumber(self.__SavingStream)
 
-        attr.set_value(saving.getNextNumber(self.__SavingStream))
-
+    @saving_next_number.setter
     @core.DEB_MEMBER_FUNCT
-    def write_saving_next_number(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
+    def saving_next_number(self, data):
+        self.__control.saving().setNextNumber(data, self.__SavingStream)
 
-        saving.setNextNumber(data, self.__SavingStream)
-
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_saving_frame_per_file(self, attr):
-        saving = self.__control.saving()
+    def saving_frame_per_file(self):
+        return self.__control.saving().getFramesPerFile(self.__SavingStream)
 
-        attr.set_value(saving.getFramesPerFile(self.__SavingStream))
-
+    @saving_frame_per_file.setter
     @core.DEB_MEMBER_FUNCT
-    def write_saving_frame_per_file(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
+    def saving_frame_per_file(self, data):
+        self.__control.saving().setFramesPerFile(data, self.__SavingStream)
 
-        saving.setFramesPerFile(data, self.__SavingStream)
-
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_saving_every_n_frames(self, attr):
-        saving = self.__control.saving()
+    def saving_every_n_frames(self):
+        return self.__control.saving().getEveryNFrames(self.__SavingStream)
 
-        attr.set_value(saving.getEveryNFrames(self.__SavingStream))
-
+    @saving_every_n_frames.setter
     @core.DEB_MEMBER_FUNCT
-    def write_saving_every_n_frames(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
+    def saving_every_n_frames(self, data):
+        self.__control.saving().setEveryNFrames(data, self.__SavingStream)
 
-        saving.setEveryNFrames(data, self.__SavingStream)
-
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_saving_format(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(saving.getFormatAsString(self.__SavingStream))
+    def saving_format(self):
+        return self.__control.saving().getFormatAsString(self.__SavingStream)
 
+    @saving_format.setter
     @core.DEB_MEMBER_FUNCT
-    def write_saving_format(self, attr):
-        data = attr.get_write_value()
+    def saving_format(self, data):
         value = data.upper()
         saving = self.__control.saving()
-
-        if not value in self.__SavingFormat:
+        if value not in self.__SavingFormat:
             PyTango.Except.throw_exception(
                 "WrongData",
                 "Wrong value %s: %s" % ("saving_format", value),
                 "LimaCCD Class",
             )
-        else:
-            saving.setFormatAsString(value, self.__SavingStream)
-            saving.setFormatSuffix(self.__SavingStream)
+        saving.setFormatAsString(value, self.__SavingStream)
+        saving.setFormatSuffix(self.__SavingStream)
 
+    # saving_mode/saving_managed_mode had no explicit read_X/write_X in the
+    # legacy code - saving_managed_mode via its __Attribute2FunctionBase
+    # override to "ManagedMode".
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_saving_overwrite_policy(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(
-            getDictKey(
-                self.__SavingOverwritePolicy,
-                saving.getOverwritePolicy(self.__SavingStream),
+    def saving_mode(self):
+        return getDictKey(self.__SavingMode, self.__control.saving().getSavingMode())
+
+    @saving_mode.setter
+    @core.DEB_MEMBER_FUNCT
+    def saving_mode(self, data):
+        value = getDictValue(self.__SavingMode, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value saving_mode: %s" % data.upper(), "LimaCCD Class"
             )
+        self.__control.saving().setSavingMode(value)
+
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def saving_managed_mode(self):
+        return getDictKey(self.__SavingManagedMode, self.__control.saving().getManagedMode())
+
+    @saving_managed_mode.setter
+    @core.DEB_MEMBER_FUNCT
+    def saving_managed_mode(self, data):
+        value = getDictValue(self.__SavingManagedMode, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value saving_managed_mode: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.saving().setManagedMode(value)
+
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def saving_overwrite_policy(self):
+        saving = self.__control.saving()
+        return getDictKey(
+            self.__SavingOverwritePolicy, saving.getOverwritePolicy(self.__SavingStream)
         )
 
+    @saving_overwrite_policy.setter
     @core.DEB_MEMBER_FUNCT
-    def write_saving_overwrite_policy(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
+    def saving_overwrite_policy(self, data):
         value = getDictValue(self.__SavingOverwritePolicy, data.upper())
         if value is None:
             PyTango.Except.throw_exception(
@@ -2138,69 +2130,51 @@ class LimaCCDs(Device):
                 "Wrong value %s: %s" % ("saving_overwrite_policy", data.upper()),
                 "LimaCCD Class",
             )
-        else:
-            saving.setOverwritePolicy(value, self.__SavingStream)
+        self.__control.saving().setOverwritePolicy(value, self.__SavingStream)
 
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_saving_use_hw_comp(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(saving.getUseHwComp(self.__SavingStream))
+    def saving_use_hw_comp(self):
+        return self.__control.saving().getUseHwComp(self.__SavingStream)
 
+    @saving_use_hw_comp.setter
     @core.DEB_MEMBER_FUNCT
-    def write_saving_use_hw_comp(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-        saving.setUseHwComp(data, self.__SavingStream)
+    def saving_use_hw_comp(self, data):
+        self.__control.saving().setUseHwComp(data, self.__SavingStream)
 
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_saving_stream_active(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(saving.getStreamActive(self.__SavingStream))
+    def saving_stream_active(self):
+        return self.__control.saving().getStreamActive(self.__SavingStream)
 
+    @saving_stream_active.setter
     @core.DEB_MEMBER_FUNCT
-    def write_saving_stream_active(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-        saving.setStreamActive(self.__SavingStream, data)
+    def saving_stream_active(self, data):
+        self.__control.saving().setStreamActive(self.__SavingStream, data)
 
-    ## @brief get the maximum number of task for concurrent writing (saving)
-    #
+    @attribute(dtype=tango.CmdArgType.DevShort, access=AttrWriteType.READ_WRITE)
     @RequiresSystemFeature("core.CtSaving.getMaxConcurrentWritingTask")
     @core.DEB_MEMBER_FUNCT
-    def read_saving_max_writing_task(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(saving.getMaxConcurrentWritingTask())
+    def saving_max_writing_task(self):
+        return self.__control.saving().getMaxConcurrentWritingTask()
 
-    ## @brief set the maximum number of task for concurrent writing (saving)
-    #
+    @saving_max_writing_task.setter
     @RequiresSystemFeature("core.CtSaving.setMaxConcurrentWritingTask")
     @core.DEB_MEMBER_FUNCT
-    def write_saving_max_writing_task(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
+    def saving_max_writing_task(self, data):
+        self.__control.saving().setMaxConcurrentWritingTask(data)
 
-        saving.setMaxConcurrentWritingTask(data)
-
-    ## @brief get the codec used for jp2k compression
-    #
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
     @RequiresSystemFeature("core.CtSaving.getJp2kCompressionCodec")
     @core.DEB_MEMBER_FUNCT
-    def read_saving_jp2k_codec(self, attr):
+    def saving_jp2k_codec(self):
         saving = self.__control.saving()
-        attr.set_value(getDictKey(
-                self.__SavingJp2kCompressionCodec,
-                saving.getJp2kCompressionCodec(),
-            )
-        )
+        return getDictKey(self.__SavingJp2kCompressionCodec, saving.getJp2kCompressionCodec())
 
-    ## @brief set the codec used for jp2k compression
-    #
+    @saving_jp2k_codec.setter
     @RequiresSystemFeature("core.CtSaving.setJp2kCompressionCodec")
     @core.DEB_MEMBER_FUNCT
-    def write_saving_jp2k_codec(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-
+    def saving_jp2k_codec(self, data):
         value = getDictValue(self.__SavingJp2kCompressionCodec, data.upper())
         if value is None:
             PyTango.Except.throw_exception(
@@ -2208,26 +2182,19 @@ class LimaCCDs(Device):
                 "Wrong value %s: %s" % ("saving_jp2k_codec", data.upper()),
                 "LimaCCD Class",
             )
-        else:
-            saving.setJp2kCompressionCodec(value)
+        self.__control.saving().setJp2kCompressionCodec(value)
 
-    ## @brief set the maximum number of task for concurrent writing (saving)
-    #
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE)
     @RequiresSystemFeature("core.CtSaving.getJp2kCompressionRatio")
     @core.DEB_MEMBER_FUNCT
-    def read_saving_jp2k_comp_ratio(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(saving.getJp2kCompressionRatio())
+    def saving_jp2k_comp_ratio(self):
+        return self.__control.saving().getJp2kCompressionRatio()
 
-    ## @brief set the maximum number of task for concurrent writing (saving)
-    #
+    @saving_jp2k_comp_ratio.setter
     @RequiresSystemFeature("core.CtSaving.setJp2kCompressionRatio")
     @core.DEB_MEMBER_FUNCT
-    def write_saving_jp2k_comp_ratio(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-
-        saving.setJp2kCompressionRatio(data)
+    def saving_jp2k_comp_ratio(self, data):
+        self.__control.saving().setJp2kCompressionRatio(data)
 
     # ------------------------------------------------------------------
     #    Debug domain (Phase 3 slice 2)
