@@ -106,7 +106,10 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
             are now named without that prefix, the fallback wording ("method X" instead of "attr. X
             [read]") kicks in when a feature is missing. Cosmetic only (still raises the same
             RuntimeError), but affects every `@RequiresSystemFeature`-guarded attribute migrated so far.
-      - [ ] Plugin/config domain (plugin_*, config_*, shared_memory_*) + the ~29 commands.
+      - [x] Plugin/config domain (last attribute domain): plugin_type_list, plugin_list,
+            shared_memory_names, shared_memory_active, config_available_module,
+            config_available_name. **All 141 attributes are now migrated.**
+      - [ ] The ~29 commands.
       - [ ] Delete the orphaned `LimaCCDsClass` and every now-dead old `read_X`/`write_X` method left
             behind by each slice above (each domain's migration leaves its old methods in place,
             unused, rather than deleting them mid-flight); update `main()`'s `add_TgClass` call; full
