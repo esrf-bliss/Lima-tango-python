@@ -90,9 +90,13 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
             saving_mode, saving_managed_mode, saving_overwrite_policy, saving_use_hw_comp,
             saving_stream_active, saving_max_writing_task, saving_jp2k_codec, saving_jp2k_comp_ratio.
             `saving_zbuffer_*` deferred to the buffer domain slice.
-      - [ ] Video domain (video_*).
-      - [ ] Buffer domain (buffer_*) - needs the prefix-routed `__getattr__`/`__Prefix2SubClass`
-            dispatch generalized (LimaCCDs-specific, doesn't reuse Phase 2's `make_fget_fset`).
+      - [x] Video domain: video_active, video_live, video_exposure, video_gain, video_mode,
+            video_source, video_bin, video_roi, video_last_image (DevEncoded),
+            video_last_image_counter (DevLong64).
+      - [ ] Buffer domain (buffer_alloc_*, acc_buffer_*, saving_zbuffer_*, buffer_max_number,
+            buffer_malloc_trim_pad) - the one domain not covered by the pattern used everywhere else:
+            `get_buffer_param_attr` builds `BufferHelper.Parameters` sub-field accessors dynamically
+            (durationPolicy/sizePolicy/initMem/reqMemSizePercent across 3 different parameter groups).
       - [ ] Shutter domain (shutter_ctrl_is_available + the dynamically-`add_attribute`'d shutter_*).
       - [ ] Plugin/config domain (plugin_*, config_*, shared_memory_*) + the ~29 commands.
       - [ ] Delete the orphaned `LimaCCDsClass` and every now-dead old `read_X`/`write_X` method left
