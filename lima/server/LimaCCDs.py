@@ -48,6 +48,9 @@ import sys
 import os
 import glob
 import PyTango
+import tango
+from tango import AttrWriteType
+from tango.server import Device, attribute, command, device_property
 import weakref
 import itertools
 import functools
@@ -137,8 +140,33 @@ def RequiresSystemFeature(feature):
     return method_decorator
 
 
-class LimaCCDs(PyTango.LatestDeviceImpl):
+class LimaCCDs(Device):
     core.DEB_CLASS(core.DebModule.DebModApplication, "LimaCCDs")
+
+    # ------------------------------------------------------------------
+    #    Device properties (was LimaCCDsClass.device_property_list)
+    # ------------------------------------------------------------------
+    LimaCameraType = device_property(dtype=str, default_value="")
+    NbProcessingThread = device_property(dtype=str, default_value="2")
+    AccBufferParameters = device_property(dtype=str, default_value="")
+    AccThresholdCallbackModule = device_property(dtype=str, default_value="")
+    ConfigurationFilePath = device_property(
+        dtype=str,
+        default_value=os.path.join(
+            os.path.expanduser("~"), "lima_%s.cfg" % instance_name
+        ),
+    )
+    ConfigurationDefaultName = device_property(dtype=str, default_value="default")
+    ImageOpMode = device_property(dtype=str, default_value="")
+    MaxVideoFPS = device_property(dtype=float, default_value=30.0)
+    UserDetectorName = device_property(dtype=str, default_value="")
+    UserInstrumentName = device_property(dtype=str, default_value="")
+    BufferMaxMemory = device_property(dtype=str, default_value="")
+    BufferAllocParameters = device_property(dtype=str, default_value="")
+    BufferMallocTrimPad = device_property(dtype=int, default_value=0)
+    TangoEvent = device_property(dtype=bool, default_value=False)
+    SavingMaxConcurrentWritingTask = device_property(dtype=int, default_value=1)
+    SavingZBufferParameters = device_property(dtype=str, default_value="")
 
     _ImageOpModes = {
         "HardOnly": core.CtImage.ImageOpMode.HardOnly,
@@ -395,21 +423,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             self.__image_events_max_rate = max_rate
 
     # ------------------------------------------------------------------
-    #    Device constructor
-    # ------------------------------------------------------------------
-    def __init__(self, *args):
-        super().__init__(*args)
-        self.__className2deviceName = {}
-        self.init_device()
-        self.__lima_control = None
-
-        self.__key_header_delimiter = "="
-        self.__entry_header_delimiter = "\n"
-        self.__image_number_header_delimiter = ";"
-        self.__readImage_frame_number = 0
-        self.__configInit = False
-
-    # ------------------------------------------------------------------
     #    Device destructor
     # ------------------------------------------------------------------
     @core.DEB_MEMBER_FUNCT
@@ -429,8 +442,19 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     # ------------------------------------------------------------------
     @core.DEB_MEMBER_FUNCT
     def init_device(self):
+        # NOTE: not a bare super() call - DEB_MEMBER_FUNCT rebuilds the
+        # function object and chokes on the implicit __class__ closure cell
+        # a zero-arg super() creates. See MIGRATION_ROADMAP.md.
+        Device.init_device(self)
+
+        self.__lima_control = None
+        self.__key_header_delimiter = "="
+        self.__entry_header_delimiter = "\n"
+        self.__image_number_header_delimiter = ";"
+        self.__readImage_frame_number = 0
+        self.__configInit = False
+
         self.set_state(PyTango.DevState.ON)
-        self.get_device_properties(self.get_device_class())
         self.__className2deviceName = get_sub_devices()
 
         TacoSpecificName.append(self.LimaCameraType)
@@ -913,71 +937,78 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     #
     # ==================================================================
 
-    ## @brief Read the Lima Type
-    #
+    # ------------------------------------------------------------------
+    #    Identification / status domain (Phase 3 slice 1)
+    # ------------------------------------------------------------------
+    @attribute(dtype=str, access=AttrWriteType.READ)
     @RequiresSystemFeature("core.CtControl.getVersion")
     @core.DEB_MEMBER_FUNCT
-    def read_lima_version(self, attr):
-        value = self.__control.getVersion()
-        attr.set_value(value)
+    def lima_version(self):
+        return self.__control.getVersion()
 
+    @attribute(dtype=str, access=AttrWriteType.READ)
     @core.DEB_MEMBER_FUNCT
-    def read_lima_type(self, attr):
-        value = self.LimaCameraType
-        attr.set_value(value)
+    def lima_type(self):
+        return self.LimaCameraType
 
-    ## @brief Read the Camera Type
-    #
+    @attribute(dtype=str, access=AttrWriteType.READ)
     @core.DEB_MEMBER_FUNCT
-    def read_camera_type(self, attr):
-        value = self.__detinfo.getDetectorType()
-        attr.set_value(value)
+    def camera_type(self):
+        return self.__detinfo.getDetectorType()
 
-    ## @brief Read the Camera Model
-    #
+    @attribute(dtype=str, access=AttrWriteType.READ)
     @core.DEB_MEMBER_FUNCT
-    def read_camera_model(self, attr):
-        value = self.__detinfo.getDetectorModel()
-        attr.set_value(value)
+    def camera_model(self):
+        return self.__detinfo.getDetectorModel()
 
-    ## @brief Read the User-defined Camera name
-    #
+    @attribute(
+        dtype=str,
+        access=AttrWriteType.READ_WRITE,
+        label="user detector name",
+        doc="A user defined detector name, will be saved in the saved file header",
+    )
     @RequiresSystemFeature("core.HwDetInfoCtrlObj.getUserDetectorName")
     @core.DEB_MEMBER_FUNCT
-    def read_user_detector_name(self, attr):
-        value = self.__detinfo.getUserDetectorName()
-        attr.set_value(value)
+    def user_detector_name(self):
+        return self.__detinfo.getUserDetectorName()
 
-    ## @brief Write the User-defined Camera name
-    #
+    @user_detector_name.setter
     @RequiresSystemFeature("core.HwDetInfoCtrlObj.setUserDetectorName")
     @core.DEB_MEMBER_FUNCT
-    def write_user_detector_name(self, attr):
-        data = attr.get_write_value()
+    def user_detector_name(self, data):
         self.__detinfo.setUserDetectorName(data)
 
-    ## @brief Read the user instrument name
-    #
+    @attribute(
+        dtype=str,
+        access=AttrWriteType.READ_WRITE,
+        label="instrument/beamline name",
+        doc="the instrument/beamline name, will be saved in the saved file header",
+    )
     @RequiresSystemFeature("core.HwDetInfoCtrlObj.getInstrumentName")
     @core.DEB_MEMBER_FUNCT
-    def read_user_instrument_name(self, attr):
-        value = self.__detinfo.getInstrumentName()
-        attr.set_value(value)
+    def user_instrument_name(self):
+        return self.__detinfo.getInstrumentName()
 
-    ## @brief Write the user instrument name
-    #
+    @user_instrument_name.setter
     @RequiresSystemFeature("core.HwDetInfoCtrlObj.setInstrumentName")
     @core.DEB_MEMBER_FUNCT
-    def write_user_instrument_name(self, attr):
-        data = attr.get_write_value()
+    def user_instrument_name(self, data):
         self.__detinfo.setInstrumentName(data)
 
-    ## @brief Read the Camera pixelsize
-    #
+    @attribute(
+        dtype=(float,),
+        max_dim_x=2,
+        access=AttrWriteType.READ,
+        label="Pixel size:x_size, y_size",
+        unit="meter",
+        standard_unit="meter",
+        display_unit="meter",
+        format="%f",
+        doc="Size of the pixel in meter",
+    )
     @core.DEB_MEMBER_FUNCT
-    def read_camera_pixelsize(self, attr):
-        value = self.__detinfo.getPixelSize()
-        attr.set_value(value)
+    def camera_pixelsize(self):
+        return self.__detinfo.getPixelSize()
 
     ## @brief get the status of the acquisition
     #

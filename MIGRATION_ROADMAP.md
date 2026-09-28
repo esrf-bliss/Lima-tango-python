@@ -51,8 +51,20 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
       - `file_pattern`: `setFilePattern` only exists on the LOADER-mode frame getter (`FrameLoader`), not
         `FrameBuilder` (GENERATOR, the default) - fails by design outside LOADER mode, not a real bug.
       None of the 41 BLISS tests exercise these three, which is why they went unnoticed.
-- [ ] **Phase 3 — Migrate `LimaCCDs.py`**: split by functional domain, `PyTango.Util` →
-      `tango.server.run()`.
+- [ ] **Phase 3 — Migrate `LimaCCDs.py`** (issue #97, branch `migration-phase3-limaccds`): 141
+      attributes, 31 commands, 32 device properties. **Structural constraint discovered**: unlike
+      Mask.py/Simulator.py (standalone devices), a single Tango device class can't be half low-level/half
+      high-level - BLISS touches attributes across nearly every domain on a normal scan, so the full
+      BLISS baseline can only validate the class once it's *entirely* ported, not domain by domain.
+      Working method: port the whole class mechanically (skeleton + `init_device` first - it's the
+      ~370-line prerequisite every domain depends on - then each domain: identification, acquisition,
+      accumulation, image, saving, debug, video, buffer, shutter, plugin/config), with a targeted
+      `DeviceTestContext` smoke test per domain as it's ported, then one full BLISS baseline run at the
+      end. `PyTango.Util` bootstrap in `main()` stays untouched (confirmed in Phase 0: it only needs
+      `LimaCCDs.TangoClassClass` instead of the old `LimaCCDsClass`) - same for `_get_control()`,
+      `declare_camera_n_commun_to_tango_world()`, `export_default_plugins()`, and the other module-level
+      helpers, since they operate on `PyTango.Util`/`PyTango.Database` generically, not on `LimaCCDs`'s
+      base class.
 - [ ] **Phase 4 — Camera ecosystem**: `camera/simulator` (done in Phase 2) → 1-2 representative cameras
       (e.g. `camera/pilatus`) as proof → long tail migrated at each maintainer's own pace.
 - [ ] **Phase 5 — Cleanup**: remove `AttrHelper.py`; replace the mocked `tests/test_tango.py`.
