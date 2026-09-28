@@ -21,72 +21,109 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 ############################################################################
-import PyTango
+import tango
+from tango import AttrWriteType, DevState
+from tango.server import Device, attribute, command
 
 from lima import core
-from lima.server.plugins.Utils import getMaskFromFile, BasePostProcess
+from lima.server.plugins.Utils import getMaskFromFile
 from lima.server import AttrHelper
 
 
-class MaskDeviceServer(BasePostProcess):
+class MaskDeviceServer(Device):
     MASK_TASK_NAME = "MaskTask"
     core.DEB_CLASS(core.DebModule.DebModApplication, "MaskDeviceServer")
 
     @core.DEB_MEMBER_FUNCT
-    def __init__(self, cl, name):
-        self.__maskTask = None
-        self.__maskFile = None
-        self.__maskImage = core.Processlib.Data()
-
-        self.__Type = {"STANDARD": core.SoftOpMask.Type.STANDARD, "DUMMY": core.SoftOpMask.Type.DUMMY}
-
-        BasePostProcess.__init__(self, cl, name)
-        MaskDeviceServer.init_device(self)
+    def init_device(self):
+        # NOTE: not a bare super() call - see the mapping guide, DEB_MEMBER_FUNCT
+        # rebuilds the function object and chokes on the implicit __class__ cell
+        # that a zero-arg super() creates.
+        Device.init_device(self)
+        self._run_level = 0
+        self._mask_task = None
+        self._mask_file = None
+        self._mask_image = core.Processlib.Data()
+        self.__Type = {
+            "STANDARD": core.SoftOpMask.Type.STANDARD,
+            "DUMMY": core.SoftOpMask.Type.DUMMY,
+        }
+        self.set_state(DevState.OFF)
 
     @core.DEB_MEMBER_FUNCT
     def set_state(self, state):
-        if state == PyTango.DevState.OFF:
-            if self.__maskTask:
-                self.__maskTask = None
+        if state == DevState.OFF:
+            if self._mask_task:
+                self._mask_task = None
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
                 extOpt.delOp(self.MASK_TASK_NAME)
-        elif state == PyTango.DevState.ON:
-            if not self.__maskTask:
+        elif state == DevState.ON:
+            if not self._mask_task:
                 ctControl = _control_ref()
                 extOpt = ctControl.externalOperation()
-                self.__maskTask = extOpt.addOp(
-                    core.SoftOpId.MASK, self.MASK_TASK_NAME, self._runLevel
+                self._mask_task = extOpt.addOp(
+                    core.SoftOpId.MASK, self.MASK_TASK_NAME, self._run_level
                 )
-                self.__maskTask.setMaskImage(self.__maskImage)
-        PyTango.LatestDeviceImpl.set_state(self, state)
+                self._mask_task.setMaskImage(self._mask_image)
+        Device.set_state(self, state)
 
     # ------------------------------------------------------------------
-    #    Read MaskFile attribute
+    #    RunLevel attribute
     # ------------------------------------------------------------------
-    @core.DEB_MEMBER_FUNCT
-    def read_MaskFile(self, attr):
-        if self.__maskFile is not None:
-            attr.set_value(self.__maskFile)
-        else:
-            attr.set_value("")
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    def RunLevel(self):
+        return self._run_level
+
+    @RunLevel.setter
+    def RunLevel(self, value):
+        self._run_level = value
+
+    def is_RunLevel_allowed(self, req_type):
+        if req_type == tango.AttReqType.READ_REQ:
+            return True
+        return self.get_state() == DevState.OFF
 
     # ------------------------------------------------------------------
-    #    Write MaskFile attribute
+    #    MaskFile attribute
     # ------------------------------------------------------------------
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def write_MaskFile(self, attr):
-        filename = attr.get_write_value()
+    def MaskFile(self):
+        return self._mask_file if self._mask_file is not None else ""
+
+    @MaskFile.setter
+    @core.DEB_MEMBER_FUNCT
+    def MaskFile(self, filename):
         self.setMaskFile(filename)
 
-    def is_MaskFile_allowed(self, mode):
+    def is_MaskFile_allowed(self, req_type):
         return True
 
+    # ------------------------------------------------------------------
+    #    type attribute
+    # ------------------------------------------------------------------
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    def type(self):
+        value = self._mask_task.getType()
+        return AttrHelper.getDictKey(self.__Type, value)
+
+    @type.setter
+    def type(self, name):
+        value = AttrHelper.getDictValue(self.__Type, name.upper())
+        if value is None:
+            tango.Except.throw_exception(
+                "WrongData", "Wrong value type: %s" % name.upper(), "LimaCCD Class"
+            )
+        self._mask_task.setType(value)
+
+    def is_type_allowed(self, req_type):
+        return self.get_state() == DevState.ON
+
     # ==================================================================
-    #
     #    Mask command methods
-    #
     # ==================================================================
+    @command(dtype_in=str)
     @core.DEB_MEMBER_FUNCT
     def setMaskImage(self, filepath):
         """Set a mask image from a EDF filename.
@@ -102,11 +139,12 @@ class MaskDeviceServer(BasePostProcess):
                      (default silx convention)
         """
         maskImage = getMaskFromFile(filepath)
-        self.__maskImage = maskImage
-        self.__maskFile = filepath
-        if self.__maskTask:
-            self.__maskTask.setMaskImage(self.__maskImage)
+        self._mask_image = maskImage
+        self._mask_file = filepath
+        if self._mask_task:
+            self._mask_task.setMaskImage(self._mask_image)
 
+    @command(dtype_in=str)
     @core.DEB_MEMBER_FUNCT
     def setMaskFile(self, filepath):
         """new command to fit with other correction plugin api"""
@@ -118,58 +156,17 @@ class MaskDeviceServer(BasePostProcess):
     #    Description: return a list of authorized values if any
     #    argout: DevVarStringArray
     # ------------------------------------------------------------------
+    @command(dtype_in=str, dtype_out=(str,))
     def getAttrStringValueList(self, attr_name):
         return AttrHelper.get_attr_string_value_list(self, attr_name)
 
-    def __getattr__(self, name):
-        try:
-            return BasePostProcess.__getattr__(self, name)
-        except AttributeError:
-            # ask the help to not store object ref (object attribute functions)
-            # into  __dict__, mask task is recreated everytime the plugin is stopped/started
-            return AttrHelper.get_attr_4u(
-                self, name, self.__maskTask, update_dict=False
-            )
+    @command
+    def Start(self):
+        self.set_state(DevState.ON)
 
-
-class MaskDeviceServerClass(PyTango.DeviceClass):
-    # 	 Class Properties
-    class_property_list = {}
-
-    # 	 Device Properties
-    device_property_list = {}
-
-    # 	 Command definitions
-    cmd_list = {
-        "setMaskImage": [
-            [PyTango.DevString, "Full path of mask image file"],
-            [PyTango.DevVoid, ""],
-        ],
-        "setMaskFile": [
-            [PyTango.DevString, "Full path of mask image file"],
-            [PyTango.DevVoid, ""],
-        ],
-        "getAttrStringValueList": [
-            [PyTango.DevString, "Attribute name"],
-            [PyTango.DevVarStringArray, "Authorized String value list"],
-        ],
-        "Start": [[PyTango.DevVoid, ""], [PyTango.DevVoid, ""]],
-        "Stop": [[PyTango.DevVoid, ""], [PyTango.DevVoid, ""]],
-    }
-
-    # 	 Attribute definitions
-    attr_list = {
-        "RunLevel": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "type": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "MaskFile": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-    }
-
-    # ------------------------------------------------------------------
-    #    RoiCounterDeviceServerClass Constructor
-    # ------------------------------------------------------------------
-    def __init__(self, name):
-        PyTango.DeviceClass.__init__(self, name)
-        self.set_type(name)
+    @command
+    def Stop(self):
+        self.set_state(DevState.OFF)
 
 
 _control_ref = None
@@ -181,4 +178,4 @@ def set_control_ref(control_class_ref):
 
 
 def get_tango_specific_class_n_device():
-    return MaskDeviceServerClass, MaskDeviceServer
+    return MaskDeviceServer.TangoClassClass, MaskDeviceServer
