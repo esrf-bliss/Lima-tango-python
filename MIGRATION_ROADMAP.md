@@ -93,11 +93,15 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
       - [x] Video domain: video_active, video_live, video_exposure, video_gain, video_mode,
             video_source, video_bin, video_roi, video_last_image (DevEncoded),
             video_last_image_counter (DevLong64).
-      - [ ] Buffer domain (buffer_alloc_*, acc_buffer_*, saving_zbuffer_*, buffer_max_number,
-            buffer_malloc_trim_pad) - the one domain not covered by the pattern used everywhere else:
-            `get_buffer_param_attr` builds `BufferHelper.Parameters` sub-field accessors dynamically
-            (durationPolicy/sizePolicy/initMem/reqMemSizePercent across 3 different parameter groups).
+      - [x] Buffer domain: buffer_alloc_*, acc_buffer_*, saving_zbuffer_* via a new module-level
+            `_make_buffer_param_fget_fset()` helper (LimaCCDs-specific, not in AttrHelper.py - no camera
+            plugin has this pattern), buffer_max_number, buffer_malloc_trim_pad.
       - [ ] Shutter domain (shutter_ctrl_is_available + the dynamically-`add_attribute`'d shutter_*).
+      - [ ] Known minor deviations to double-check at the end: `RequiresSystemFeature`'s error message
+            regex-matches the old `read_X`/`write_X` method name to word the message - since attributes
+            are now named without that prefix, the fallback wording ("method X" instead of "attr. X
+            [read]") kicks in when a feature is missing. Cosmetic only (still raises the same
+            RuntimeError), but affects every `@RequiresSystemFeature`-guarded attribute migrated so far.
       - [ ] Plugin/config domain (plugin_*, config_*, shared_memory_*) + the ~29 commands.
       - [ ] Delete the orphaned `LimaCCDsClass` and every now-dead old `read_X`/`write_X` method left
             behind by each slice above (each domain's migration leaves its old methods in place,
