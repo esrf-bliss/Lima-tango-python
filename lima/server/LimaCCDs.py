@@ -1519,110 +1519,196 @@ class LimaCCDs(Device):
             ]
         )
 
-    ## @brief Read image Roi
-    #
+    # ------------------------------------------------------------------
+    #    Image domain (Phase 3 slice 6)
+    # ------------------------------------------------------------------
+    @attribute(dtype=(int,), max_dim_x=4, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_image_roi(self, attr):
+    def image_roi(self):
         image = self.__control.image()
         roi = image.getRoi()
         point = roi.getTopLeft()
         size = roi.getSize()
+        return [point.x, point.y, size.getWidth(), size.getHeight()]
 
-        attr.set_value([point.x, point.y, size.getWidth(), size.getHeight()])
-
-    ## @brief Write image Roi
-    #
+    @image_roi.setter
     @core.DEB_MEMBER_FUNCT
-    def write_image_roi(self, attr):
-        data = attr.get_write_value()
-        image = self.__control.image()
-        roi = core.Roi(*data)
-        image.setRoi(roi)
+    def image_roi(self, data):
+        self.__control.image().setRoi(core.Roi(*data))
 
-    ## @brief Read image sizes
-    #
+    @attribute(
+        dtype=(int,),
+        max_dim_x=4,
+        access=AttrWriteType.READ,
+        label="Image sizes:Signed, Depth, Width, Height",
+        unit="",
+        standard_unit="",
+        display_unit="",
+        format="%d",
+        doc="Signed ,nb bytes of depth, nb pixels of width and nb pixels of height",
+    )
     @core.DEB_MEMBER_FUNCT
-    def read_image_sizes(self, attr):
+    def image_sizes(self):
         image = self.__control.image()
         imageType = image.getImageType()
         dim = image.getImageDim()
         depth, signed = self.ImageType2NbBytes.get(imageType, (0, 0))
-        sizes = [signed, depth, dim.getSize().getWidth(), dim.getSize().getHeight()]
+        return [signed, depth, dim.getSize().getWidth(), dim.getSize().getHeight()]
 
-        attr.set_value(sizes)
-
-    ## @brief Read max image dimension in width and height pixels
-    #
+    @attribute(
+        dtype=(int,),
+        max_dim_x=2,
+        access=AttrWriteType.READ,
+        label="Width, Height",
+        unit="pixel",
+        format="%d",
+        doc="Max width and height in pixel",
+    )
     @core.DEB_MEMBER_FUNCT
-    def read_image_max_dim(self, attr):
+    def image_max_dim(self):
         size = self.__detinfo.getMaxImageSize()
-        dim = [size.getWidth(), size.getHeight()]
+        return [size.getWidth(), size.getHeight()]
 
-        attr.set_value(dim)
-
-    ## @brief Read image type
-    #
+    @attribute(dtype=str, access=AttrWriteType.READ)
     @core.DEB_MEMBER_FUNCT
-    def read_image_type(self, attr):
-        image = self.__control.image()
-        imageType = image.getImageType()
-        stringType = self.ImageType2String.get(imageType, "?")
+    def image_type(self):
+        imageType = self.__control.image().getImageType()
+        return self.ImageType2String.get(imageType, "?")
 
-        attr.set_value(stringType)
-
-    ## @brief Read image width
-    #
+    @attribute(dtype=int, access=AttrWriteType.READ)
     @core.DEB_MEMBER_FUNCT
-    def read_image_width(self, attr):
-        image = self.__control.image()
-        dim = image.getImageDim()
+    def image_width(self):
+        return self.__control.image().getImageDim().getSize().getWidth()
 
-        attr.set_value(dim.getSize().getWidth())
-
-    ## @brief Read image height
-    #
+    @attribute(dtype=int, access=AttrWriteType.READ)
     @core.DEB_MEMBER_FUNCT
-    def read_image_height(self, attr):
-        image = self.__control.image()
-        dim = image.getImageDim()
+    def image_height(self):
+        return self.__control.image().getImageDim().getSize().getHeight()
 
-        attr.set_value(dim.getSize().getHeight())
-
-    ## @brief Read image binning
-    #
+    @attribute(dtype=(int,), max_dim_x=2, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_image_bin(self, attr):
-        image = self.__control.image()
-        binValues = image.getBin()
+    def image_bin(self):
+        binValues = self.__control.image().getBin()
+        return [binValues.getX(), binValues.getY()]
 
-        attr.set_value([binValues.getX(), binValues.getY()])
-
-    ## @brief Write image binning
-    #
+    @image_bin.setter
     @core.DEB_MEMBER_FUNCT
-    def write_image_bin(self, attr):
-        data = attr.get_write_value()
+    def image_bin(self, data):
+        self.__control.image().setBin(core.Bin(*data))
 
-        image = self.__control.image()
-        binValue = core.Bin(*data)
-        image.setBin(binValue)
-
-    ## @brief Read image flip
-    #
+    # image_bin_mode/image_rotation had no explicit read_X/write_X in the
+    # legacy code - see __Attribute2FunctionBase's "BinMode"/"Rotation"
+    # overrides and the per-instance enum dicts set in init_device.
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_image_flip(self, attr):
-        image = self.__control.image()
-        flip = image.getFlip()
-        attr.set_value([flip.x, flip.y])
+    def image_bin_mode(self):
+        return getDictKey(self.__ImageBinMode, self.__control.image().getBinMode())
 
-    ## @brief Write image flip
-    #
+    @image_bin_mode.setter
     @core.DEB_MEMBER_FUNCT
-    def write_image_flip(self, attr):
-        data = attr.get_write_value()
+    def image_bin_mode(self, data):
+        value = getDictValue(self.__ImageBinMode, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value image_bin_mode: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.image().setBinMode(value)
+
+    @attribute(dtype=(bool,), max_dim_x=2, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def image_flip(self):
+        flip = self.__control.image().getFlip()
+        return [flip.x, flip.y]
+
+    @image_flip.setter
+    @core.DEB_MEMBER_FUNCT
+    def image_flip(self, data):
         flip = core.Flip(bool(data[0]), bool(data[1]))
-        image = self.__control.image()
-        image.setFlip(flip)
+        self.__control.image().setFlip(flip)
+
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def image_rotation(self):
+        return getDictKey(self.__ImageRotation, self.__control.image().getRotation())
+
+    @image_rotation.setter
+    @core.DEB_MEMBER_FUNCT
+    def image_rotation(self, data):
+        value = getDictValue(self.__ImageRotation, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value image_rotation: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.image().setRotation(value)
+
+    @attribute(dtype=tango.CmdArgType.DevEncoded, access=AttrWriteType.READ)
+    @core.DEB_MEMBER_FUNCT
+    def last_image(self):
+        status = self.__control.getStatus()
+        last_img_ready = status.ImageCounters.LastImageReady
+        image = self.__control.ReadImage(last_img_ready)
+        # workaround for PyTango #147
+        self._lidata = self._image_2_data_array(image, self.DataArrayCategory.Image)
+        return ("DATA_ARRAY", self._lidata)
+
+    @attribute(dtype=int, access=AttrWriteType.READ)
+    @core.DEB_MEMBER_FUNCT
+    def last_image_acquired(self):
+        return self.__control.getStatus().ImageCounters.LastImageAcquired
+
+    @attribute(dtype=int, access=AttrWriteType.READ)
+    @core.DEB_MEMBER_FUNCT
+    def last_base_image_ready(self):
+        return self.__control.getStatus().ImageCounters.LastBaseImageReady
+
+    @attribute(dtype=int, access=AttrWriteType.READ)
+    @core.DEB_MEMBER_FUNCT
+    def last_image_ready(self):
+        return self.__control.getStatus().ImageCounters.LastImageReady
+
+    @attribute(dtype=int, access=AttrWriteType.READ)
+    @core.DEB_MEMBER_FUNCT
+    def last_counter_ready(self):
+        return self.__control.getStatus().ImageCounters.LastCounterReady
+
+    @attribute(dtype=int, access=AttrWriteType.READ)
+    @core.DEB_MEMBER_FUNCT
+    def last_image_saved(self):
+        value = self.__control.getStatus().ImageCounters.LastImageSaved
+        return -1 if value is None else value
+
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def image_events_push_data(self):
+        return self.__image_status_cbk.getImageEventsPushData()
+
+    @image_events_push_data.setter
+    @core.DEB_MEMBER_FUNCT
+    def image_events_push_data(self, image_events):
+        self.__image_status_cbk.setImageEventsPushData(image_events)
+
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def image_events_max_rate(self):
+        return self.__image_status_cbk.getImageEventsMaxRate()
+
+    @image_events_max_rate.setter
+    @core.DEB_MEMBER_FUNCT
+    def image_events_max_rate(self, event_rate):
+        self.__image_status_cbk.setImageEventsMaxRate(event_rate)
+
+    @attribute(dtype=bool, access=AttrWriteType.READ)
+    @core.DEB_MEMBER_FUNCT
+    def ready_for_next_image(self):
+        interface = self.__control.hwInterface()
+        status = interface.getStatus()
+        ready = status.det == core.DetStatus.DetIdle or status.det & core.DetStatus.DetWaitForTrigger
+        return bool(ready)
+
+    @attribute(dtype=bool, access=AttrWriteType.READ)
+    @core.DEB_MEMBER_FUNCT
+    def ready_for_next_acq(self):
+        return self.__control.getStatus().AcquisitionStatus == core.AcqStatus.AcqReady
 
     ## @brief Read common header
     #
