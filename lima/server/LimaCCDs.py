@@ -980,23 +980,23 @@ class LimaCCDs(Device):
     # ------------------------------------------------------------------
     #    Identification / status domain (Phase 3 slice 1)
     # ------------------------------------------------------------------
-    @attribute(dtype=str, access=AttrWriteType.READ)
+    @attribute(dtype=str, access=AttrWriteType.READ, doc="The lima core library version number")
     @RequiresSystemFeature("core.CtControl.getVersion")
     @core.DEB_MEMBER_FUNCT
     def lima_version(self):
         return self.__control.getVersion()
 
-    @attribute(dtype=str, access=AttrWriteType.READ)
+    @attribute(dtype=str, access=AttrWriteType.READ, doc="LImA camera type")
     @core.DEB_MEMBER_FUNCT
     def lima_type(self):
         return self.LimaCameraType
 
-    @attribute(dtype=str, access=AttrWriteType.READ)
+    @attribute(dtype=str, access=AttrWriteType.READ, doc="Like lima_type but in upper-case")
     @core.DEB_MEMBER_FUNCT
     def camera_type(self):
         return self.__detinfo.getDetectorType()
 
-    @attribute(dtype=str, access=AttrWriteType.READ)
+    @attribute(dtype=str, access=AttrWriteType.READ, doc="Camera model returned by the detector layer")
     @core.DEB_MEMBER_FUNCT
     def camera_model(self):
         return self.__detinfo.getDetectorModel()
@@ -1053,13 +1053,13 @@ class LimaCCDs(Device):
     # ------------------------------------------------------------------
     #    Acquisition status domain (Phase 3 slice 3)
     # ------------------------------------------------------------------
-    @attribute(dtype=str, access=AttrWriteType.READ)
+    @attribute(dtype=str, access=AttrWriteType.READ, doc="Acquisition status: Ready, Running, Fault or Configuration")
     @core.DEB_MEMBER_FUNCT
     def acq_status(self):
         status = self.__control.getStatus()
         return _acqstate2string(status.AcquisitionStatus)
 
-    @attribute(dtype=str, access=AttrWriteType.READ)
+    @attribute(dtype=str, access=AttrWriteType.READ, doc="In case of Fault state, the error message")
     @core.DEB_MEMBER_FUNCT
     def acq_status_fault_error(self):
         status = self.__control.getStatus()
@@ -1081,7 +1081,7 @@ class LimaCCDs(Device):
     # "acq_tag" can't also be the plain instance attribute the rest of the
     # class (prepareAcq, init_device) reads/writes as internal state, now
     # that "acq_tag" is a class-level attribute() descriptor.
-    @attribute(dtype=tango.CmdArgType.DevULong64, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=tango.CmdArgType.DevULong64, access=AttrWriteType.READ_WRITE, doc="Acquisition tag, included in DATA_ARRAY header (from v4)")
     @core.DEB_MEMBER_FUNCT
     def acq_tag(self):
         acq_tag = self._acq_tag
@@ -1104,7 +1104,7 @@ class LimaCCDs(Device):
     # "TriggerMode"). Written out directly here rather than through
     # make_fget_fset() since the enum dicts are per-instance state set in
     # init_device, not fixed class-level constants like AttrHelper expects.
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Acquisition mode: Single, Concatenation or Accumulation")
     @core.DEB_MEMBER_FUNCT
     def acq_mode(self):
         return getDictKey(self.__AcqMode, self.__control.acquisition().getAcqMode())
@@ -1119,7 +1119,7 @@ class LimaCCDs(Device):
             )
         self.__control.acquisition().setAcqMode(value)
 
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Trigger mode")
     @core.DEB_MEMBER_FUNCT
     def acq_trigger_mode(self):
         return getDictKey(self.__AcqTriggerMode, self.__control.acquisition().getTriggerMode())
@@ -1134,7 +1134,7 @@ class LimaCCDs(Device):
             )
         self.__control.acquisition().setTriggerMode(value)
 
-    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="Number of frames to be acquired, default is 1 frame")
     @core.DEB_MEMBER_FUNCT
     def acq_nb_frames(self):
         return self.__control.acquisition().getAcqNbFrames()
@@ -1144,7 +1144,7 @@ class LimaCCDs(Device):
     def acq_nb_frames(self, data):
         self.__control.acquisition().setAcqNbFrames(data)
 
-    @attribute(dtype=float, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE, doc="The exposure time of the image, default is 1 second")
     @core.DEB_MEMBER_FUNCT
     def acq_expo_time(self):
         return self.__control.acquisition().getAcqExpoTime()
@@ -1154,7 +1154,7 @@ class LimaCCDs(Device):
     def acq_expo_time(self, data):
         self.__control.acquisition().setAcqExpoTime(data)
 
-    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="The nb of frames to concatenate in one image")
     @core.DEB_MEMBER_FUNCT
     def concat_nb_frames(self):
         return self.__control.acquisition().getConcatNbFrames()
@@ -1164,7 +1164,7 @@ class LimaCCDs(Device):
     def concat_nb_frames(self, data):
         self.__control.acquisition().setConcatNbFrames(data)
 
-    @attribute(dtype=float, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE, doc="Latency time in second between two frame acquisitions")
     @core.DEB_MEMBER_FUNCT
     def latency_time(self):
         value = self.__control.acquisition().getLatencyTime()
@@ -1204,7 +1204,7 @@ class LimaCCDs(Device):
     # acc_time_mode routes to CtAcquisition, not CtAccumulation (see
     # __Name2SubClass in init_device) - grouped here with the other acc_*
     # attributes by name for readability, not by dispatch target.
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Accumulation time mode: Live or Real")
     @core.DEB_MEMBER_FUNCT
     def acc_time_mode(self):
         return getDictKey(self.__AccTimeMode, self.__control.acquisition().getAccTimeMode())
@@ -1219,7 +1219,7 @@ class LimaCCDs(Device):
             )
         self.__control.acquisition().setAccTimeMode(value)
 
-    @attribute(dtype=float, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE, doc="The maximum exposure time per frame for accumulation")
     @core.DEB_MEMBER_FUNCT
     def acc_max_expo_time(self):
         value = self.__control.acquisition().getAccMaxExpoTime()
@@ -1237,7 +1237,7 @@ class LimaCCDs(Device):
     # init_device (empty/absent on old Lima core versions, in which case
     # they behave as plain passthrough values, same as get_attr_4u's
     # `if d:` fallback - see AttrHelper.make_fget_fset's enum handling).
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Select the mode of accumulation")
     @core.DEB_MEMBER_FUNCT
     def acc_mode(self):
         return getDictKey(self.__AccMode, self.__control.accumulation().getMode())
@@ -1252,7 +1252,7 @@ class LimaCCDs(Device):
             )
         self.__control.accumulation().setMode(value)
 
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Select the filter to apply in accumulation")
     @core.DEB_MEMBER_FUNCT
     def acc_filter(self):
         return getDictKey(self.__AccFilter, self.__control.accumulation().getFilter())
@@ -1267,7 +1267,7 @@ class LimaCCDs(Device):
             )
         self.__control.accumulation().setFilter(value)
 
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Operation applied to each pixel over the accumulation window")
     @core.DEB_MEMBER_FUNCT
     def acc_operation(self):
         return getDictKey(self.__AccOperation, self.__control.accumulation().getOperation())
@@ -1282,7 +1282,7 @@ class LimaCCDs(Device):
             )
         self.__control.accumulation().setOperation(value)
 
-    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="Threshold value, lower pixel values (noise) are discarded from the accumulation")
     @core.DEB_MEMBER_FUNCT
     def acc_threshold_before(self):
         return self.__control.accumulation().getThresholdBefore()
@@ -1292,7 +1292,7 @@ class LimaCCDs(Device):
     def acc_threshold_before(self, data):
         self.__control.accumulation().setThresholdBefore(data)
 
-    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="Offset value to be subtracted to each pixel value")
     @core.DEB_MEMBER_FUNCT
     def acc_offset_before(self):
         return self.__control.accumulation().getOffsetBefore()
@@ -1302,7 +1302,7 @@ class LimaCCDs(Device):
     def acc_offset_before(self, data):
         self.__control.accumulation().setOffsetBefore(data)
 
-    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="Number of buffers allocated by the HW plugin in accumulation mode")
     @core.DEB_MEMBER_FUNCT
     def acc_hw_nb_buffers(self):
         return self.__control.accumulation().getHwNbBuffers()
@@ -1312,29 +1312,29 @@ class LimaCCDs(Device):
     def acc_hw_nb_buffers(self, data):
         self.__control.accumulation().setHwNbBuffers(data)
 
-    @attribute(dtype=float, access=AttrWriteType.READ)
+    @attribute(dtype=float, access=AttrWriteType.READ, doc="The effective accumulation total exposure time")
     @core.DEB_MEMBER_FUNCT
     def acc_expo_time(self):
         value = self.__control.acquisition().getAccExpoTime()
         return -1 if value is None else value
 
-    @attribute(dtype=int, access=AttrWriteType.READ)
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="The calculated accumulation number of frames per image")
     @core.DEB_MEMBER_FUNCT
     def acc_nb_frames(self):
         value = self.__control.acquisition().getAccNbFrames()
         return -1 if value is None else value
 
-    @attribute(dtype=float, access=AttrWriteType.READ)
+    @attribute(dtype=float, access=AttrWriteType.READ, doc="Total accumulation dead time")
     @core.DEB_MEMBER_FUNCT
     def acc_dead_time(self):
         return self.__control.acquisition().getAccDeadTime()
 
-    @attribute(dtype=float, access=AttrWriteType.READ)
+    @attribute(dtype=float, access=AttrWriteType.READ, doc="Total accumulation live time")
     @core.DEB_MEMBER_FUNCT
     def acc_live_time(self):
         return self.__control.acquisition().getAccLiveTime()
 
-    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE, doc="Activate the saturation counters (i.e. readAccSaturated commands)")
     @core.DEB_MEMBER_FUNCT
     def acc_saturated_active(self):
         return self.__control.accumulation().getActive()
@@ -1344,7 +1344,7 @@ class LimaCCDs(Device):
     def acc_saturated_active(self, data):
         self.__control.accumulation().setActive(data)
 
-    @attribute(dtype=tango.CmdArgType.DevLong64, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=tango.CmdArgType.DevLong64, access=AttrWriteType.READ_WRITE, doc="The threshold for counting saturated pixels")
     @core.DEB_MEMBER_FUNCT
     def acc_saturated_threshold(self):
         return self.__control.accumulation().getPixelThresholdValue()
@@ -1354,7 +1354,7 @@ class LimaCCDs(Device):
     def acc_saturated_threshold(self, data):
         self.__control.accumulation().setPixelThresholdValue(data)
 
-    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="Level of total saturated pixels that triggers the threshold callback plugin")
     @core.DEB_MEMBER_FUNCT
     def acc_saturated_cblevel(self):
         if self.__accThresholdCallback is not None:
@@ -1369,7 +1369,7 @@ class LimaCCDs(Device):
         else:
             deb.Error("Accumulation threshold plugins not loaded")
 
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The out image type after accumulation")
     @core.DEB_MEMBER_FUNCT
     def acc_out_type(self):
         imageType = self.__control.accumulation().getOutputType()
@@ -1394,6 +1394,7 @@ class LimaCCDs(Device):
     )
     acc_buffer_init_mem = attribute(
         dtype=bool, access=AttrWriteType.READ_WRITE,
+        doc="Whether to initialize (force-allocate) accumulation buffer memory right away",
         fget=_acc_buffer_init_mem_fget, fset=_acc_buffer_init_mem_fset,
     )
 
@@ -1402,6 +1403,7 @@ class LimaCCDs(Device):
     )
     acc_buffer_duration_policy = attribute(
         dtype=str, access=AttrWriteType.READ_WRITE,
+        doc="Duration policy for accumulation buffers: EPHEMERAL or PERSISTENT",
         fget=_acc_buffer_duration_policy_fget, fset=_acc_buffer_duration_policy_fset,
     )
 
@@ -1410,6 +1412,7 @@ class LimaCCDs(Device):
     )
     acc_buffer_size_policy = attribute(
         dtype=str, access=AttrWriteType.READ_WRITE,
+        doc="Pool size policy for accumulation buffers: AUTOMATIC or FIXED",
         fget=_acc_buffer_size_policy_fget, fset=_acc_buffer_size_policy_fset,
     )
 
@@ -1418,13 +1421,14 @@ class LimaCCDs(Device):
     )
     acc_buffer_req_mem_size_percent = attribute(
         dtype=float, access=AttrWriteType.READ_WRITE,
+        doc="Max percentage of system memory usable for accumulation buffers",
         fget=_acc_buffer_req_mem_size_percent_fget, fset=_acc_buffer_req_mem_size_percent_fset,
     )
 
     # ------------------------------------------------------------------
     #    Image domain (Phase 3 slice 6)
     # ------------------------------------------------------------------
-    @attribute(dtype=(int,), max_dim_x=4, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=(int,), max_dim_x=4, access=AttrWriteType.READ_WRITE, doc="Region Of Interest on image: BeginX, BeginY, Width, Height")
     @core.DEB_MEMBER_FUNCT
     def image_roi(self):
         image = self.__control.image()
@@ -1471,23 +1475,23 @@ class LimaCCDs(Device):
         size = self.__detinfo.getMaxImageSize()
         return [size.getWidth(), size.getHeight()]
 
-    @attribute(dtype=str, access=AttrWriteType.READ)
+    @attribute(dtype=str, access=AttrWriteType.READ, doc="Current image data type (bit per pixel, signed or unsigned)")
     @core.DEB_MEMBER_FUNCT
     def image_type(self):
         imageType = self.__control.image().getImageType()
         return self.ImageType2String.get(imageType, "?")
 
-    @attribute(dtype=int, access=AttrWriteType.READ)
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="Width size of the detector in pixel")
     @core.DEB_MEMBER_FUNCT
     def image_width(self):
         return self.__control.image().getImageDim().getSize().getWidth()
 
-    @attribute(dtype=int, access=AttrWriteType.READ)
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="Height size of the detector in pixel")
     @core.DEB_MEMBER_FUNCT
     def image_height(self):
         return self.__control.image().getImageDim().getSize().getHeight()
 
-    @attribute(dtype=(int,), max_dim_x=2, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=(int,), max_dim_x=2, access=AttrWriteType.READ_WRITE, doc="Binning on image: factor on X, factor on Y")
     @core.DEB_MEMBER_FUNCT
     def image_bin(self):
         binValues = self.__control.image().getBin()
@@ -1501,7 +1505,7 @@ class LimaCCDs(Device):
     # image_bin_mode/image_rotation had no explicit read_X/write_X in the
     # legacy code - see __Attribute2FunctionBase's "BinMode"/"Rotation"
     # overrides and the per-instance enum dicts set in init_device.
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Operation applied to each bin over the binned pixels: SUM or MEAN")
     @core.DEB_MEMBER_FUNCT
     def image_bin_mode(self):
         return getDictKey(self.__ImageBinMode, self.__control.image().getBinMode())
@@ -1516,7 +1520,7 @@ class LimaCCDs(Device):
             )
         self.__control.image().setBinMode(value)
 
-    @attribute(dtype=(bool,), max_dim_x=2, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=(bool,), max_dim_x=2, access=AttrWriteType.READ_WRITE, doc="Flip on the image: over X axis, over Y axis")
     @core.DEB_MEMBER_FUNCT
     def image_flip(self):
         flip = self.__control.image().getFlip()
@@ -1528,7 +1532,7 @@ class LimaCCDs(Device):
         flip = core.Flip(bool(data[0]), bool(data[1]))
         self.__control.image().setFlip(flip)
 
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Rotate the image: 0, 90, 180 or 270")
     @core.DEB_MEMBER_FUNCT
     def image_rotation(self):
         return getDictKey(self.__ImageRotation, self.__control.image().getRotation())
@@ -1543,7 +1547,7 @@ class LimaCCDs(Device):
             )
         self.__control.image().setRotation(value)
 
-    @attribute(dtype=tango.CmdArgType.DevEncoded, access=AttrWriteType.READ)
+    @attribute(dtype=tango.CmdArgType.DevEncoded, access=AttrWriteType.READ, doc="Last acquired image, DATA_ARRAY encoded")
     @core.DEB_MEMBER_FUNCT
     def last_image(self):
         status = self.__control.getStatus()
@@ -1553,33 +1557,33 @@ class LimaCCDs(Device):
         self._lidata = self._image_2_data_array(image, self.DataArrayCategory.Image)
         return ("DATA_ARRAY", self._lidata)
 
-    @attribute(dtype=int, access=AttrWriteType.READ)
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="The last acquired image number")
     @core.DEB_MEMBER_FUNCT
     def last_image_acquired(self):
         return self.__control.getStatus().ImageCounters.LastImageAcquired
 
-    @attribute(dtype=int, access=AttrWriteType.READ)
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="The last base (before treatment) image ready")
     @core.DEB_MEMBER_FUNCT
     def last_base_image_ready(self):
         return self.__control.getStatus().ImageCounters.LastBaseImageReady
 
-    @attribute(dtype=int, access=AttrWriteType.READ)
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="The last acquired image number, ready for reading")
     @core.DEB_MEMBER_FUNCT
     def last_image_ready(self):
         return self.__control.getStatus().ImageCounters.LastImageReady
 
-    @attribute(dtype=int, access=AttrWriteType.READ)
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="Which image counter is last ready")
     @core.DEB_MEMBER_FUNCT
     def last_counter_ready(self):
         return self.__control.getStatus().ImageCounters.LastCounterReady
 
-    @attribute(dtype=int, access=AttrWriteType.READ)
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="The last saved image number")
     @core.DEB_MEMBER_FUNCT
     def last_image_saved(self):
         value = self.__control.getStatus().ImageCounters.LastImageSaved
         return -1 if value is None else value
 
-    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE, doc="Whether the last_image attribute pushes Tango events")
     @core.DEB_MEMBER_FUNCT
     def image_events_push_data(self):
         return self.__image_status_cbk.getImageEventsPushData()
@@ -1589,7 +1593,7 @@ class LimaCCDs(Device):
     def image_events_push_data(self, image_events):
         self.__image_status_cbk.setImageEventsPushData(image_events)
 
-    @attribute(dtype=float, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE, doc="Max event generation rate for image events")
     @core.DEB_MEMBER_FUNCT
     def image_events_max_rate(self):
         return self.__image_status_cbk.getImageEventsMaxRate()
@@ -1599,7 +1603,7 @@ class LimaCCDs(Device):
     def image_events_max_rate(self, event_rate):
         self.__image_status_cbk.setImageEventsMaxRate(event_rate)
 
-    @attribute(dtype=bool, access=AttrWriteType.READ)
+    @attribute(dtype=bool, access=AttrWriteType.READ, doc="True after a camera readout, otherwise false")
     @core.DEB_MEMBER_FUNCT
     def ready_for_next_image(self):
         interface = self.__control.hwInterface()
@@ -1607,7 +1611,7 @@ class LimaCCDs(Device):
         ready = status.det == core.DetStatus.DetIdle or status.det & core.DetStatus.DetWaitForTrigger
         return bool(ready)
 
-    @attribute(dtype=bool, access=AttrWriteType.READ)
+    @attribute(dtype=bool, access=AttrWriteType.READ, doc="True after end of acquisition, otherwise false")
     @core.DEB_MEMBER_FUNCT
     def ready_for_next_acq(self):
         return self.__control.getStatus().AcquisitionStatus == core.AcqStatus.AcqReady
@@ -1615,7 +1619,7 @@ class LimaCCDs(Device):
     # ------------------------------------------------------------------
     #    Saving domain (Phase 3 slice 7)
     # ------------------------------------------------------------------
-    @attribute(dtype=(str,), max_dim_x=65535, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=(str,), max_dim_x=65535, access=AttrWriteType.READ_WRITE, doc="Common header with multiple entries")
     @core.DEB_MEMBER_FUNCT
     def saving_common_header(self):
         header = self.__control.saving().getCommonHeader()
@@ -1629,7 +1633,7 @@ class LimaCCDs(Device):
         header = dict([x.split(self.__key_header_delimiter, 1) for x in data])
         self.__control.saving().setCommonHeader(header)
 
-    @attribute(dtype=(str,), max_dim_x=3, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=(str,), max_dim_x=3, access=AttrWriteType.READ_WRITE, doc="The header delimiters: key, entry, image number")
     @core.DEB_MEMBER_FUNCT
     def saving_header_delimiter(self):
         return [
@@ -1644,7 +1648,7 @@ class LimaCCDs(Device):
         self.__entry_header_delimiter = data[1]
         self.__image_number_header_delimiter = data[2]
 
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The printf-style format for the saving index number")
     def saving_index_format(self):
         return self.__control.saving().getParameters().indexFormat
 
@@ -1655,13 +1659,13 @@ class LimaCCDs(Device):
         params.indexFormat = data
         saving.setParameters(params)
 
-    @attribute(dtype=(float,), max_dim_x=4, access=AttrWriteType.READ)
+    @attribute(dtype=(float,), max_dim_x=4, access=AttrWriteType.READ, doc="Saving speed, compression ratio, compression speed and incoming speed")
     @core.DEB_MEMBER_FUNCT
     def saving_statistics(self):
         # saving_speed, compression_speed, compression_ratio, incoming_speed
         return self.__control.saving().getStatisticCounters()
 
-    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="Size of history for stats calculation, default is 16 frames")
     @core.DEB_MEMBER_FUNCT
     def saving_statistics_history(self):
         return self.__control.saving().getStatisticHistorySize()
@@ -1671,7 +1675,7 @@ class LimaCCDs(Device):
     def saving_statistics_history(self, stat_size):
         self.__control.saving().setStatisticHistorySize(stat_size)
 
-    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE, doc="Enable the generation of the saving statistics log file")
     @core.DEB_MEMBER_FUNCT
     def saving_statistics_log_enable(self):
         return self.__control.saving().getEnableLogStat()
@@ -1681,7 +1685,7 @@ class LimaCCDs(Device):
     def saving_statistics_log_enable(self, flag):
         self.__control.saving().setEnableLogStat(flag)
 
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The directory where to save the image files")
     @core.DEB_MEMBER_FUNCT
     def saving_directory(self):
         return self.__control.saving().getDirectory(self.__SavingStream)
@@ -1691,7 +1695,7 @@ class LimaCCDs(Device):
     def saving_directory(self, data):
         self.__control.saving().setDirectory(data, self.__SavingStream)
 
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The image file prefix")
     @core.DEB_MEMBER_FUNCT
     def saving_prefix(self):
         return self.__control.saving().getPrefix(self.__SavingStream)
@@ -1713,7 +1717,7 @@ class LimaCCDs(Device):
         saving.setPrefix(prefix, self.__SavingStream)
         saving.setNextNumber(lastnumber + 1, self.__SavingStream)
 
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The image file suffix")
     @core.DEB_MEMBER_FUNCT
     def saving_suffix(self):
         return self.__control.saving().getSuffix(self.__SavingStream)
@@ -1723,7 +1727,7 @@ class LimaCCDs(Device):
     def saving_suffix(self, data):
         self.__control.saving().setSuffix(data, self.__SavingStream)
 
-    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="The image next number")
     @core.DEB_MEMBER_FUNCT
     def saving_next_number(self):
         return self.__control.saving().getNextNumber(self.__SavingStream)
@@ -1733,7 +1737,7 @@ class LimaCCDs(Device):
     def saving_next_number(self, data):
         self.__control.saving().setNextNumber(data, self.__SavingStream)
 
-    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="Number of frames saved in each file")
     @core.DEB_MEMBER_FUNCT
     def saving_frame_per_file(self):
         return self.__control.saving().getFramesPerFile(self.__SavingStream)
@@ -1743,7 +1747,7 @@ class LimaCCDs(Device):
     def saving_frame_per_file(self, data):
         self.__control.saving().setFramesPerFile(data, self.__SavingStream)
 
-    @attribute(dtype=int, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="Save (or skip, if negative) a frame every N frames")
     @core.DEB_MEMBER_FUNCT
     def saving_every_n_frames(self):
         return self.__control.saving().getEveryNFrames(self.__SavingStream)
@@ -1753,7 +1757,7 @@ class LimaCCDs(Device):
     def saving_every_n_frames(self, data):
         self.__control.saving().setEveryNFrames(data, self.__SavingStream)
 
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The data format for saving")
     @core.DEB_MEMBER_FUNCT
     def saving_format(self):
         return self.__control.saving().getFormatAsString(self.__SavingStream)
@@ -1775,7 +1779,7 @@ class LimaCCDs(Device):
     # saving_mode/saving_managed_mode had no explicit read_X/write_X in the
     # legacy code - saving_managed_mode via its __Attribute2FunctionBase
     # override to "ManagedMode".
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Saving mode: Manual, Auto_Frame or Auto_Header")
     @core.DEB_MEMBER_FUNCT
     def saving_mode(self):
         return getDictKey(self.__SavingMode, self.__control.saving().getSavingMode())
@@ -1790,7 +1794,7 @@ class LimaCCDs(Device):
             )
         self.__control.saving().setSavingMode(value)
 
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Whether saving is managed by hardware (SDK) or by Lima")
     @core.DEB_MEMBER_FUNCT
     def saving_managed_mode(self):
         return getDictKey(self.__SavingManagedMode, self.__control.saving().getManagedMode())
@@ -1805,7 +1809,7 @@ class LimaCCDs(Device):
             )
         self.__control.saving().setManagedMode(value)
 
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Overwrite policy in case of existing files: Abort, Overwrite or Append")
     @core.DEB_MEMBER_FUNCT
     def saving_overwrite_policy(self):
         saving = self.__control.saving()
@@ -1825,7 +1829,7 @@ class LimaCCDs(Device):
             )
         self.__control.saving().setOverwritePolicy(value, self.__SavingStream)
 
-    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE, doc="Try to use the compressed image blob injected by the HW plugin")
     @core.DEB_MEMBER_FUNCT
     def saving_use_hw_comp(self):
         return self.__control.saving().getUseHwComp(self.__SavingStream)
@@ -1835,7 +1839,7 @@ class LimaCCDs(Device):
     def saving_use_hw_comp(self, data):
         self.__control.saving().setUseHwComp(data, self.__SavingStream)
 
-    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE, doc="Activate (or not) this saving stream")
     @core.DEB_MEMBER_FUNCT
     def saving_stream_active(self):
         return self.__control.saving().getStreamActive(self.__SavingStream)
@@ -1845,7 +1849,7 @@ class LimaCCDs(Device):
     def saving_stream_active(self, data):
         self.__control.saving().setStreamActive(self.__SavingStream, data)
 
-    @attribute(dtype=tango.CmdArgType.DevShort, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=tango.CmdArgType.DevShort, access=AttrWriteType.READ_WRITE, doc="Max. tasks for saving file, default is 1")
     @RequiresSystemFeature("core.CtSaving.getMaxConcurrentWritingTask")
     @core.DEB_MEMBER_FUNCT
     def saving_max_writing_task(self):
@@ -1857,7 +1861,7 @@ class LimaCCDs(Device):
     def saving_max_writing_task(self, data):
         self.__control.saving().setMaxConcurrentWritingTask(data)
 
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The codec used for jp2k compression")
     @RequiresSystemFeature("core.CtSaving.getJp2kCompressionCodec")
     @core.DEB_MEMBER_FUNCT
     def saving_jp2k_codec(self):
@@ -1877,7 +1881,7 @@ class LimaCCDs(Device):
             )
         self.__control.saving().setJp2kCompressionCodec(value)
 
-    @attribute(dtype=float, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE, doc="The compression ratio for jp2k saving [0. - 10.]")
     @RequiresSystemFeature("core.CtSaving.getJp2kCompressionRatio")
     @core.DEB_MEMBER_FUNCT
     def saving_jp2k_comp_ratio(self):
@@ -1896,6 +1900,7 @@ class LimaCCDs(Device):
     )
     saving_zbuffer_init_mem = attribute(
         dtype=bool, access=AttrWriteType.READ_WRITE,
+        doc="Whether to initialize (force-allocate) saving compression buffer memory right away",
         fget=_saving_zbuffer_init_mem_fget, fset=_saving_zbuffer_init_mem_fset,
     )
 
@@ -1904,6 +1909,7 @@ class LimaCCDs(Device):
     )
     saving_zbuffer_duration_policy = attribute(
         dtype=str, access=AttrWriteType.READ_WRITE,
+        doc="Duration policy for saving compression buffers: EPHEMERAL or PERSISTENT",
         fget=_saving_zbuffer_duration_policy_fget, fset=_saving_zbuffer_duration_policy_fset,
     )
 
@@ -1912,6 +1918,7 @@ class LimaCCDs(Device):
     )
     saving_zbuffer_size_policy = attribute(
         dtype=str, access=AttrWriteType.READ_WRITE,
+        doc="Pool size policy for saving compression buffers: AUTOMATIC or FIXED",
         fget=_saving_zbuffer_size_policy_fget, fset=_saving_zbuffer_size_policy_fset,
     )
 
@@ -1920,17 +1927,18 @@ class LimaCCDs(Device):
     )
     saving_zbuffer_req_mem_size_percent = attribute(
         dtype=float, access=AttrWriteType.READ_WRITE,
+        doc="Max percentage of system memory usable for saving compression buffers",
         fget=_saving_zbuffer_req_mem_size_percent_fget, fset=_saving_zbuffer_req_mem_size_percent_fset,
     )
 
     # ------------------------------------------------------------------
     #    Debug domain (Phase 3 slice 2)
     # ------------------------------------------------------------------
-    @attribute(dtype=(str,), max_dim_x=len(_debugModuleList), access=AttrWriteType.READ)
+    @attribute(dtype=(str,), max_dim_x=len(_debugModuleList), access=AttrWriteType.READ, doc="The list of possible debug modules")
     def debug_modules_possible(self):
         return LimaCCDs._debugModuleList
 
-    @attribute(dtype=(str,), max_dim_x=len(_debugModuleList), access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=(str,), max_dim_x=len(_debugModuleList), access=AttrWriteType.READ_WRITE, doc="The debug module level of LImA")
     @core.DEB_MEMBER_FUNCT
     def debug_modules(self):
         return core.DebParams.getModuleFlagsNameList()
@@ -1940,11 +1948,11 @@ class LimaCCDs(Device):
     def debug_modules(self, data):
         core.DebParams.setModuleFlagsNameList(data)
 
-    @attribute(dtype=(str,), max_dim_x=len(_debugTypeList), access=AttrWriteType.READ)
+    @attribute(dtype=(str,), max_dim_x=len(_debugTypeList), access=AttrWriteType.READ, doc="The list of the possible debug types")
     def debug_types_possible(self):
         return LimaCCDs._debugTypeList
 
-    @attribute(dtype=(str,), max_dim_x=len(_debugTypeList), access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=(str,), max_dim_x=len(_debugTypeList), access=AttrWriteType.READ_WRITE, doc="The debug type level of LImA")
     @core.DEB_MEMBER_FUNCT
     def debug_types(self):
         NameList = core.DebParams.getTypeFlagsNameList()
@@ -1958,7 +1966,7 @@ class LimaCCDs(Device):
     # ------------------------------------------------------------------
     #    Video domain (Phase 3 slice 9)
     # ------------------------------------------------------------------
-    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE, doc="Start the video mode (or not)")
     @core.DEB_MEMBER_FUNCT
     def video_active(self):
         return self.__control.video().isActive()
@@ -1968,7 +1976,7 @@ class LimaCCDs(Device):
     def video_active(self, data):
         self.__control.video().setActive(data)
 
-    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE, doc="Start the video streaming (or not)")
     @core.DEB_MEMBER_FUNCT
     def video_live(self):
         return self.__control.video().getLive()
@@ -1982,7 +1990,7 @@ class LimaCCDs(Device):
         else:
             video.stopLive()
 
-    @attribute(dtype=float, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE, doc="The video exposure time (can be different to acq_expo_time)")
     @core.DEB_MEMBER_FUNCT
     def video_exposure(self):
         return self.__control.video().getExposure()
@@ -1992,7 +2000,7 @@ class LimaCCDs(Device):
     def video_exposure(self, data):
         self.__control.video().setExposure(data)
 
-    @attribute(dtype=float, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE, doc="The video gain (if supported by the hardware)")
     @core.DEB_MEMBER_FUNCT
     def video_gain(self):
         return self.__control.video().getGain()
@@ -2004,7 +2012,7 @@ class LimaCCDs(Device):
 
     # video_mode/video_source had no explicit read_X/write_X in the legacy
     # code - video_mode via its __Attribute2FunctionBase "Mode" override.
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The video format supported by the camera")
     @core.DEB_MEMBER_FUNCT
     def video_mode(self):
         return getDictKey(self.__VideoMode, self.__control.video().getMode())
@@ -2019,7 +2027,7 @@ class LimaCCDs(Device):
             )
         self.__control.video().setMode(value)
 
-    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The source for video image: BASE_IMAGE or LAST_IMAGE")
     @core.DEB_MEMBER_FUNCT
     def video_source(self):
         return getDictKey(self.__VideoSource, self.__control.video().getVideoSource())
@@ -2034,7 +2042,7 @@ class LimaCCDs(Device):
             )
         self.__control.video().setVideoSource(value)
 
-    @attribute(dtype=(int,), max_dim_x=2, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=(int,), max_dim_x=2, access=AttrWriteType.READ_WRITE, doc="A binning on the video image (independent of the image_bin attribute)")
     @core.DEB_MEMBER_FUNCT
     def video_bin(self):
         binValue = self.__control.video().getBin()
@@ -2045,7 +2053,7 @@ class LimaCCDs(Device):
     def video_bin(self, data):
         self.__control.video().setBin(core.Bin(*data))
 
-    @attribute(dtype=(int,), max_dim_x=4, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=(int,), max_dim_x=4, access=AttrWriteType.READ_WRITE, doc="A ROI on the video image (independent of the image_roi attribute)")
     @core.DEB_MEMBER_FUNCT
     def video_roi(self):
         roi = self.__control.video().getRoi()
@@ -2073,7 +2081,7 @@ class LimaCCDs(Device):
         self._videoStr = _video_image_2_struct(self.__control.video().getLastImage())
         return ("VIDEO_IMAGE", self._videoStr)
 
-    @attribute(dtype=tango.CmdArgType.DevLong64, access=AttrWriteType.READ)
+    @attribute(dtype=tango.CmdArgType.DevLong64, access=AttrWriteType.READ, doc="The video image counter")
     @core.DEB_MEMBER_FUNCT
     def video_last_image_counter(self):
         return self.__control.video().getLastImageCounter()
@@ -2081,12 +2089,12 @@ class LimaCCDs(Device):
     # ------------------------------------------------------------------
     #    Plugin/config domain (Phase 3 slice 12 - last attribute domain)
     # ------------------------------------------------------------------
-    @attribute(dtype=(str,), max_dim_x=256, access=AttrWriteType.READ)
+    @attribute(dtype=(str,), max_dim_x=256, access=AttrWriteType.READ, doc="List of the available plugin types")
     def plugin_type_list(self):
         className2deviceName = get_sub_devices()
         return [x.lower().replace("deviceserver", "") for x in className2deviceName.keys()]
 
-    @attribute(dtype=(str,), max_dim_x=256, access=AttrWriteType.READ)
+    @attribute(dtype=(str,), max_dim_x=256, access=AttrWriteType.READ, doc="List of the available plugins, as couples of type and device name")
     def plugin_list(self):
         returnList = []
         for key, value in get_sub_devices().items():
@@ -2094,7 +2102,7 @@ class LimaCCDs(Device):
             returnList.append(value)
         return returnList
 
-    @attribute(dtype=(str,), max_dim_x=2, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=(str,), max_dim_x=2, access=AttrWriteType.READ_WRITE, doc="Name of the SPS typed shared memory (default is LimaCCDs,<camera_type>)")
     def shared_memory_names(self):
         try:
             shared_memory_names = self.__control.display().getNames()
@@ -2110,7 +2118,7 @@ class LimaCCDs(Device):
         except Exception:
             pass
 
-    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE, doc="Activate (or not) the shared memory, used for image display")
     def shared_memory_active(self):
         try:
             return self.__control.display().isActive()
@@ -2124,11 +2132,11 @@ class LimaCCDs(Device):
         except Exception:
             pass
 
-    @attribute(dtype=(str,), max_dim_x=1024, access=AttrWriteType.READ)
+    @attribute(dtype=(str,), max_dim_x=1024, access=AttrWriteType.READ, doc="List of possible config modules")
     def config_available_module(self):
         return self.__control.config().getAvailableModule()
 
-    @attribute(dtype=(str,), max_dim_x=1024, access=AttrWriteType.READ)
+    @attribute(dtype=(str,), max_dim_x=1024, access=AttrWriteType.READ, doc="List of existing config names")
     def config_available_name(self):
         return self.__control.config().getAlias()
 
@@ -2143,7 +2151,7 @@ class LimaCCDs(Device):
     # class being high- or low-level - verified against a real
     # DeviceTestContext. Their bodies need no change at all and are left
     # as-is; only their position moved, to sit next to shutter_ctrl_is_available.
-    @attribute(dtype=bool, access=AttrWriteType.READ)
+    @attribute(dtype=bool, access=AttrWriteType.READ, doc="True if the camera has a shutter control")
     @core.DEB_MEMBER_FUNCT
     def shutter_ctrl_is_available(self):
         return self.__control.shutter().hasCapability()
@@ -2278,6 +2286,7 @@ class LimaCCDs(Device):
     )
     buffer_alloc_init_mem = attribute(
         dtype=bool, access=AttrWriteType.READ_WRITE,
+        doc="Whether to initialize (force-allocate) HW plugin buffer memory right away",
         fget=_buffer_alloc_init_mem_fget, fset=_buffer_alloc_init_mem_fset,
     )
 
@@ -2286,6 +2295,7 @@ class LimaCCDs(Device):
     )
     buffer_alloc_duration_policy = attribute(
         dtype=str, access=AttrWriteType.READ_WRITE,
+        doc="Duration policy for HW plugin buffers: EPHEMERAL or PERSISTENT",
         fget=_buffer_alloc_duration_policy_fget, fset=_buffer_alloc_duration_policy_fset,
     )
 
@@ -2294,6 +2304,7 @@ class LimaCCDs(Device):
     )
     buffer_alloc_size_policy = attribute(
         dtype=str, access=AttrWriteType.READ_WRITE,
+        doc="Pool size policy for HW plugin buffers: AUTOMATIC or FIXED",
         fget=_buffer_alloc_size_policy_fget, fset=_buffer_alloc_size_policy_fset,
     )
 
@@ -2302,17 +2313,18 @@ class LimaCCDs(Device):
     )
     buffer_alloc_req_mem_size_percent = attribute(
         dtype=float, access=AttrWriteType.READ_WRITE,
+        doc="Max percentage of system memory usable for HW plugin buffers",
         fget=_buffer_alloc_req_mem_size_percent_fget, fset=_buffer_alloc_req_mem_size_percent_fset,
     )
 
     # buffer_max_number: dispatched via __Attribute2FunctionBase's
     # "MaxNumber" override in the legacy code (read-only, no enum).
-    @attribute(dtype=int, access=AttrWriteType.READ)
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="The maximum number of image buffers that can be allocated for the frame size")
     @core.DEB_MEMBER_FUNCT
     def buffer_max_number(self):
         return self.__control.buffer().getMaxNumber()
 
-    @attribute(dtype=tango.CmdArgType.DevULong64, access=AttrWriteType.READ_WRITE)
+    @attribute(dtype=tango.CmdArgType.DevULong64, access=AttrWriteType.READ_WRITE, doc="Pad parameter passed to malloc_trim after buffer alloc")
     @RequiresSystemFeature("core.CtBuffer.getMallocTrimPad")
     @core.DEB_MEMBER_FUNCT
     def buffer_malloc_trim_pad(self):
@@ -2338,7 +2350,10 @@ class LimaCCDs(Device):
     #    Description: return a list of authorized values if any
     #    argout: DevVarStringArray
     # ------------------------------------------------------------------
-    @command(dtype_in=str, dtype_out=(str,))
+    @command(
+        dtype_in=str, doc_in="Attribute name",
+        dtype_out=(str,), doc_out="Authorized string value list",
+    )
     @core.DEB_MEMBER_FUNCT
     def getAttrStringValueList(self, attr_name):
         valueList = []
@@ -2435,7 +2450,7 @@ class LimaCCDs(Device):
 
     ##@brief set images heaaders
     #
-    @command(dtype_in=(str,))
+    @command(dtype_in=(str,), doc_in="ImageId0 SEPARATOR imageHeader0,ImageId1 SEPARATOR imageHeader1...")
     @core.DEB_MEMBER_FUNCT
     def setImageHeader(self, headers_str):
         control = self.__control
@@ -2480,7 +2495,10 @@ class LimaCCDs(Device):
 
     ##@brief get image data
     #
-    @command(dtype_in=int, dtype_out=tango.CmdArgType.DevVarCharArray)
+    @command(
+        dtype_in=int, doc_in="Image number(0-N)",
+        dtype_out=tango.CmdArgType.DevVarCharArray, doc_out="Image data",
+    )
     @core.DEB_MEMBER_FUNCT
     def getImage(self, image_id):
         data = self.__control.ReadImage(image_id)
@@ -2570,7 +2588,10 @@ class LimaCCDs(Device):
 
     ##@brief get image data
     #
-    @command(dtype_in=int, dtype_out=tango.CmdArgType.DevEncoded)
+    @command(
+        dtype_in=int, doc_in="Image number(0-N)",
+        dtype_out=tango.CmdArgType.DevEncoded, doc_out="Encoded image (DATA_ARRAY)",
+    )
     @core.DEB_MEMBER_FUNCT
     def readImage(self, frame_number):
         deb.Param("readImage: frame_number=%d" % frame_number)
@@ -2582,7 +2603,10 @@ class LimaCCDs(Device):
     ##@brief get last image data (if new image since last_frame_number)
     #
     # @returns Image if new image available since last_frame_number else None
-    @command(dtype_in=int, dtype_out=tango.CmdArgType.DevEncoded)
+    @command(
+        dtype_in=int, doc_in="Last image number(0-N)",
+        dtype_out=tango.CmdArgType.DevEncoded, doc_out="Encoded image (DATA_ARRAY)",
+    )
     @core.DEB_MEMBER_FUNCT
     def readLastImage(self, last_frame_number=-1):
         deb.Param("readLastImage: last_frame_number=%d" % last_frame_number)
@@ -2606,7 +2630,10 @@ class LimaCCDs(Device):
     ##@brief get the data for an image sequence
     #
     # @params start,end[,step[,acq_tag]]
-    @command(dtype_in=tango.CmdArgType.DevVarLong64Array, dtype_out=tango.CmdArgType.DevEncoded)
+    @command(
+        dtype_in=tango.CmdArgType.DevVarLong64Array, doc_in="Start,End[,Step,[AcqTag]]",
+        dtype_out=tango.CmdArgType.DevEncoded, doc_out="Encoded image(s) (DATA_ARRAY)",
+    )
     @core.DEB_MEMBER_FUNCT
     def readImageSeq(self, frame_seq):
         deb.Param("frame_seq=%s" % frame_seq)
@@ -2641,7 +2668,10 @@ class LimaCCDs(Device):
     ##@brief get base image data
     #
     # image before post processing
-    @command(dtype_in=int, dtype_out=tango.CmdArgType.DevVarCharArray)
+    @command(
+        dtype_in=int, doc_in="Image number(0-N)",
+        dtype_out=tango.CmdArgType.DevVarCharArray, doc_out="Base image data",
+    )
     @core.DEB_MEMBER_FUNCT
     def getBaseImage(self, image_id):
         data = self.__control.ReadBaseImage(image_id)
@@ -2652,7 +2682,7 @@ class LimaCCDs(Device):
     ##@brief manual write image
     #
     #
-    @command(dtype_in=int)
+    @command(dtype_in=int, doc_in="Image number(0-N)")
     @core.DEB_MEMBER_FUNCT
     def writeImage(self, image_id):
         saving = self.__control.saving()
@@ -2661,7 +2691,10 @@ class LimaCCDs(Device):
     ##@brief get saturated images
     #
     # @params image_id if < 0 read the last image
-    @command(dtype_in=int, dtype_out=tango.CmdArgType.DevVarUShortArray)
+    @command(
+        dtype_in=int, doc_in="Image number",
+        dtype_out=tango.CmdArgType.DevVarUShortArray, doc_out="The image counter",
+    )
     @core.DEB_MEMBER_FUNCT
     def readAccSaturatedImageCounter(self, image_id):
         acc = self.__control.accumulation()
@@ -2675,7 +2708,11 @@ class LimaCCDs(Device):
     ##@brief get saturated sum counter
     #
     # @params from_image_id the starting image id
-    @command(dtype_in=int, dtype_out=tango.CmdArgType.DevVarLongArray)
+    @command(
+        dtype_in=int, doc_in="From image id",
+        dtype_out=tango.CmdArgType.DevVarLongArray,
+        doc_out="Nb of results per image, then sum counters per raw image",
+    )
     @core.DEB_MEMBER_FUNCT
     def readAccSaturatedSumCounter(self, from_image_id):
         acc = self.__control.accumulation()
@@ -2690,7 +2727,7 @@ class LimaCCDs(Device):
     ##@brief set the mask file for saturated counters
     #
     # @params file_path the full path of mask image or '' -> unset Mask
-    @command(dtype_in=str)
+    @command(dtype_in=str, doc_in="Full path of mask file, empty string (\"\") to unset the mask")
     @core.DEB_MEMBER_FUNCT
     def setAccSaturatedMask(self, file_path):
         if file_path:
@@ -2731,7 +2768,7 @@ class LimaCCDs(Device):
         if shutter.getModeList().count(core.ShutterMode.ShutterManual):
             shutter.setState(True)
 
-    @command(dtype_in=str, dtype_out=str)
+    @command(dtype_in=str, doc_in="Plugin type", dtype_out=str, doc_out="Device name")
     @core.DEB_MEMBER_FUNCT
     def getPluginDeviceNameFromType(self, pluginType):
         pluginType2deviceName = dict(
@@ -2745,26 +2782,26 @@ class LimaCCDs(Device):
     # ----------------------------------------------------------------------------
     #                         Configuration Mgt
     # ----------------------------------------------------------------------------
-    @command(dtype_in=(str,))
+    @command(dtype_in=(str,), doc_in="config name,module1,module2,...,modulen")
     @core.DEB_MEMBER_FUNCT
     def configStore(self, args):
         config_name = args.pop(0)
         config = self.__control.config()
         config.store(config_name, args)
 
-    @command(dtype_in=str)
+    @command(dtype_in=str, doc_in="config name")
     @core.DEB_MEMBER_FUNCT
     def configApply(self, config_name):
         config = self.__control.config()
         config.apply(config_name)
 
-    @command(dtype_in=str)
+    @command(dtype_in=str, doc_in="config name")
     @core.DEB_MEMBER_FUNCT
     def configPop(self, config_name):
         config = self.__control.config()
         config.pop(config_name)
 
-    @command(dtype_in=str)
+    @command(dtype_in=str, doc_in="config name")
     @core.DEB_MEMBER_FUNCT
     def configDelete(self, config_name):
         config = self.__control.config()
@@ -2782,7 +2819,7 @@ class LimaCCDs(Device):
         config = self.__control.config()
         config.load()
 
-    @command(dtype_in=int)
+    @command(dtype_in=int, doc_in="Stream number")
     @core.DEB_MEMBER_FUNCT
     def setSavingStream(self, streamNb):
         self.__SavingStream = streamNb
