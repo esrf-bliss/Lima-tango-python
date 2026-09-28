@@ -205,3 +205,94 @@ def get_attr_string_value_list(obj, attr_name):
     if d:
         valueList = list(d.keys())
     return valueList
+
+
+# ============================================================================
+#                    tango.server (high-level API) replacement
+# ============================================================================
+#
+# make_fget_fset() is the high-level-API equivalent of get_attr_4u() above:
+# it builds a static (fget, fset) pair for `tango.server.attribute(...)`,
+# dispatching to `getName`/`setName` on the first of `interfaces` that has it,
+# by the same naming convention (attr_name -> CamelCase -> getCamelCase).
+#
+# Unlike get_attr_4u, `interfaces` are resolved *per call* through unary
+# callables taking the device instance, since a high-level `attribute()` is
+# built once at class-definition time, before any device instance exists:
+#
+#   grow_factor = attribute(
+#       dtype=float, access=AttrWriteType.READ_WRITE,
+#       fget=(fget := make_fget_fset("grow_factor", lambda self: self._SimuCamera)[0]),
+#   )
+#
+# or, more commonly, unpacking both at once:
+#
+#   _fget, _fset = make_fget_fset(
+#       "mode", lambda self: self._SimuCamera.getFrameGetter(),
+#       lambda self: self._SimuCamera, enum=_Mode,
+#   )
+#   mode_attr = attribute(name="mode", dtype=str, access=AttrWriteType.READ_WRITE,
+#                          fget=_fget, fset=_fset)
+#
+# A plain-assignment `attribute(name=..., fget=..., fset=...)` (not a method
+# decorator) is used on purpose: several of these attributes share their name
+# with a `device_property` of the same name (the property is only consulted
+# once, at init_device, for the initial hardware config), and only
+# `attribute(name=...)` lets the Tango-visible name be decoupled from the
+# Python identifier - `device_property()` has no such override.
+
+
+def _title_case(attr_name):
+    return "".join(x.title() for x in attr_name.split("_"))
+
+
+def make_fget_fset(attr_name, *interfaces, enum=None):
+    """Build (fget, fset) callables for `tango.server.attribute(fget=, fset=)`.
+
+    Arguments:
+        attr_name: attribute name, e.g. "grow_factor" -> getGrowFactor/setGrowFactor
+        interfaces: one or more `f(device_self) -> target_object` callables,
+            tried in order; the first whose target has getX/setX is used
+            (mirrors get_attr_4u + the legacy try/except interface fallback)
+        enum: optional {"STRING_KEY": underlying_value} dict for string-valued
+            attributes, translated both ways (mirrors the legacy per-attribute
+            enum dict convention, e.g. self.__Mode)
+    """
+    camel = _title_case(attr_name)
+    get_name, set_name = "get" + camel, "set" + camel
+
+    def _resolve_target(device_self):
+        last_exc = None
+        for make_target in interfaces:
+            try:
+                target = make_target(device_self)
+            except Exception as exc:
+                last_exc = exc
+                continue
+            if hasattr(target, get_name) or hasattr(target, set_name):
+                return target
+        if last_exc is not None:
+            raise last_exc
+        raise AttributeError(
+            "No %s/%s found for attribute %r" % (get_name, set_name, attr_name)
+        )
+
+    def fget(device_self):
+        value = getattr(_resolve_target(device_self), get_name)()
+        return getDictKey(enum, value) if enum is not None else value
+
+    def fset(device_self, value):
+        if enum is not None:
+            resolved = getDictValue(enum, value.upper())
+            if resolved is None:
+                import tango
+
+                tango.Except.throw_exception(
+                    "WrongData",
+                    "Wrong value %s: %s" % (attr_name, value.upper()),
+                    "LimaCCD Class",
+                )
+            value = resolved
+        getattr(_resolve_target(device_self), set_name)(value)
+
+    return fget, fset
