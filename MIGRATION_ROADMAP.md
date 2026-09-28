@@ -112,10 +112,11 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
       - [x] The ~29 commands: bodies needed zero changes (commands already used the modern return-based
             convention, unlike attributes), just `@command(dtype_in=, dtype_out=)` decorators, explicit
             `tango.CmdArgType.*` for the array types. **All attributes and commands are now migrated.**
-            Found another pre-existing bug verifying against real core: `closeShutterManual`/
-            `openShutterManual` reference `core.ShutterManual`, which doesn't exist
-            (`core.ShutterMode.ShutterManual` does) - both have always raised `AttributeError`, before
-            and after. Left unchanged, out of scope.
+            Found (and, per user request, fixed) another pre-existing bug verifying against real core:
+            `closeShutterManual`/`openShutterManual` referenced `core.ShutterManual`, which doesn't
+            exist (`core.ShutterMode.ShutterManual` does) - both had always raised `AttributeError`,
+            before and after the migration itself. This one fix is a deliberate, requested exception to
+            the "preserve pre-existing bugs" rule applied everywhere else in this migration.
       - [ ] Delete the orphaned `LimaCCDsClass` and every now-dead old `read_X`/`write_X` method left
             behind by each slice above (each domain's migration leaves its old methods in place,
             unused, rather than deleting them mid-flight); update `main()`'s `add_TgClass` call; full
