@@ -51,7 +51,8 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
       - `file_pattern`: `setFilePattern` only exists on the LOADER-mode frame getter (`FrameLoader`), not
         `FrameBuilder` (GENERATOR, the default) - fails by design outside LOADER mode, not a real bug.
       None of the 41 BLISS tests exercise these three, which is why they went unnoticed.
-- [ ] **Phase 3 — Migrate `LimaCCDs.py`** (issue #97, branch `migration-phase3-limaccds`): 141
+- [x] **Phase 3 — Migrate `LimaCCDs.py`** (issue #97, branch `migration-phase3-limaccds`) - **DONE,
+      validated: 41/41 on the full BLISS baseline against the entirely migrated class.** 141
       attributes, 31 commands, 32 device properties. **Structural constraint discovered**: unlike
       Mask.py/Simulator.py (standalone devices), a single Tango device class can't be half low-level/half
       high-level - BLISS touches attributes across nearly every domain on a normal scan, so the full
@@ -127,7 +128,9 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
             longer happens now that every attribute is a real descriptor. `tests/test_tango.py` also
             breaks (was already excluded from the conda CI recipe's test run) - `LimaCCDs.LimaCCDsClass`
             no longer exists; folds into the Phase 5 test rewrite already planned.
-      - [ ] Full BLISS baseline run against the completely migrated class.
+      - [x] Full BLISS baseline run against the completely migrated class: **41/41 passed**
+            (`tests/controllers_sw/test_lima_simulator.py`, real `LimaCCDs` + `Simulator` server, env
+            restored after). Phase 3 is complete.
 - [ ] **Phase 4 — Camera ecosystem**: `camera/simulator` (done in Phase 2) → 1-2 representative cameras
       (e.g. `camera/pilatus`) as proof → long tail migrated at each maintainer's own pace.
 - [ ] **Phase 5 — Cleanup**: remove `AttrHelper.py`; replace the mocked `tests/test_tango.py`.
