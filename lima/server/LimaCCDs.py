@@ -822,7 +822,7 @@ class LimaCCDs(Device):
             )
 
         # Acquisition number
-        self.acq_tag = self.AcqTagNone
+        self._acq_tag = self.AcqTagNone
         self.last_acq_tag = self.AcqTagNone
 
     @core.DEB_MEMBER_FUNCT
@@ -1010,17 +1010,18 @@ class LimaCCDs(Device):
     def camera_pixelsize(self):
         return self.__detinfo.getPixelSize()
 
-    ## @brief get the status of the acquisition
-    #
+    # ------------------------------------------------------------------
+    #    Acquisition status domain (Phase 3 slice 3)
+    # ------------------------------------------------------------------
+    @attribute(dtype=str, access=AttrWriteType.READ)
     @core.DEB_MEMBER_FUNCT
-    def read_acq_status(self, attr):
+    def acq_status(self):
         status = self.__control.getStatus()
-        attr.set_value(_acqstate2string(status.AcquisitionStatus))
+        return _acqstate2string(status.AcquisitionStatus)
 
-    ## @brief get the errir message when acq_status is in Fault stat
-    #
+    @attribute(dtype=str, access=AttrWriteType.READ)
     @core.DEB_MEMBER_FUNCT
-    def read_acq_status_fault_error(self, attr):
+    def acq_status_fault_error(self):
         status = self.__control.getStatus()
         state2string = {
             core.CtControl.ErrorCode.NoError: "No error",
@@ -1034,23 +1035,24 @@ class LimaCCDs(Device):
             core.CtControl.ErrorCode.ProcessingOverun: "Processing: overun",
             core.CtControl.ErrorCode.CameraError: "Camera: error",
         }
-        attr.set_value(state2string.get(status.Error, "?"))
+        return state2string.get(status.Error, "?")
 
-    ## @brief get the acquisition tag
-    #
+    # NOTE: storage renamed self._acq_tag - the Tango attribute name
+    # "acq_tag" can't also be the plain instance attribute the rest of the
+    # class (prepareAcq, init_device) reads/writes as internal state, now
+    # that "acq_tag" is a class-level attribute() descriptor.
+    @attribute(dtype=tango.CmdArgType.DevULong64, access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_acq_tag(self, attr):
-        acq_tag = self.acq_tag
+    def acq_tag(self):
+        acq_tag = self._acq_tag
         deb.Return("acq_tag=%s (0x%08x)" % (acq_tag, acq_tag))
-        attr.set_value(acq_tag)
+        return acq_tag
 
-    ## @brief set the acquisition tag
-    #
+    @acq_tag.setter
     @core.DEB_MEMBER_FUNCT
-    def write_acq_tag(self, attr):
-        acq_tag = attr.get_write_value()
+    def acq_tag(self, acq_tag):
         deb.Param("acq_tag=%s (0x%08x)" % (acq_tag, acq_tag))
-        self.acq_tag = acq_tag
+        self._acq_tag = acq_tag
 
     ## @brief read the number of frame for an acquisition
     #
@@ -2159,7 +2161,7 @@ class LimaCCDs(Device):
         self._push_status()
 
         # check that the tag is different from previous acq (if not AcqTagNone)
-        tag = self.acq_tag
+        tag = self._acq_tag
         if tag == self.AcqTagNone or tag != self.last_acq_tag:
             self.last_acq_tag = tag
             deb.Trace("Preparing a new acq. with tag %s (0x%08x)" % (tag, tag))
