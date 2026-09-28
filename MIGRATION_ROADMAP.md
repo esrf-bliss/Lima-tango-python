@@ -80,7 +80,10 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
             acc_dead_time, acc_live_time, acc_saturated_active, acc_saturated_threshold (DevLong64,
             same reasoning as acq_tag), acc_saturated_cblevel, acc_out_type. `acc_buffer_*` deferred to
             the buffer domain slice.
-      - [ ] Image domain (image_*, last_image*, ready_for_next_*).
+      - [x] Image domain: image_roi, image_sizes, image_max_dim, image_type, image_width, image_height,
+            image_bin, image_bin_mode, image_flip, image_rotation, last_image (DevEncoded), last_image_
+            acquired/ready/saved, last_base_image_ready, last_counter_ready, image_events_push_data,
+            image_events_max_rate, ready_for_next_image, ready_for_next_acq.
       - [ ] Saving domain (saving_*).
       - [ ] Video domain (video_*).
       - [ ] Buffer domain (buffer_*) - needs the prefix-routed `__getattr__`/`__Prefix2SubClass`
