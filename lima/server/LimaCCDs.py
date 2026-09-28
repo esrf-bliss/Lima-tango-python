@@ -1903,46 +1903,36 @@ class LimaCCDs(Device):
 
         saving.setJp2kCompressionRatio(data)
 
-    ##@brief Read possible modules
-    #
-    def read_debug_modules_possible(self, attr):
-        attr.set_value(LimaCCDs._debugModuleList)
+    # ------------------------------------------------------------------
+    #    Debug domain (Phase 3 slice 2)
+    # ------------------------------------------------------------------
+    @attribute(dtype=(str,), max_dim_x=len(_debugModuleList), access=AttrWriteType.READ)
+    def debug_modules_possible(self):
+        return LimaCCDs._debugModuleList
 
-    ##@brief Read list of module which are in debug
-    #
+    @attribute(dtype=(str,), max_dim_x=len(_debugModuleList), access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_debug_modules(self, attr):
-        NameList = core.DebParams.getModuleFlagsNameList()
-        attr.set_value(NameList)
+    def debug_modules(self):
+        return core.DebParams.getModuleFlagsNameList()
 
-    ##@brief set debug module list
-    #
+    @debug_modules.setter
     @core.DEB_MEMBER_FUNCT
-    def write_debug_modules(self, attr):
-        data = attr.get_write_value()
+    def debug_modules(self, data):
         core.DebParams.setModuleFlagsNameList(data)
 
-    ##@biref Read possible modules
-    #
-    def read_debug_types_possible(self, attr):
-        attr.set_value(LimaCCDs._debugTypeList)
+    @attribute(dtype=(str,), max_dim_x=len(_debugTypeList), access=AttrWriteType.READ)
+    def debug_types_possible(self):
+        return LimaCCDs._debugTypeList
 
-    ##@brief Read list of module which are in debug
-    #
+    @attribute(dtype=(str,), max_dim_x=len(_debugTypeList), access=AttrWriteType.READ_WRITE)
     @core.DEB_MEMBER_FUNCT
-    def read_debug_types(self, attr):
+    def debug_types(self):
         NameList = core.DebParams.getTypeFlagsNameList()
+        return NameList if NameList else [""]
 
-        if NameList:
-            attr.set_value(NameList)
-        else:
-            attr.set_value([""])
-
-    ##@brief set debug module list
-    #
+    @debug_types.setter
     @core.DEB_MEMBER_FUNCT
-    def write_debug_types(self, attr):
-        data = attr.get_write_value()
+    def debug_types(self, data):
         core.DebParams.setTypeFlagsNameList(data)
 
     def read_video_active(self, attr):
