@@ -72,18 +72,25 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
       - [x] Acquisition-status domain: acq_status, acq_status_fault_error, acq_tag (storage renamed to
             `self._acq_tag` - collided with the new attribute descriptor; fixed the other reader,
             `prepareAcq`, too, not yet migrated itself but affected by the rename).
-      - [ ] Acquisition domain (acq_mode, acq_nb_frames, acq_expo_time, acq_trigger_mode,
-            concat_nb_frames, latency_time, valid_ranges, acc_time_mode).
+      - [x] Acquisition domain: acq_mode, acc_time_mode (routed to CtAcquisition despite the "acc_"
+            name - `__Name2SubClass` special-cases it, confirmed against real core), acq_trigger_mode,
+            acq_nb_frames, acq_expo_time, concat_nb_frames, latency_time, valid_ranges.
+      - [x] Accumulation domain: acc_max_expo_time, acc_mode, acc_filter, acc_operation,
+            acc_threshold_before, acc_offset_before, acc_hw_nb_buffers, acc_expo_time, acc_nb_frames,
+            acc_dead_time, acc_live_time, acc_saturated_active, acc_saturated_threshold (DevLong64,
+            same reasoning as acq_tag), acc_saturated_cblevel, acc_out_type. `acc_buffer_*` deferred to
+            the buffer domain slice.
       - [ ] Image domain (image_*, last_image*, ready_for_next_*).
-      - [ ] Accumulation domain (acc_*).
       - [ ] Saving domain (saving_*).
       - [ ] Video domain (video_*).
       - [ ] Buffer domain (buffer_*) - needs the prefix-routed `__getattr__`/`__Prefix2SubClass`
             dispatch generalized (LimaCCDs-specific, doesn't reuse Phase 2's `make_fget_fset`).
       - [ ] Shutter domain (shutter_ctrl_is_available + the dynamically-`add_attribute`'d shutter_*).
       - [ ] Plugin/config domain (plugin_*, config_*, shared_memory_*) + the ~29 commands.
-      - [ ] Delete the orphaned `LimaCCDsClass`; update `main()`'s `add_TgClass` call; full BLISS
-            baseline run.
+      - [ ] Delete the orphaned `LimaCCDsClass` and every now-dead old `read_X`/`write_X` method left
+            behind by each slice above (each domain's migration leaves its old methods in place,
+            unused, rather than deleting them mid-flight); update `main()`'s `add_TgClass` call; full
+            BLISS baseline run.
 - [ ] **Phase 4 — Camera ecosystem**: `camera/simulator` (done in Phase 2) → 1-2 representative cameras
       (e.g. `camera/pilatus`) as proof → long tail migrated at each maintainer's own pace.
 - [ ] **Phase 5 — Cleanup**: remove `AttrHelper.py`; replace the mocked `tests/test_tango.py`.
