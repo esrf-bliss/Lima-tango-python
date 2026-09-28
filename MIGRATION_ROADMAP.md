@@ -84,7 +84,12 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
             image_bin, image_bin_mode, image_flip, image_rotation, last_image (DevEncoded), last_image_
             acquired/ready/saved, last_base_image_ready, last_counter_ready, image_events_push_data,
             image_events_max_rate, ready_for_next_image, ready_for_next_acq.
-      - [ ] Saving domain (saving_*).
+      - [x] Saving domain: saving_common_header, saving_header_delimiter, saving_index_format,
+            saving_statistics(_history/_log_enable), saving_directory, saving_prefix, saving_suffix,
+            saving_next_number, saving_frame_per_file, saving_every_n_frames, saving_format,
+            saving_mode, saving_managed_mode, saving_overwrite_policy, saving_use_hw_comp,
+            saving_stream_active, saving_max_writing_task, saving_jp2k_codec, saving_jp2k_comp_ratio.
+            `saving_zbuffer_*` deferred to the buffer domain slice.
       - [ ] Video domain (video_*).
       - [ ] Buffer domain (buffer_*) - needs the prefix-routed `__getattr__`/`__Prefix2SubClass`
             dispatch generalized (LimaCCDs-specific, doesn't reuse Phase 2's `make_fget_fset`).
