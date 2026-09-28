@@ -2441,9 +2441,20 @@ class LimaCCDs(Device):
         config = self.__control.config()
         attr.set_value(config.getAlias())
 
-    def read_shutter_ctrl_is_available(self, attr):
-        is_available = self.__control.shutter().hasCapability()
-        attr.set_value(is_available)
+    # ------------------------------------------------------------------
+    #    Shutter domain (Phase 3 slice 11)
+    # ------------------------------------------------------------------
+    # shutter_close_time/manual_state/mode/open_time are NOT here: they're
+    # added dynamically at runtime (init_device, only if the hardware
+    # actually has shutter capability) via self.add_attribute(...), which
+    # always uses the old-style (self, attr) callback signature regardless
+    # of the device class being high- or low-level - verified against a
+    # real DeviceTestContext. Their read_X/write_X methods further down
+    # need no change at all and are left as-is.
+    @attribute(dtype=bool, access=AttrWriteType.READ)
+    @core.DEB_MEMBER_FUNCT
+    def shutter_ctrl_is_available(self):
+        return self.__control.shutter().hasCapability()
 
     @RequiresSystemFeature("core.BufferHelper.Parameters")
     def readBufferParam(self, attr, param=None, getter=None, setter=None):
