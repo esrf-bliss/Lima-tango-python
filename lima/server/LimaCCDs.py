@@ -2228,80 +2228,128 @@ class LimaCCDs(Device):
     def debug_types(self, data):
         core.DebParams.setTypeFlagsNameList(data)
 
-    def read_video_active(self, attr):
-        video = self.__control.video()
-        attr.set_value(video.isActive())
+    # ------------------------------------------------------------------
+    #    Video domain (Phase 3 slice 9)
+    # ------------------------------------------------------------------
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def video_active(self):
+        return self.__control.video().isActive()
 
-    def write_video_active(self, attr):
-        video = self.__control.video()
-        data = attr.get_write_value()
-        video.setActive(data)
+    @video_active.setter
+    @core.DEB_MEMBER_FUNCT
+    def video_active(self, data):
+        self.__control.video().setActive(data)
 
-    def read_video_live(self, attr):
-        video = self.__control.video()
-        attr.set_value(video.getLive())
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def video_live(self):
+        return self.__control.video().getLive()
 
-    def write_video_live(self, attr):
+    @video_live.setter
+    @core.DEB_MEMBER_FUNCT
+    def video_live(self, data):
         video = self.__control.video()
-        data = attr.get_write_value()
         if data:
             video.startLive()
         else:
             video.stopLive()
 
-    def read_video_exposure(self, attr):
-        video = self.__control.video()
-        attr.set_value(video.getExposure())
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def video_exposure(self):
+        return self.__control.video().getExposure()
 
-    def write_video_exposure(self, attr):
-        video = self.__control.video()
-        data = attr.get_write_value()
-        video.setExposure(data)
+    @video_exposure.setter
+    @core.DEB_MEMBER_FUNCT
+    def video_exposure(self, data):
+        self.__control.video().setExposure(data)
 
-    def read_video_gain(self, attr):
-        video = self.__control.video()
-        attr.set_value(video.getGain())
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def video_gain(self):
+        return self.__control.video().getGain()
 
-    def write_video_gain(self, attr):
-        video = self.__control.video()
-        data = attr.get_write_value()
-        video.setGain(data)
+    @video_gain.setter
+    @core.DEB_MEMBER_FUNCT
+    def video_gain(self, data):
+        self.__control.video().setGain(data)
 
-    def read_video_bin(self, attr):
-        video = self.__control.video()
-        binValue = video.getBin()
+    # video_mode/video_source had no explicit read_X/write_X in the legacy
+    # code - video_mode via its __Attribute2FunctionBase "Mode" override.
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def video_mode(self):
+        return getDictKey(self.__VideoMode, self.__control.video().getMode())
 
-        attr.set_value([binValue.getX(), binValue.getY()])
+    @video_mode.setter
+    @core.DEB_MEMBER_FUNCT
+    def video_mode(self, data):
+        value = getDictValue(self.__VideoMode, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value video_mode: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.video().setMode(value)
 
-    def write_video_bin(self, attr):
-        data = attr.get_write_value()
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def video_source(self):
+        return getDictKey(self.__VideoSource, self.__control.video().getVideoSource())
 
-        video = self.__control.video()
-        binValue = core.Bin(*data)
-        video.setBin(binValue)
+    @video_source.setter
+    @core.DEB_MEMBER_FUNCT
+    def video_source(self, data):
+        value = getDictValue(self.__VideoSource, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value video_source: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.video().setVideoSource(value)
 
-    def read_video_roi(self, attr):
-        video = self.__control.video()
-        roi = video.getRoi()
+    @attribute(dtype=(int,), max_dim_x=2, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def video_bin(self):
+        binValue = self.__control.video().getBin()
+        return [binValue.getX(), binValue.getY()]
+
+    @video_bin.setter
+    @core.DEB_MEMBER_FUNCT
+    def video_bin(self, data):
+        self.__control.video().setBin(core.Bin(*data))
+
+    @attribute(dtype=(int,), max_dim_x=4, access=AttrWriteType.READ_WRITE)
+    @core.DEB_MEMBER_FUNCT
+    def video_roi(self):
+        roi = self.__control.video().getRoi()
         point = roi.getTopLeft()
         size = roi.getSize()
+        return [point.x, point.y, size.getWidth(), size.getHeight()]
 
-        attr.set_value([point.x, point.y, size.getWidth(), size.getHeight()])
+    @video_roi.setter
+    @core.DEB_MEMBER_FUNCT
+    def video_roi(self, data):
+        self.__control.video().setRoi(core.Roi(*data))
 
-    def write_video_roi(self, attr):
-        data = attr.get_write_value()
-        video = self.__control.video()
-        roi = core.Roi(*data)
-        video.setRoi(roi)
+    @attribute(
+        dtype=tango.CmdArgType.DevEncoded,
+        access=AttrWriteType.READ,
+        label="the video image",
+        unit="",
+        standard_unit="",
+        display_unit="",
+        format="%d",
+        doc="video image as encoded",
+    )
+    @core.DEB_MEMBER_FUNCT
+    def video_last_image(self):
+        self._videoStr = _video_image_2_struct(self.__control.video().getLastImage())
+        return ("VIDEO_IMAGE", self._videoStr)
 
-    def read_video_last_image(self, attr):
-        video = self.__control.video()
-        self._videoStr = _video_image_2_struct(video.getLastImage())
-        attr.set_value("VIDEO_IMAGE", self._videoStr)
-
-    def read_video_last_image_counter(self, attr):
-        video = self.__control.video()
-        attr.set_value(video.getLastImageCounter())
+    @attribute(dtype=tango.CmdArgType.DevLong64, access=AttrWriteType.READ)
+    @core.DEB_MEMBER_FUNCT
+    def video_last_image_counter(self):
+        return self.__control.video().getLastImageCounter()
 
     def read_plugin_type_list(self, attr):
         className2deviceName = get_sub_devices()
