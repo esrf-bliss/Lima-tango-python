@@ -48,6 +48,9 @@ import sys
 import os
 import glob
 import PyTango
+import tango
+from tango import AttrWriteType
+from tango.server import Device, attribute, command, device_property
 import weakref
 import itertools
 import functools
@@ -67,7 +70,7 @@ from .EnvHelper import get_sub_devices
 from .EnvHelper import get_lima_camera_type, get_lima_device_name
 from .EnvHelper import get_camera_module, get_plugin_module
 from .AttrHelper import get_attr_4u
-from lima.server.AttrHelper import getDictKey, getDictValue
+from lima.server.AttrHelper import getDictKey, getDictValue, make_fget_fset
 from lima import core
 
 from lima.server import plugins
@@ -137,8 +140,72 @@ def RequiresSystemFeature(feature):
     return method_decorator
 
 
-class LimaCCDs(PyTango.LatestDeviceImpl):
+def _make_buffer_param_fget_fset(control_sub, params_base, field, enum_key=None):
+    """Build (fget, fset) for one BufferHelper.Parameters sub-field attribute
+    (buffer_alloc_*/acc_buffer_*/saving_zbuffer_*) - the high-level equivalent
+    of the legacy get_buffer_param_attr()/readBufferParam()/writeBufferParam()
+    dynamic dispatch (see __getattr__/__BufferParamData/__BufferHelperEnums
+    in init_device). Not reused outside LimaCCDs, no camera plugin has this
+    BufferHelper.Parameters group pattern.
+
+    Arguments:
+        control_sub: f(self) -> CtControl sub-object (buffer()/accumulation()/
+            saving())
+        params_base: e.g. "Alloc"/"Buffer"/"ZBuffer" -> get/set<Base>Parameters
+        field: BufferHelper.Parameters field name, e.g. "initMem"
+        enum_key: if set, looks up self.__BufferHelperEnums[enum_key] for the
+            string<->value translation (only "durationPolicy"/"sizePolicy")
+    """
+    get_params = "get" + params_base + "Parameters"
+    set_params = "set" + params_base + "Parameters"
+
+    @RequiresSystemFeature("core.BufferHelper.Parameters")
+    def fget(self):
+        params = getattr(control_sub(self), get_params)()
+        val = getattr(params, field)
+        if enum_key is not None:
+            val = getDictKey(self._LimaCCDs__BufferHelperEnums[enum_key], val)
+        return val
+
+    @RequiresSystemFeature("core.BufferHelper.Parameters")
+    def fset(self, value):
+        sub = control_sub(self)
+        params = getattr(sub, get_params)()
+        if enum_key is not None:
+            value = getDictValue(self._LimaCCDs__BufferHelperEnums[enum_key], value)
+        setattr(params, field, value)
+        getattr(sub, set_params)(params)
+
+    return fget, fset
+
+
+class LimaCCDs(Device):
     core.DEB_CLASS(core.DebModule.DebModApplication, "LimaCCDs")
+
+    # ------------------------------------------------------------------
+    #    Device properties (was LimaCCDsClass.device_property_list)
+    # ------------------------------------------------------------------
+    LimaCameraType = device_property(dtype=str, default_value="")
+    NbProcessingThread = device_property(dtype=str, default_value="2")
+    AccBufferParameters = device_property(dtype=str, default_value="")
+    AccThresholdCallbackModule = device_property(dtype=str, default_value="")
+    ConfigurationFilePath = device_property(
+        dtype=str,
+        default_value=os.path.join(
+            os.path.expanduser("~"), "lima_%s.cfg" % instance_name
+        ),
+    )
+    ConfigurationDefaultName = device_property(dtype=str, default_value="default")
+    ImageOpMode = device_property(dtype=str, default_value="")
+    MaxVideoFPS = device_property(dtype=float, default_value=30.0)
+    UserDetectorName = device_property(dtype=str, default_value="")
+    UserInstrumentName = device_property(dtype=str, default_value="")
+    BufferMaxMemory = device_property(dtype=str, default_value="")
+    BufferAllocParameters = device_property(dtype=str, default_value="")
+    BufferMallocTrimPad = device_property(dtype=int, default_value=0)
+    TangoEvent = device_property(dtype=bool, default_value=False)
+    SavingMaxConcurrentWritingTask = device_property(dtype=int, default_value=1)
+    SavingZBufferParameters = device_property(dtype=str, default_value="")
 
     _ImageOpModes = {
         "HardOnly": core.CtImage.ImageOpMode.HardOnly,
@@ -395,21 +462,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             self.__image_events_max_rate = max_rate
 
     # ------------------------------------------------------------------
-    #    Device constructor
-    # ------------------------------------------------------------------
-    def __init__(self, *args):
-        super().__init__(*args)
-        self.__className2deviceName = {}
-        self.init_device()
-        self.__lima_control = None
-
-        self.__key_header_delimiter = "="
-        self.__entry_header_delimiter = "\n"
-        self.__image_number_header_delimiter = ";"
-        self.__readImage_frame_number = 0
-        self.__configInit = False
-
-    # ------------------------------------------------------------------
     #    Device destructor
     # ------------------------------------------------------------------
     @core.DEB_MEMBER_FUNCT
@@ -429,8 +481,19 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     # ------------------------------------------------------------------
     @core.DEB_MEMBER_FUNCT
     def init_device(self):
+        # NOTE: not a bare super() call - DEB_MEMBER_FUNCT rebuilds the
+        # function object and chokes on the implicit __class__ closure cell
+        # a zero-arg super() creates. See MIGRATION_ROADMAP.md.
+        Device.init_device(self)
+
+        self.__lima_control = None
+        self.__key_header_delimiter = "="
+        self.__entry_header_delimiter = "\n"
+        self.__image_number_header_delimiter = ";"
+        self.__readImage_frame_number = 0
+        self.__configInit = False
+
         self.set_state(PyTango.DevState.ON)
-        self.get_device_properties(self.get_device_class())
         self.__className2deviceName = get_sub_devices()
 
         TacoSpecificName.append(self.LimaCameraType)
@@ -798,7 +861,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             )
 
         # Acquisition number
-        self.acq_tag = self.AcqTagNone
+        self._acq_tag = self.AcqTagNone
         self.last_acq_tag = self.AcqTagNone
 
     @core.DEB_MEMBER_FUNCT
@@ -872,6 +935,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             return functools.partial(method, param=param, getter=getter, setter=setter)
         return None
 
+    @command
     def gc(self):
         import gc
 
@@ -913,83 +977,91 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     #
     # ==================================================================
 
-    ## @brief Read the Lima Type
-    #
+    # ------------------------------------------------------------------
+    #    Identification / status domain (Phase 3 slice 1)
+    # ------------------------------------------------------------------
+    @attribute(dtype=str, access=AttrWriteType.READ, doc="The lima core library version number")
     @RequiresSystemFeature("core.CtControl.getVersion")
     @core.DEB_MEMBER_FUNCT
-    def read_lima_version(self, attr):
-        value = self.__control.getVersion()
-        attr.set_value(value)
+    def lima_version(self):
+        return self.__control.getVersion()
 
+    @attribute(dtype=str, access=AttrWriteType.READ, doc="LImA camera type")
     @core.DEB_MEMBER_FUNCT
-    def read_lima_type(self, attr):
-        value = self.LimaCameraType
-        attr.set_value(value)
+    def lima_type(self):
+        return self.LimaCameraType
 
-    ## @brief Read the Camera Type
-    #
+    @attribute(dtype=str, access=AttrWriteType.READ, doc="Like lima_type but in upper-case")
     @core.DEB_MEMBER_FUNCT
-    def read_camera_type(self, attr):
-        value = self.__detinfo.getDetectorType()
-        attr.set_value(value)
+    def camera_type(self):
+        return self.__detinfo.getDetectorType()
 
-    ## @brief Read the Camera Model
-    #
+    @attribute(dtype=str, access=AttrWriteType.READ, doc="Camera model returned by the detector layer")
     @core.DEB_MEMBER_FUNCT
-    def read_camera_model(self, attr):
-        value = self.__detinfo.getDetectorModel()
-        attr.set_value(value)
+    def camera_model(self):
+        return self.__detinfo.getDetectorModel()
 
-    ## @brief Read the User-defined Camera name
-    #
+    @attribute(
+        dtype=str,
+        access=AttrWriteType.READ_WRITE,
+        label="user detector name",
+        doc="A user defined detector name, will be saved in the saved file header",
+    )
     @RequiresSystemFeature("core.HwDetInfoCtrlObj.getUserDetectorName")
     @core.DEB_MEMBER_FUNCT
-    def read_user_detector_name(self, attr):
-        value = self.__detinfo.getUserDetectorName()
-        attr.set_value(value)
+    def user_detector_name(self):
+        return self.__detinfo.getUserDetectorName()
 
-    ## @brief Write the User-defined Camera name
-    #
+    @user_detector_name.setter
     @RequiresSystemFeature("core.HwDetInfoCtrlObj.setUserDetectorName")
     @core.DEB_MEMBER_FUNCT
-    def write_user_detector_name(self, attr):
-        data = attr.get_write_value()
+    def user_detector_name(self, data):
         self.__detinfo.setUserDetectorName(data)
 
-    ## @brief Read the user instrument name
-    #
+    @attribute(
+        dtype=str,
+        access=AttrWriteType.READ_WRITE,
+        label="instrument/beamline name",
+        doc="the instrument/beamline name, will be saved in the saved file header",
+    )
     @RequiresSystemFeature("core.HwDetInfoCtrlObj.getInstrumentName")
     @core.DEB_MEMBER_FUNCT
-    def read_user_instrument_name(self, attr):
-        value = self.__detinfo.getInstrumentName()
-        attr.set_value(value)
+    def user_instrument_name(self):
+        return self.__detinfo.getInstrumentName()
 
-    ## @brief Write the user instrument name
-    #
+    @user_instrument_name.setter
     @RequiresSystemFeature("core.HwDetInfoCtrlObj.setInstrumentName")
     @core.DEB_MEMBER_FUNCT
-    def write_user_instrument_name(self, attr):
-        data = attr.get_write_value()
+    def user_instrument_name(self, data):
         self.__detinfo.setInstrumentName(data)
 
-    ## @brief Read the Camera pixelsize
-    #
+    @attribute(
+        dtype=(float,),
+        max_dim_x=2,
+        access=AttrWriteType.READ,
+        label="Pixel size:x_size, y_size",
+        unit="meter",
+        standard_unit="meter",
+        display_unit="meter",
+        format="%f",
+        doc="Size of the pixel in meter",
+    )
     @core.DEB_MEMBER_FUNCT
-    def read_camera_pixelsize(self, attr):
-        value = self.__detinfo.getPixelSize()
-        attr.set_value(value)
+    def camera_pixelsize(self):
+        return self.__detinfo.getPixelSize()
 
-    ## @brief get the status of the acquisition
-    #
+    # ------------------------------------------------------------------
+    #    Acquisition status domain (Phase 3 slice 3)
+    # ------------------------------------------------------------------
+    @attribute(dtype=str, access=AttrWriteType.READ, doc="Acquisition status: Ready, Running, Fault or Configuration")
     @core.DEB_MEMBER_FUNCT
-    def read_acq_status(self, attr):
+    def acq_status(self):
         status = self.__control.getStatus()
-        attr.set_value(_acqstate2string(status.AcquisitionStatus))
+        return _acqstate2string(status.AcquisitionStatus)
 
-    ## @brief get the errir message when acq_status is in Fault stat
-    #
+    @attribute(dtype=str, access=AttrWriteType.READ, doc="In case of Fault state, the error message")
     @core.DEB_MEMBER_FUNCT
-    def read_acq_status_fault_error(self, attr):
+    def acq_status_fault_error(self):
         status = self.__control.getStatus()
         state2string = {
             core.CtControl.ErrorCode.NoError: "No error",
@@ -1003,558 +1075,1086 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
             core.CtControl.ErrorCode.ProcessingOverun: "Processing: overun",
             core.CtControl.ErrorCode.CameraError: "Camera: error",
         }
-        attr.set_value(state2string.get(status.Error, "?"))
+        return state2string.get(status.Error, "?")
 
-    ## @brief get the acquisition tag
-    #
+    # NOTE: storage renamed self._acq_tag - the Tango attribute name
+    # "acq_tag" can't also be the plain instance attribute the rest of the
+    # class (prepareAcq, init_device) reads/writes as internal state, now
+    # that "acq_tag" is a class-level attribute() descriptor.
+    @attribute(dtype=tango.CmdArgType.DevULong64, access=AttrWriteType.READ_WRITE, doc="Acquisition tag, included in DATA_ARRAY header (from v4)")
     @core.DEB_MEMBER_FUNCT
-    def read_acq_tag(self, attr):
-        acq_tag = self.acq_tag
+    def acq_tag(self):
+        acq_tag = self._acq_tag
         deb.Return("acq_tag=%s (0x%08x)" % (acq_tag, acq_tag))
-        attr.set_value(acq_tag)
+        return acq_tag
 
-    ## @brief set the acquisition tag
-    #
+    @acq_tag.setter
     @core.DEB_MEMBER_FUNCT
-    def write_acq_tag(self, attr):
-        acq_tag = attr.get_write_value()
+    def acq_tag(self, acq_tag):
         deb.Param("acq_tag=%s (0x%08x)" % (acq_tag, acq_tag))
-        self.acq_tag = acq_tag
+        self._acq_tag = acq_tag
 
-    ## @brief read the number of frame for an acquisition
-    #
+    # ------------------------------------------------------------------
+    #    Acquisition domain (Phase 3 slice 4)
+    # ------------------------------------------------------------------
+    # acq_mode, acc_time_mode and acq_trigger_mode had no explicit
+    # read_X/write_X in the legacy code - they went through the
+    # __getattr__ + get_attr_4u naming-convention dispatch instead
+    # (acq_trigger_mode via its __Attribute2FunctionBase override to
+    # "TriggerMode"). Written out directly here rather than through
+    # make_fget_fset() since the enum dicts are per-instance state set in
+    # init_device, not fixed class-level constants like AttrHelper expects.
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Acquisition mode: Single, Concatenation or Accumulation")
     @core.DEB_MEMBER_FUNCT
-    def read_acq_nb_frames(self, attr):
-        acquisition = self.__control.acquisition()
-        nb_frames = acquisition.getAcqNbFrames()
-        attr.set_value(nb_frames)
+    def acq_mode(self):
+        return getDictKey(self.__AcqMode, self.__control.acquisition().getAcqMode())
 
-    ## @brief write the number of frame for an acquisition
-    #
+    @acq_mode.setter
     @core.DEB_MEMBER_FUNCT
-    def write_acq_nb_frames(self, attr):
-        data = attr.get_write_value()
-        acquisition = self.__control.acquisition()
-        acquisition.setAcqNbFrames(data)
-
-    ## @brief read the number of frame for an acquisition
-    #
-    @core.DEB_MEMBER_FUNCT
-    def read_acq_expo_time(self, attr):
-        acquisition = self.__control.acquisition()
-        expo_time = acquisition.getAcqExpoTime()
-        attr.set_value(expo_time)
-
-    ## @brief write the number of frame for an acquisition
-    #
-    @core.DEB_MEMBER_FUNCT
-    def write_acq_expo_time(self, attr):
-        data = attr.get_write_value()
-        acquisition = self.__control.acquisition()
-        acquisition.setAcqExpoTime(data)
-
-    ## @brief Read maximum accumulation exposure time
-    #
-    @core.DEB_MEMBER_FUNCT
-    def read_acc_max_expo_time(self, attr):
-        acq = self.__control.acquisition()
-
-        value = acq.getAccMaxExpoTime()
+    def acq_mode(self, data):
+        value = getDictValue(self.__AcqMode, data.upper())
         if value is None:
-            value = -1
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value acq_mode: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.acquisition().setAcqMode(value)
 
-        attr.set_value(value)
-
-    ## @brief Write the accumulation max exposure time
-    #
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Trigger mode")
     @core.DEB_MEMBER_FUNCT
-    def write_acc_max_expo_time(self, attr):
-        data = attr.get_write_value()
-        acq = self.__control.acquisition()
-        acq.setAccMaxExpoTime(data)
+    def acq_trigger_mode(self):
+        return getDictKey(self.__AcqTriggerMode, self.__control.acquisition().getTriggerMode())
 
-    ## @brief Read maximum accumulation exposure time
-    #
+    @acq_trigger_mode.setter
     @core.DEB_MEMBER_FUNCT
-    def read_concat_nb_frames(self, attr):
-        acq = self.__control.acquisition()
-        value = acq.getConcatNbFrames()
-        attr.set_value(value)
-
-    ## @brief Write the accumulation max exposure time
-    #
-    @core.DEB_MEMBER_FUNCT
-    def write_concat_nb_frames(self, attr):
-        data = attr.get_write_value()
-        acq = self.__control.acquisition()
-        acq.setConcatNbFrames(data)
-
-    ## @brief Read calculated accumulation exposure time
-    #
-    @core.DEB_MEMBER_FUNCT
-    def read_acc_expo_time(self, attr):
-        acq = self.__control.acquisition()
-
-        value = acq.getAccExpoTime()
+    def acq_trigger_mode(self, data):
+        value = getDictValue(self.__AcqTriggerMode, data.upper())
         if value is None:
-            value = -1
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value acq_trigger_mode: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.acquisition().setTriggerMode(value)
 
-        attr.set_value(value)
-
-    ## @brief Read calculated accumulation number of frames
-    #
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="Number of frames to be acquired, default is 1 frame")
     @core.DEB_MEMBER_FUNCT
-    def read_acc_nb_frames(self, attr):
-        acq = self.__control.acquisition()
-        value = acq.getAccNbFrames()
+    def acq_nb_frames(self):
+        return self.__control.acquisition().getAcqNbFrames()
+
+    @acq_nb_frames.setter
+    @core.DEB_MEMBER_FUNCT
+    def acq_nb_frames(self, data):
+        self.__control.acquisition().setAcqNbFrames(data)
+
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE, doc="The exposure time of the image, default is 1 second")
+    @core.DEB_MEMBER_FUNCT
+    def acq_expo_time(self):
+        return self.__control.acquisition().getAcqExpoTime()
+
+    @acq_expo_time.setter
+    @core.DEB_MEMBER_FUNCT
+    def acq_expo_time(self, data):
+        self.__control.acquisition().setAcqExpoTime(data)
+
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="The nb of frames to concatenate in one image")
+    @core.DEB_MEMBER_FUNCT
+    def concat_nb_frames(self):
+        return self.__control.acquisition().getConcatNbFrames()
+
+    @concat_nb_frames.setter
+    @core.DEB_MEMBER_FUNCT
+    def concat_nb_frames(self, data):
+        self.__control.acquisition().setConcatNbFrames(data)
+
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE, doc="Latency time in second between two frame acquisitions")
+    @core.DEB_MEMBER_FUNCT
+    def latency_time(self):
+        value = self.__control.acquisition().getLatencyTime()
+        return -1 if value is None else value
+
+    @latency_time.setter
+    @core.DEB_MEMBER_FUNCT
+    def latency_time(self, data):
+        self.__control.acquisition().setLatencyTime(data)
+
+    @attribute(
+        dtype=(float,),
+        max_dim_x=4,
+        access=AttrWriteType.READ,
+        label="valid time ranges: min_exposure, max_exposure, min_latency, max_latency",
+        unit="second",
+        standard_unit="second",
+        display_unit="second",
+        format="%f",
+        doc="min_exposure, max_exposure, min_latency, max_latency",
+    )
+    @core.DEB_MEMBER_FUNCT
+    def valid_ranges(self):
+        interface = self.__control.hwInterface()
+        sync = interface.getHwCtrlObj(core.HwCap.Type.Sync)
+        ranges = sync.getValidRanges()
+        return [
+            ranges.min_exp_time,
+            ranges.max_exp_time,
+            ranges.min_lat_time,
+            ranges.max_lat_time,
+        ]
+
+    # ------------------------------------------------------------------
+    #    Accumulation domain (Phase 3 slice 5)
+    # ------------------------------------------------------------------
+    # acc_time_mode routes to CtAcquisition, not CtAccumulation (see
+    # __Name2SubClass in init_device) - grouped here with the other acc_*
+    # attributes by name for readability, not by dispatch target.
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Accumulation time mode: Live or Real")
+    @core.DEB_MEMBER_FUNCT
+    def acc_time_mode(self):
+        return getDictKey(self.__AccTimeMode, self.__control.acquisition().getAccTimeMode())
+
+    @acc_time_mode.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_time_mode(self, data):
+        value = getDictValue(self.__AccTimeMode, data.upper())
         if value is None:
-            value = -1
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value acc_time_mode: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.acquisition().setAccTimeMode(value)
 
-        attr.set_value(value)
-
-    ## @brief Read calculated accumulation dead time
-    #
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE, doc="The maximum exposure time per frame for accumulation")
     @core.DEB_MEMBER_FUNCT
-    def read_acc_dead_time(self, attr):
-        acq = self.__control.acquisition()
-        value = acq.getAccDeadTime()
+    def acc_max_expo_time(self):
+        value = self.__control.acquisition().getAccMaxExpoTime()
+        return -1 if value is None else value
 
-        attr.set_value(value)
-
-    ## @brief Read calculated accumulation live time
-    #
+    @acc_max_expo_time.setter
     @core.DEB_MEMBER_FUNCT
-    def read_acc_live_time(self, attr):
-        acq = self.__control.acquisition()
-        value = acq.getAccLiveTime()
+    def acc_max_expo_time(self, data):
+        self.__control.acquisition().setAccMaxExpoTime(data)
 
-        attr.set_value(value)
-
-    ## @brief Read if saturated calculation is active
-    #
+    # acc_mode/acc_filter/acc_operation/acc_threshold_before/
+    # acc_offset_before/acc_hw_nb_buffers had no explicit read_X/write_X in
+    # the legacy code - see __Attribute2FunctionBase's overrides
+    # ("acc_mode" -> "Mode" etc.) and the per-instance enum dicts set in
+    # init_device (empty/absent on old Lima core versions, in which case
+    # they behave as plain passthrough values, same as get_attr_4u's
+    # `if d:` fallback - see AttrHelper.make_fget_fset's enum handling).
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Select the mode of accumulation")
     @core.DEB_MEMBER_FUNCT
-    def read_acc_saturated_active(self, attr):
-        acc = self.__control.accumulation()
-        value = acc.getActive()
+    def acc_mode(self):
+        return getDictKey(self.__AccMode, self.__control.accumulation().getMode())
 
-        attr.set_value(value)
-
-    ## @brief active/unactive calculation of saturated images and counters
-    #
+    @acc_mode.setter
     @core.DEB_MEMBER_FUNCT
-    def write_acc_saturated_active(self, attr):
-        data = attr.get_write_value()
+    def acc_mode(self, data):
+        value = getDictValue(self.__AccMode, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value acc_mode: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.accumulation().setMode(value)
 
-        acc = self.__control.accumulation()
-        acc.setActive(data)
-
-    ## @brief Read saturated threshold
-    #
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Select the filter to apply in accumulation")
     @core.DEB_MEMBER_FUNCT
-    def read_acc_saturated_threshold(self, attr):
-        acc = self.__control.accumulation()
-        value = acc.getPixelThresholdValue()
+    def acc_filter(self):
+        return getDictKey(self.__AccFilter, self.__control.accumulation().getFilter())
 
-        attr.set_value(value)
-
-    ## @brief Set saturated threshold
-    #
+    @acc_filter.setter
     @core.DEB_MEMBER_FUNCT
-    def write_acc_saturated_threshold(self, attr):
-        data = attr.get_write_value()
-        acc = self.__control.accumulation()
-        acc.setPixelThresholdValue(data)
+    def acc_filter(self, data):
+        value = getDictValue(self.__AccFilter, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value acc_filter: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.accumulation().setFilter(value)
 
-    ## @brief Read if saturated calculation is active
-    #
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Operation applied to each pixel over the accumulation window")
     @core.DEB_MEMBER_FUNCT
-    def read_acc_saturated_cblevel(self, attr):
+    def acc_operation(self):
+        return getDictKey(self.__AccOperation, self.__control.accumulation().getOperation())
+
+    @acc_operation.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_operation(self, data):
+        value = getDictValue(self.__AccOperation, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value acc_operation: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.accumulation().setOperation(value)
+
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="Threshold value, lower pixel values (noise) are discarded from the accumulation")
+    @core.DEB_MEMBER_FUNCT
+    def acc_threshold_before(self):
+        return self.__control.accumulation().getThresholdBefore()
+
+    @acc_threshold_before.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_threshold_before(self, data):
+        self.__control.accumulation().setThresholdBefore(data)
+
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="Offset value to be subtracted to each pixel value")
+    @core.DEB_MEMBER_FUNCT
+    def acc_offset_before(self):
+        return self.__control.accumulation().getOffsetBefore()
+
+    @acc_offset_before.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_offset_before(self, data):
+        self.__control.accumulation().setOffsetBefore(data)
+
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="Number of buffers allocated by the HW plugin in accumulation mode")
+    @core.DEB_MEMBER_FUNCT
+    def acc_hw_nb_buffers(self):
+        return self.__control.accumulation().getHwNbBuffers()
+
+    @acc_hw_nb_buffers.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_hw_nb_buffers(self, data):
+        self.__control.accumulation().setHwNbBuffers(data)
+
+    @attribute(dtype=float, access=AttrWriteType.READ, doc="The effective accumulation total exposure time")
+    @core.DEB_MEMBER_FUNCT
+    def acc_expo_time(self):
+        value = self.__control.acquisition().getAccExpoTime()
+        return -1 if value is None else value
+
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="The calculated accumulation number of frames per image")
+    @core.DEB_MEMBER_FUNCT
+    def acc_nb_frames(self):
+        value = self.__control.acquisition().getAccNbFrames()
+        return -1 if value is None else value
+
+    @attribute(dtype=float, access=AttrWriteType.READ, doc="Total accumulation dead time")
+    @core.DEB_MEMBER_FUNCT
+    def acc_dead_time(self):
+        return self.__control.acquisition().getAccDeadTime()
+
+    @attribute(dtype=float, access=AttrWriteType.READ, doc="Total accumulation live time")
+    @core.DEB_MEMBER_FUNCT
+    def acc_live_time(self):
+        return self.__control.acquisition().getAccLiveTime()
+
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE, doc="Activate the saturation counters (i.e. readAccSaturated commands)")
+    @core.DEB_MEMBER_FUNCT
+    def acc_saturated_active(self):
+        return self.__control.accumulation().getActive()
+
+    @acc_saturated_active.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_saturated_active(self, data):
+        self.__control.accumulation().setActive(data)
+
+    @attribute(dtype=tango.CmdArgType.DevLong64, access=AttrWriteType.READ_WRITE, doc="The threshold for counting saturated pixels")
+    @core.DEB_MEMBER_FUNCT
+    def acc_saturated_threshold(self):
+        return self.__control.accumulation().getPixelThresholdValue()
+
+    @acc_saturated_threshold.setter
+    @core.DEB_MEMBER_FUNCT
+    def acc_saturated_threshold(self, data):
+        self.__control.accumulation().setPixelThresholdValue(data)
+
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="Level of total saturated pixels that triggers the threshold callback plugin")
+    @core.DEB_MEMBER_FUNCT
+    def acc_saturated_cblevel(self):
         if self.__accThresholdCallback is not None:
-            attr.set_value(self.__accThresholdCallback.m_max)
-        else:
-            attr.set_value(-1)
+            return self.__accThresholdCallback.m_max
+        return -1
 
-    ## @brief active/unactive calculation of saturated images and counters
-    #
+    @acc_saturated_cblevel.setter
     @core.DEB_MEMBER_FUNCT
-    def write_acc_saturated_cblevel(self, attr):
-        data = attr.get_write_value()
+    def acc_saturated_cblevel(self, data):
         if self.__accThresholdCallback is not None:
             self.__accThresholdCallback.m_max = data
         else:
-            msg = "Accumulation threshold plugins not loaded"
-            deb.Error(msg)
+            deb.Error("Accumulation threshold plugins not loaded")
 
-    ## @brief Read the output image type (after acumulation)
-    #
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The out image type after accumulation")
     @core.DEB_MEMBER_FUNCT
-    def read_acc_out_type(self, attr):
-        acc = self.__control.accumulation()
-        imageType = acc.getOutputType()
-        stringType = self.ImageType2String.get(imageType, "?")
+    def acc_out_type(self):
+        imageType = self.__control.accumulation().getOutputType()
+        return self.ImageType2String.get(imageType, "?")
 
-        attr.set_value(stringType)
-
-    ## @brief Write the output image type (after acumulation)
-    #
+    @acc_out_type.setter
     @core.DEB_MEMBER_FUNCT
-    def write_acc_out_type(self, attr):
-        stringType = attr.get_write_value()
+    def acc_out_type(self, stringType):
         imageType = self.String2ImageType.get(stringType)
-        if imageType is not None:
-            acc = self.__control.accumulation()
-            acc.setOutputType(imageType)
-        else:
+        if imageType is None:
             PyTango.Except.throw_exception(
                 "WrongData",
                 "Wrong value %s: %s" % ("acc_out_type", stringType),
                 "LimaCCD Class",
             )
+        self.__control.accumulation().setOutputType(imageType)
 
-    ## @brief Read latency time
-    #
+    # acc_buffer_* built with _make_buffer_param_fget_fset() - see the
+    # buffer domain section below for the helper and buffer_alloc_*.
+    _acc_buffer_init_mem_fget, _acc_buffer_init_mem_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.accumulation(), "Buffer", "initMem"
+    )
+    acc_buffer_init_mem = attribute(
+        dtype=bool, access=AttrWriteType.READ_WRITE,
+        doc="Whether to initialize (force-allocate) accumulation buffer memory right away",
+        fget=_acc_buffer_init_mem_fget, fset=_acc_buffer_init_mem_fset,
+    )
+
+    _acc_buffer_duration_policy_fget, _acc_buffer_duration_policy_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.accumulation(), "Buffer", "durationPolicy", enum_key="durationPolicy"
+    )
+    acc_buffer_duration_policy = attribute(
+        dtype=str, access=AttrWriteType.READ_WRITE,
+        doc="Duration policy for accumulation buffers: EPHEMERAL or PERSISTENT",
+        fget=_acc_buffer_duration_policy_fget, fset=_acc_buffer_duration_policy_fset,
+    )
+
+    _acc_buffer_size_policy_fget, _acc_buffer_size_policy_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.accumulation(), "Buffer", "sizePolicy", enum_key="sizePolicy"
+    )
+    acc_buffer_size_policy = attribute(
+        dtype=str, access=AttrWriteType.READ_WRITE,
+        doc="Pool size policy for accumulation buffers: AUTOMATIC or FIXED",
+        fget=_acc_buffer_size_policy_fget, fset=_acc_buffer_size_policy_fset,
+    )
+
+    _acc_buffer_req_mem_size_percent_fget, _acc_buffer_req_mem_size_percent_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.accumulation(), "Buffer", "reqMemSizePercent"
+    )
+    acc_buffer_req_mem_size_percent = attribute(
+        dtype=float, access=AttrWriteType.READ_WRITE,
+        doc="Max percentage of system memory usable for accumulation buffers",
+        fget=_acc_buffer_req_mem_size_percent_fget, fset=_acc_buffer_req_mem_size_percent_fset,
+    )
+
+    # ------------------------------------------------------------------
+    #    Image domain (Phase 3 slice 6)
+    # ------------------------------------------------------------------
+    @attribute(dtype=(int,), max_dim_x=4, access=AttrWriteType.READ_WRITE, doc="Region Of Interest on image: BeginX, BeginY, Width, Height")
     @core.DEB_MEMBER_FUNCT
-    def read_latency_time(self, attr):
-        acq = self.__control.acquisition()
-
-        value = acq.getLatencyTime()
-        if value is None:
-            value = -1
-
-        attr.set_value(value)
-
-    ## @brief Write Latency time
-    #
-    @core.DEB_MEMBER_FUNCT
-    def write_latency_time(self, attr):
-        data = attr.get_write_value()
-        acq = self.__control.acquisition()
-
-        acq.setLatencyTime(data)
-
-    ## @brief Read the valid latency and exposure valid ranges
-    #
-    @core.DEB_MEMBER_FUNCT
-    def read_valid_ranges(self, attr):
-        interface = self.__control.hwInterface()
-        sync = interface.getHwCtrlObj(core.HwCap.Type.Sync)
-        ranges = sync.getValidRanges()
-        attr.set_value(
-            [
-                ranges.min_exp_time,
-                ranges.max_exp_time,
-                ranges.min_lat_time,
-                ranges.max_lat_time,
-            ]
-        )
-
-    ## @brief Read image Roi
-    #
-    @core.DEB_MEMBER_FUNCT
-    def read_image_roi(self, attr):
+    def image_roi(self):
         image = self.__control.image()
         roi = image.getRoi()
         point = roi.getTopLeft()
         size = roi.getSize()
+        return [point.x, point.y, size.getWidth(), size.getHeight()]
 
-        attr.set_value([point.x, point.y, size.getWidth(), size.getHeight()])
-
-    ## @brief Write image Roi
-    #
+    @image_roi.setter
     @core.DEB_MEMBER_FUNCT
-    def write_image_roi(self, attr):
-        data = attr.get_write_value()
-        image = self.__control.image()
-        roi = core.Roi(*data)
-        image.setRoi(roi)
+    def image_roi(self, data):
+        self.__control.image().setRoi(core.Roi(*data))
 
-    ## @brief Read image sizes
-    #
+    @attribute(
+        dtype=(int,),
+        max_dim_x=4,
+        access=AttrWriteType.READ,
+        label="Image sizes:Signed, Depth, Width, Height",
+        unit="",
+        standard_unit="",
+        display_unit="",
+        format="%d",
+        doc="Signed ,nb bytes of depth, nb pixels of width and nb pixels of height",
+    )
     @core.DEB_MEMBER_FUNCT
-    def read_image_sizes(self, attr):
+    def image_sizes(self):
         image = self.__control.image()
         imageType = image.getImageType()
         dim = image.getImageDim()
         depth, signed = self.ImageType2NbBytes.get(imageType, (0, 0))
-        sizes = [signed, depth, dim.getSize().getWidth(), dim.getSize().getHeight()]
+        return [signed, depth, dim.getSize().getWidth(), dim.getSize().getHeight()]
 
-        attr.set_value(sizes)
-
-    ## @brief Read max image dimension in width and height pixels
-    #
+    @attribute(
+        dtype=(int,),
+        max_dim_x=2,
+        access=AttrWriteType.READ,
+        label="Width, Height",
+        unit="pixel",
+        format="%d",
+        doc="Max width and height in pixel",
+    )
     @core.DEB_MEMBER_FUNCT
-    def read_image_max_dim(self, attr):
+    def image_max_dim(self):
         size = self.__detinfo.getMaxImageSize()
-        dim = [size.getWidth(), size.getHeight()]
+        return [size.getWidth(), size.getHeight()]
 
-        attr.set_value(dim)
-
-    ## @brief Read image type
-    #
+    @attribute(dtype=str, access=AttrWriteType.READ, doc="Current image data type (bit per pixel, signed or unsigned)")
     @core.DEB_MEMBER_FUNCT
-    def read_image_type(self, attr):
-        image = self.__control.image()
-        imageType = image.getImageType()
-        stringType = self.ImageType2String.get(imageType, "?")
+    def image_type(self):
+        imageType = self.__control.image().getImageType()
+        return self.ImageType2String.get(imageType, "?")
 
-        attr.set_value(stringType)
-
-    ## @brief Read image width
-    #
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="Width size of the detector in pixel")
     @core.DEB_MEMBER_FUNCT
-    def read_image_width(self, attr):
-        image = self.__control.image()
-        dim = image.getImageDim()
+    def image_width(self):
+        return self.__control.image().getImageDim().getSize().getWidth()
 
-        attr.set_value(dim.getSize().getWidth())
-
-    ## @brief Read image height
-    #
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="Height size of the detector in pixel")
     @core.DEB_MEMBER_FUNCT
-    def read_image_height(self, attr):
-        image = self.__control.image()
-        dim = image.getImageDim()
+    def image_height(self):
+        return self.__control.image().getImageDim().getSize().getHeight()
 
-        attr.set_value(dim.getSize().getHeight())
-
-    ## @brief Read image binning
-    #
+    @attribute(dtype=(int,), max_dim_x=2, access=AttrWriteType.READ_WRITE, doc="Binning on image: factor on X, factor on Y")
     @core.DEB_MEMBER_FUNCT
-    def read_image_bin(self, attr):
-        image = self.__control.image()
-        binValues = image.getBin()
+    def image_bin(self):
+        binValues = self.__control.image().getBin()
+        return [binValues.getX(), binValues.getY()]
 
-        attr.set_value([binValues.getX(), binValues.getY()])
-
-    ## @brief Write image binning
-    #
+    @image_bin.setter
     @core.DEB_MEMBER_FUNCT
-    def write_image_bin(self, attr):
-        data = attr.get_write_value()
+    def image_bin(self, data):
+        self.__control.image().setBin(core.Bin(*data))
 
-        image = self.__control.image()
-        binValue = core.Bin(*data)
-        image.setBin(binValue)
-
-    ## @brief Read image flip
-    #
+    # image_bin_mode/image_rotation had no explicit read_X/write_X in the
+    # legacy code - see __Attribute2FunctionBase's "BinMode"/"Rotation"
+    # overrides and the per-instance enum dicts set in init_device.
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Operation applied to each bin over the binned pixels: SUM or MEAN")
     @core.DEB_MEMBER_FUNCT
-    def read_image_flip(self, attr):
-        image = self.__control.image()
-        flip = image.getFlip()
-        attr.set_value([flip.x, flip.y])
+    def image_bin_mode(self):
+        return getDictKey(self.__ImageBinMode, self.__control.image().getBinMode())
 
-    ## @brief Write image flip
-    #
+    @image_bin_mode.setter
     @core.DEB_MEMBER_FUNCT
-    def write_image_flip(self, attr):
-        data = attr.get_write_value()
+    def image_bin_mode(self, data):
+        value = getDictValue(self.__ImageBinMode, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value image_bin_mode: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.image().setBinMode(value)
+
+    @attribute(dtype=(bool,), max_dim_x=2, access=AttrWriteType.READ_WRITE, doc="Flip on the image: over X axis, over Y axis")
+    @core.DEB_MEMBER_FUNCT
+    def image_flip(self):
+        flip = self.__control.image().getFlip()
+        return [flip.x, flip.y]
+
+    @image_flip.setter
+    @core.DEB_MEMBER_FUNCT
+    def image_flip(self, data):
         flip = core.Flip(bool(data[0]), bool(data[1]))
-        image = self.__control.image()
-        image.setFlip(flip)
+        self.__control.image().setFlip(flip)
 
-    ## @brief Read common header
-    #
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Rotate the image: 0, 90, 180 or 270")
     @core.DEB_MEMBER_FUNCT
-    def read_saving_common_header(self, attr):
-        saving = self.__control.saving()
-        header = saving.getCommonHeader()
-        headerArr = [
-            "%s%s%s" % (k, self.__key_header_delimiter, v) for k, v in header.items()
-        ]
-        attr.set_value(headerArr)
+    def image_rotation(self):
+        return getDictKey(self.__ImageRotation, self.__control.image().getRotation())
 
-    ## @brief Write common header
-    #
+    @image_rotation.setter
     @core.DEB_MEMBER_FUNCT
-    def write_saving_common_header(self, attr):
-        data = attr.get_write_value()
-        header = dict([x.split(self.__key_header_delimiter, 1) for x in data])
-        saving = self.__control.saving()
-        saving.setCommonHeader(header)
+    def image_rotation(self, data):
+        value = getDictValue(self.__ImageRotation, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value image_rotation: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.image().setRotation(value)
 
-    ## @brief Read header delimiter
-    #
+    @attribute(dtype=tango.CmdArgType.DevEncoded, access=AttrWriteType.READ, doc="Last acquired image, DATA_ARRAY encoded")
     @core.DEB_MEMBER_FUNCT
-    def read_saving_header_delimiter(self, attr):
-        attr.set_value(
-            [
-                self.__key_header_delimiter,
-                self.__entry_header_delimiter,
-                self.__image_number_header_delimiter,
-            ],
-        )
-
-    ##@brief Write header delimiter
-    #
-    def write_saving_header_delimiter(self, attr):
-        data = attr.get_write_value()
-        self.__key_header_delimiter = data[0]
-        self.__entry_header_delimiter = data[1]
-        self.__image_number_header_delimiter = data[2]
-
-    def read_saving_index_format(self, attr):
-        saving = self.__control.saving()
-        params = saving.getParameters()
-        attr.set_value(params.indexFormat)
-
-    def write_saving_index_format(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-        params = saving.getParameters()
-        params.indexFormat = data
-        saving.setParameters(params)
-
-    ## @brief last image
-    #
-    @core.DEB_MEMBER_FUNCT
-    def read_last_image(self, attr):
+    def last_image(self):
         status = self.__control.getStatus()
         last_img_ready = status.ImageCounters.LastImageReady
         image = self.__control.ReadImage(last_img_ready)
         # workaround for PyTango #147
         self._lidata = self._image_2_data_array(image, self.DataArrayCategory.Image)
-        attr.set_value("DATA_ARRAY", self._lidata)
+        return ("DATA_ARRAY", self._lidata)
 
-    ## @brief last image acquired
-    #
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="The last acquired image number")
     @core.DEB_MEMBER_FUNCT
-    def read_last_image_acquired(self, attr):
-        status = self.__control.getStatus()
-        img_counters = status.ImageCounters
+    def last_image_acquired(self):
+        return self.__control.getStatus().ImageCounters.LastImageAcquired
 
-        value = img_counters.LastImageAcquired
-        attr.set_value(value)
-
-    ## @brief last base image acquired
-    #
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="The last base (before treatment) image ready")
     @core.DEB_MEMBER_FUNCT
-    def read_last_base_image_ready(self, attr):
-        status = self.__control.getStatus()
-        img_counters = status.ImageCounters
+    def last_base_image_ready(self):
+        return self.__control.getStatus().ImageCounters.LastBaseImageReady
 
-        value = img_counters.LastBaseImageReady
-        attr.set_value(value)
-
-    ## @brief Read last image ready
-    #
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="The last acquired image number, ready for reading")
     @core.DEB_MEMBER_FUNCT
-    def read_last_image_ready(self, attr):
-        status = self.__control.getStatus()
-        img_counters = status.ImageCounters
+    def last_image_ready(self):
+        return self.__control.getStatus().ImageCounters.LastImageReady
 
-        value = img_counters.LastImageReady
-
-        attr.set_value(value)
-
-    ## @brief last counter ready
-    #
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="Which image counter is last ready")
     @core.DEB_MEMBER_FUNCT
-    def read_last_counter_ready(self, attr):
-        status = self.__control.getStatus()
-        img_counters = status.ImageCounters
+    def last_counter_ready(self):
+        return self.__control.getStatus().ImageCounters.LastCounterReady
 
-        value = img_counters.LastCounterReady
-
-        attr.set_value(value)
-
-    ## @brief Read last image saved
-    #
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="The last saved image number")
     @core.DEB_MEMBER_FUNCT
-    def read_last_image_saved(self, attr):
-        status = self.__control.getStatus()
-        img_counters = status.ImageCounters
+    def last_image_saved(self):
+        value = self.__control.getStatus().ImageCounters.LastImageSaved
+        return -1 if value is None else value
 
-        value = img_counters.LastImageSaved
-        if value is None:
-            value = -1
-
-        attr.set_value(value)
-
-    ## @brief get if last_image attr pushes events
-    #
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE, doc="Whether the last_image attribute pushes Tango events")
     @core.DEB_MEMBER_FUNCT
-    def read_image_events_push_data(self, attr):
-        image_events = self.__image_status_cbk.getImageEventsPushData()
-        attr.set_value(image_events)
+    def image_events_push_data(self):
+        return self.__image_status_cbk.getImageEventsPushData()
 
-    ## @brief set if last_image attr pushes events
-    #
+    @image_events_push_data.setter
     @core.DEB_MEMBER_FUNCT
-    def write_image_events_push_data(self, attr):
-        image_events = attr.get_write_value()
+    def image_events_push_data(self, image_events):
         self.__image_status_cbk.setImageEventsPushData(image_events)
 
-    ## @brief get the max event generation rate
-    #
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE, doc="Max event generation rate for image events")
     @core.DEB_MEMBER_FUNCT
-    def read_image_events_max_rate(self, attr):
-        event_rate = self.__image_status_cbk.getImageEventsMaxRate()
-        attr.set_value(event_rate)
+    def image_events_max_rate(self):
+        return self.__image_status_cbk.getImageEventsMaxRate()
 
-    ## @brief set the max event generation rate
-    #
+    @image_events_max_rate.setter
     @core.DEB_MEMBER_FUNCT
-    def write_image_events_max_rate(self, attr):
-        event_rate = attr.get_write_value()
+    def image_events_max_rate(self, event_rate):
         self.__image_status_cbk.setImageEventsMaxRate(event_rate)
 
-    ## @brief this flag is true just after
-    #  the detector readout.
-    #
-    # This attribute should be use
-    #  to test is client can re-trigger an other image
+    @attribute(dtype=bool, access=AttrWriteType.READ, doc="True after a camera readout, otherwise false")
     @core.DEB_MEMBER_FUNCT
-    def read_ready_for_next_image(self, attr):
+    def ready_for_next_image(self):
         interface = self.__control.hwInterface()
         status = interface.getStatus()
         ready = status.det == core.DetStatus.DetIdle or status.det & core.DetStatus.DetWaitForTrigger
-        attr.set_value(bool(ready))
+        return bool(ready)
 
-    ## @brief this flag is true when acquisition is finished
-    #
+    @attribute(dtype=bool, access=AttrWriteType.READ, doc="True after end of acquisition, otherwise false")
     @core.DEB_MEMBER_FUNCT
-    def read_ready_for_next_acq(self, attr):
-        status = self.__control.getStatus()
-        attr.set_value(status.AcquisitionStatus == core.AcqStatus.AcqReady)
+    def ready_for_next_acq(self):
+        return self.__control.getStatus().AcquisitionStatus == core.AcqStatus.AcqReady
 
-    ## @brief read write statistic
-    #
-    # return saving_speed,compression_speed, compression_ratio,incoming_speed
+    # ------------------------------------------------------------------
+    #    Saving domain (Phase 3 slice 7)
+    # ------------------------------------------------------------------
+    @attribute(dtype=(str,), max_dim_x=65535, access=AttrWriteType.READ_WRITE, doc="Common header with multiple entries")
     @core.DEB_MEMBER_FUNCT
-    def read_saving_statistics(self, attr):
+    def saving_common_header(self):
+        header = self.__control.saving().getCommonHeader()
+        return [
+            "%s%s%s" % (k, self.__key_header_delimiter, v) for k, v in header.items()
+        ]
+
+    @saving_common_header.setter
+    @core.DEB_MEMBER_FUNCT
+    def saving_common_header(self, data):
+        header = dict([x.split(self.__key_header_delimiter, 1) for x in data])
+        self.__control.saving().setCommonHeader(header)
+
+    @attribute(dtype=(str,), max_dim_x=3, access=AttrWriteType.READ_WRITE, doc="The header delimiters: key, entry, image number")
+    @core.DEB_MEMBER_FUNCT
+    def saving_header_delimiter(self):
+        return [
+            self.__key_header_delimiter,
+            self.__entry_header_delimiter,
+            self.__image_number_header_delimiter,
+        ]
+
+    @saving_header_delimiter.setter
+    def saving_header_delimiter(self, data):
+        self.__key_header_delimiter = data[0]
+        self.__entry_header_delimiter = data[1]
+        self.__image_number_header_delimiter = data[2]
+
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The printf-style format for the saving index number")
+    def saving_index_format(self):
+        return self.__control.saving().getParameters().indexFormat
+
+    @saving_index_format.setter
+    def saving_index_format(self, data):
         saving = self.__control.saving()
-        attr.set_value(saving.getStatisticCounters())
+        params = saving.getParameters()
+        params.indexFormat = data
+        saving.setParameters(params)
 
-    ## @brief get the write statistics history size
-    #
+    @attribute(dtype=(float,), max_dim_x=4, access=AttrWriteType.READ, doc="Saving speed, compression ratio, compression speed and incoming speed")
     @core.DEB_MEMBER_FUNCT
-    def read_saving_statistics_history(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(saving.getStatisticHistorySize())
+    def saving_statistics(self):
+        # saving_speed, compression_speed, compression_ratio, incoming_speed
+        return self.__control.saving().getStatisticCounters()
 
-    ## @brief set the write statistics history size
-    #
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="Size of history for stats calculation, default is 16 frames")
     @core.DEB_MEMBER_FUNCT
-    def write_saving_statistics_history(self, attr):
-        stat_size = attr.get_write_value()
-        saving = self.__control.saving()
-        saving.setStatisticHistorySize(stat_size)
+    def saving_statistics_history(self):
+        return self.__control.saving().getStatisticHistorySize()
 
-    ## @brief get statistics log enabled flag
-    #
+    @saving_statistics_history.setter
     @core.DEB_MEMBER_FUNCT
-    def read_saving_statistics_log_enable(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(saving.getEnableLogStat())
+    def saving_statistics_history(self, stat_size):
+        self.__control.saving().setStatisticHistorySize(stat_size)
 
-    ## @brief set statistics log enable flag
-    #
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE, doc="Enable the generation of the saving statistics log file")
     @core.DEB_MEMBER_FUNCT
-    def write_saving_statistics_log_enable(self, attr):
-        flag = attr.get_write_value()
+    def saving_statistics_log_enable(self):
+        return self.__control.saving().getEnableLogStat()
+
+    @saving_statistics_log_enable.setter
+    @core.DEB_MEMBER_FUNCT
+    def saving_statistics_log_enable(self, flag):
+        self.__control.saving().setEnableLogStat(flag)
+
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The directory where to save the image files")
+    @core.DEB_MEMBER_FUNCT
+    def saving_directory(self):
+        return self.__control.saving().getDirectory(self.__SavingStream)
+
+    @saving_directory.setter
+    @core.DEB_MEMBER_FUNCT
+    def saving_directory(self, data):
+        self.__control.saving().setDirectory(data, self.__SavingStream)
+
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The image file prefix")
+    @core.DEB_MEMBER_FUNCT
+    def saving_prefix(self):
+        return self.__control.saving().getPrefix(self.__SavingStream)
+
+    @saving_prefix.setter
+    @core.DEB_MEMBER_FUNCT
+    def saving_prefix(self, data):
         saving = self.__control.saving()
-        saving.setEnableLogStat(flag)
+        prefix = data
+
+        directory = saving.getDirectory(self.__SavingStream)
+        suffix = saving.getSuffix(self.__SavingStream)
+        overwritePolicy = saving.getOverwritePolicy(self.__SavingStream)
+        if overwritePolicy == core.CtSaving.OverwritePolicy.Abort:
+            matchFiles = glob.glob(os.path.join(directory, "%s*%s" % (prefix, suffix)))
+            lastnumber = _getLastFileNumber(prefix, suffix, matchFiles)
+        else:
+            lastnumber = -1
+        saving.setPrefix(prefix, self.__SavingStream)
+        saving.setNextNumber(lastnumber + 1, self.__SavingStream)
+
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The image file suffix")
+    @core.DEB_MEMBER_FUNCT
+    def saving_suffix(self):
+        return self.__control.saving().getSuffix(self.__SavingStream)
+
+    @saving_suffix.setter
+    @core.DEB_MEMBER_FUNCT
+    def saving_suffix(self, data):
+        self.__control.saving().setSuffix(data, self.__SavingStream)
+
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="The image next number")
+    @core.DEB_MEMBER_FUNCT
+    def saving_next_number(self):
+        return self.__control.saving().getNextNumber(self.__SavingStream)
+
+    @saving_next_number.setter
+    @core.DEB_MEMBER_FUNCT
+    def saving_next_number(self, data):
+        self.__control.saving().setNextNumber(data, self.__SavingStream)
+
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="Number of frames saved in each file")
+    @core.DEB_MEMBER_FUNCT
+    def saving_frame_per_file(self):
+        return self.__control.saving().getFramesPerFile(self.__SavingStream)
+
+    @saving_frame_per_file.setter
+    @core.DEB_MEMBER_FUNCT
+    def saving_frame_per_file(self, data):
+        self.__control.saving().setFramesPerFile(data, self.__SavingStream)
+
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, doc="Save (or skip, if negative) a frame every N frames")
+    @core.DEB_MEMBER_FUNCT
+    def saving_every_n_frames(self):
+        return self.__control.saving().getEveryNFrames(self.__SavingStream)
+
+    @saving_every_n_frames.setter
+    @core.DEB_MEMBER_FUNCT
+    def saving_every_n_frames(self, data):
+        self.__control.saving().setEveryNFrames(data, self.__SavingStream)
+
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The data format for saving")
+    @core.DEB_MEMBER_FUNCT
+    def saving_format(self):
+        return self.__control.saving().getFormatAsString(self.__SavingStream)
+
+    @saving_format.setter
+    @core.DEB_MEMBER_FUNCT
+    def saving_format(self, data):
+        value = data.upper()
+        saving = self.__control.saving()
+        if value not in self.__SavingFormat:
+            PyTango.Except.throw_exception(
+                "WrongData",
+                "Wrong value %s: %s" % ("saving_format", value),
+                "LimaCCD Class",
+            )
+        saving.setFormatAsString(value, self.__SavingStream)
+        saving.setFormatSuffix(self.__SavingStream)
+
+    # saving_mode/saving_managed_mode had no explicit read_X/write_X in the
+    # legacy code - saving_managed_mode via its __Attribute2FunctionBase
+    # override to "ManagedMode".
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Saving mode: Manual, Auto_Frame or Auto_Header")
+    @core.DEB_MEMBER_FUNCT
+    def saving_mode(self):
+        return getDictKey(self.__SavingMode, self.__control.saving().getSavingMode())
+
+    @saving_mode.setter
+    @core.DEB_MEMBER_FUNCT
+    def saving_mode(self, data):
+        value = getDictValue(self.__SavingMode, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value saving_mode: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.saving().setSavingMode(value)
+
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Whether saving is managed by hardware (SDK) or by Lima")
+    @core.DEB_MEMBER_FUNCT
+    def saving_managed_mode(self):
+        return getDictKey(self.__SavingManagedMode, self.__control.saving().getManagedMode())
+
+    @saving_managed_mode.setter
+    @core.DEB_MEMBER_FUNCT
+    def saving_managed_mode(self, data):
+        value = getDictValue(self.__SavingManagedMode, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value saving_managed_mode: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.saving().setManagedMode(value)
+
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="Overwrite policy in case of existing files: Abort, Overwrite or Append")
+    @core.DEB_MEMBER_FUNCT
+    def saving_overwrite_policy(self):
+        saving = self.__control.saving()
+        return getDictKey(
+            self.__SavingOverwritePolicy, saving.getOverwritePolicy(self.__SavingStream)
+        )
+
+    @saving_overwrite_policy.setter
+    @core.DEB_MEMBER_FUNCT
+    def saving_overwrite_policy(self, data):
+        value = getDictValue(self.__SavingOverwritePolicy, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData",
+                "Wrong value %s: %s" % ("saving_overwrite_policy", data.upper()),
+                "LimaCCD Class",
+            )
+        self.__control.saving().setOverwritePolicy(value, self.__SavingStream)
+
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE, doc="Try to use the compressed image blob injected by the HW plugin")
+    @core.DEB_MEMBER_FUNCT
+    def saving_use_hw_comp(self):
+        return self.__control.saving().getUseHwComp(self.__SavingStream)
+
+    @saving_use_hw_comp.setter
+    @core.DEB_MEMBER_FUNCT
+    def saving_use_hw_comp(self, data):
+        self.__control.saving().setUseHwComp(data, self.__SavingStream)
+
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE, doc="Activate (or not) this saving stream")
+    @core.DEB_MEMBER_FUNCT
+    def saving_stream_active(self):
+        return self.__control.saving().getStreamActive(self.__SavingStream)
+
+    @saving_stream_active.setter
+    @core.DEB_MEMBER_FUNCT
+    def saving_stream_active(self, data):
+        self.__control.saving().setStreamActive(self.__SavingStream, data)
+
+    @attribute(dtype=tango.CmdArgType.DevShort, access=AttrWriteType.READ_WRITE, doc="Max. tasks for saving file, default is 1")
+    @RequiresSystemFeature("core.CtSaving.getMaxConcurrentWritingTask")
+    @core.DEB_MEMBER_FUNCT
+    def saving_max_writing_task(self):
+        return self.__control.saving().getMaxConcurrentWritingTask()
+
+    @saving_max_writing_task.setter
+    @RequiresSystemFeature("core.CtSaving.setMaxConcurrentWritingTask")
+    @core.DEB_MEMBER_FUNCT
+    def saving_max_writing_task(self, data):
+        self.__control.saving().setMaxConcurrentWritingTask(data)
+
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The codec used for jp2k compression")
+    @RequiresSystemFeature("core.CtSaving.getJp2kCompressionCodec")
+    @core.DEB_MEMBER_FUNCT
+    def saving_jp2k_codec(self):
+        saving = self.__control.saving()
+        return getDictKey(self.__SavingJp2kCompressionCodec, saving.getJp2kCompressionCodec())
+
+    @saving_jp2k_codec.setter
+    @RequiresSystemFeature("core.CtSaving.setJp2kCompressionCodec")
+    @core.DEB_MEMBER_FUNCT
+    def saving_jp2k_codec(self, data):
+        value = getDictValue(self.__SavingJp2kCompressionCodec, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData",
+                "Wrong value %s: %s" % ("saving_jp2k_codec", data.upper()),
+                "LimaCCD Class",
+            )
+        self.__control.saving().setJp2kCompressionCodec(value)
+
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE, doc="The compression ratio for jp2k saving [0. - 10.]")
+    @RequiresSystemFeature("core.CtSaving.getJp2kCompressionRatio")
+    @core.DEB_MEMBER_FUNCT
+    def saving_jp2k_comp_ratio(self):
+        return self.__control.saving().getJp2kCompressionRatio()
+
+    @saving_jp2k_comp_ratio.setter
+    @RequiresSystemFeature("core.CtSaving.setJp2kCompressionRatio")
+    @core.DEB_MEMBER_FUNCT
+    def saving_jp2k_comp_ratio(self, data):
+        self.__control.saving().setJp2kCompressionRatio(data)
+
+    # saving_zbuffer_* built with _make_buffer_param_fget_fset() - see the
+    # buffer domain section below for the helper and buffer_alloc_*.
+    _saving_zbuffer_init_mem_fget, _saving_zbuffer_init_mem_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.saving(), "ZBuffer", "initMem"
+    )
+    saving_zbuffer_init_mem = attribute(
+        dtype=bool, access=AttrWriteType.READ_WRITE,
+        doc="Whether to initialize (force-allocate) saving compression buffer memory right away",
+        fget=_saving_zbuffer_init_mem_fget, fset=_saving_zbuffer_init_mem_fset,
+    )
+
+    _saving_zbuffer_duration_policy_fget, _saving_zbuffer_duration_policy_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.saving(), "ZBuffer", "durationPolicy", enum_key="durationPolicy"
+    )
+    saving_zbuffer_duration_policy = attribute(
+        dtype=str, access=AttrWriteType.READ_WRITE,
+        doc="Duration policy for saving compression buffers: EPHEMERAL or PERSISTENT",
+        fget=_saving_zbuffer_duration_policy_fget, fset=_saving_zbuffer_duration_policy_fset,
+    )
+
+    _saving_zbuffer_size_policy_fget, _saving_zbuffer_size_policy_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.saving(), "ZBuffer", "sizePolicy", enum_key="sizePolicy"
+    )
+    saving_zbuffer_size_policy = attribute(
+        dtype=str, access=AttrWriteType.READ_WRITE,
+        doc="Pool size policy for saving compression buffers: AUTOMATIC or FIXED",
+        fget=_saving_zbuffer_size_policy_fget, fset=_saving_zbuffer_size_policy_fset,
+    )
+
+    _saving_zbuffer_req_mem_size_percent_fget, _saving_zbuffer_req_mem_size_percent_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.saving(), "ZBuffer", "reqMemSizePercent"
+    )
+    saving_zbuffer_req_mem_size_percent = attribute(
+        dtype=float, access=AttrWriteType.READ_WRITE,
+        doc="Max percentage of system memory usable for saving compression buffers",
+        fget=_saving_zbuffer_req_mem_size_percent_fget, fset=_saving_zbuffer_req_mem_size_percent_fset,
+    )
+
+    # ------------------------------------------------------------------
+    #    Debug domain (Phase 3 slice 2)
+    # ------------------------------------------------------------------
+    @attribute(dtype=(str,), max_dim_x=len(_debugModuleList), access=AttrWriteType.READ, doc="The list of possible debug modules")
+    def debug_modules_possible(self):
+        return LimaCCDs._debugModuleList
+
+    @attribute(dtype=(str,), max_dim_x=len(_debugModuleList), access=AttrWriteType.READ_WRITE, doc="The debug module level of LImA")
+    @core.DEB_MEMBER_FUNCT
+    def debug_modules(self):
+        return core.DebParams.getModuleFlagsNameList()
+
+    @debug_modules.setter
+    @core.DEB_MEMBER_FUNCT
+    def debug_modules(self, data):
+        core.DebParams.setModuleFlagsNameList(data)
+
+    @attribute(dtype=(str,), max_dim_x=len(_debugTypeList), access=AttrWriteType.READ, doc="The list of the possible debug types")
+    def debug_types_possible(self):
+        return LimaCCDs._debugTypeList
+
+    @attribute(dtype=(str,), max_dim_x=len(_debugTypeList), access=AttrWriteType.READ_WRITE, doc="The debug type level of LImA")
+    @core.DEB_MEMBER_FUNCT
+    def debug_types(self):
+        NameList = core.DebParams.getTypeFlagsNameList()
+        return NameList if NameList else [""]
+
+    @debug_types.setter
+    @core.DEB_MEMBER_FUNCT
+    def debug_types(self, data):
+        core.DebParams.setTypeFlagsNameList(data)
+
+    # ------------------------------------------------------------------
+    #    Video domain (Phase 3 slice 9)
+    # ------------------------------------------------------------------
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE, doc="Start the video mode (or not)")
+    @core.DEB_MEMBER_FUNCT
+    def video_active(self):
+        return self.__control.video().isActive()
+
+    @video_active.setter
+    @core.DEB_MEMBER_FUNCT
+    def video_active(self, data):
+        self.__control.video().setActive(data)
+
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE, doc="Start the video streaming (or not)")
+    @core.DEB_MEMBER_FUNCT
+    def video_live(self):
+        return self.__control.video().getLive()
+
+    @video_live.setter
+    @core.DEB_MEMBER_FUNCT
+    def video_live(self, data):
+        video = self.__control.video()
+        if data:
+            video.startLive()
+        else:
+            video.stopLive()
+
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE, doc="The video exposure time (can be different to acq_expo_time)")
+    @core.DEB_MEMBER_FUNCT
+    def video_exposure(self):
+        return self.__control.video().getExposure()
+
+    @video_exposure.setter
+    @core.DEB_MEMBER_FUNCT
+    def video_exposure(self, data):
+        self.__control.video().setExposure(data)
+
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE, doc="The video gain (if supported by the hardware)")
+    @core.DEB_MEMBER_FUNCT
+    def video_gain(self):
+        return self.__control.video().getGain()
+
+    @video_gain.setter
+    @core.DEB_MEMBER_FUNCT
+    def video_gain(self, data):
+        self.__control.video().setGain(data)
+
+    # video_mode/video_source had no explicit read_X/write_X in the legacy
+    # code - video_mode via its __Attribute2FunctionBase "Mode" override.
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The video format supported by the camera")
+    @core.DEB_MEMBER_FUNCT
+    def video_mode(self):
+        return getDictKey(self.__VideoMode, self.__control.video().getMode())
+
+    @video_mode.setter
+    @core.DEB_MEMBER_FUNCT
+    def video_mode(self, data):
+        value = getDictValue(self.__VideoMode, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value video_mode: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.video().setMode(value)
+
+    @attribute(dtype=str, access=AttrWriteType.READ_WRITE, doc="The source for video image: BASE_IMAGE or LAST_IMAGE")
+    @core.DEB_MEMBER_FUNCT
+    def video_source(self):
+        return getDictKey(self.__VideoSource, self.__control.video().getVideoSource())
+
+    @video_source.setter
+    @core.DEB_MEMBER_FUNCT
+    def video_source(self, data):
+        value = getDictValue(self.__VideoSource, data.upper())
+        if value is None:
+            PyTango.Except.throw_exception(
+                "WrongData", "Wrong value video_source: %s" % data.upper(), "LimaCCD Class"
+            )
+        self.__control.video().setVideoSource(value)
+
+    @attribute(dtype=(int,), max_dim_x=2, access=AttrWriteType.READ_WRITE, doc="A binning on the video image (independent of the image_bin attribute)")
+    @core.DEB_MEMBER_FUNCT
+    def video_bin(self):
+        binValue = self.__control.video().getBin()
+        return [binValue.getX(), binValue.getY()]
+
+    @video_bin.setter
+    @core.DEB_MEMBER_FUNCT
+    def video_bin(self, data):
+        self.__control.video().setBin(core.Bin(*data))
+
+    @attribute(dtype=(int,), max_dim_x=4, access=AttrWriteType.READ_WRITE, doc="A ROI on the video image (independent of the image_roi attribute)")
+    @core.DEB_MEMBER_FUNCT
+    def video_roi(self):
+        roi = self.__control.video().getRoi()
+        point = roi.getTopLeft()
+        size = roi.getSize()
+        return [point.x, point.y, size.getWidth(), size.getHeight()]
+
+    @video_roi.setter
+    @core.DEB_MEMBER_FUNCT
+    def video_roi(self, data):
+        self.__control.video().setRoi(core.Roi(*data))
+
+    @attribute(
+        dtype=tango.CmdArgType.DevEncoded,
+        access=AttrWriteType.READ,
+        label="the video image",
+        unit="",
+        standard_unit="",
+        display_unit="",
+        format="%d",
+        doc="video image as encoded",
+    )
+    @core.DEB_MEMBER_FUNCT
+    def video_last_image(self):
+        self._videoStr = _video_image_2_struct(self.__control.video().getLastImage())
+        return ("VIDEO_IMAGE", self._videoStr)
+
+    @attribute(dtype=tango.CmdArgType.DevLong64, access=AttrWriteType.READ, doc="The video image counter")
+    @core.DEB_MEMBER_FUNCT
+    def video_last_image_counter(self):
+        return self.__control.video().getLastImageCounter()
+
+    # ------------------------------------------------------------------
+    #    Plugin/config domain (Phase 3 slice 12 - last attribute domain)
+    # ------------------------------------------------------------------
+    @attribute(dtype=(str,), max_dim_x=256, access=AttrWriteType.READ, doc="List of the available plugin types")
+    def plugin_type_list(self):
+        className2deviceName = get_sub_devices()
+        return [x.lower().replace("deviceserver", "") for x in className2deviceName.keys()]
+
+    @attribute(dtype=(str,), max_dim_x=256, access=AttrWriteType.READ, doc="List of the available plugins, as couples of type and device name")
+    def plugin_list(self):
+        returnList = []
+        for key, value in get_sub_devices().items():
+            returnList.append(key.lower().replace("deviceserver", ""))
+            returnList.append(value)
+        return returnList
+
+    @attribute(dtype=(str,), max_dim_x=2, access=AttrWriteType.READ_WRITE, doc="Name of the SPS typed shared memory (default is LimaCCDs,<camera_type>)")
+    def shared_memory_names(self):
+        try:
+            shared_memory_names = self.__control.display().getNames()
+        except Exception:
+            shared_memory_names = ["", ""]
+        return shared_memory_names
+
+    @shared_memory_names.setter
+    def shared_memory_names(self, data):
+        self.__shared_memory_names = data
+        try:
+            self.__control.display().setNames(*self.__shared_memory_names)
+        except Exception:
+            pass
+
+    @attribute(dtype=bool, access=AttrWriteType.READ_WRITE, doc="Activate (or not) the shared memory, used for image display")
+    def shared_memory_active(self):
+        try:
+            return self.__control.display().isActive()
+        except Exception:
+            return False
+
+    @shared_memory_active.setter
+    def shared_memory_active(self, data):
+        try:
+            self.__control.display().setActive(data)
+        except Exception:
+            pass
+
+    @attribute(dtype=(str,), max_dim_x=1024, access=AttrWriteType.READ, doc="List of possible config modules")
+    def config_available_module(self):
+        return self.__control.config().getAvailableModule()
+
+    @attribute(dtype=(str,), max_dim_x=1024, access=AttrWriteType.READ, doc="List of existing config names")
+    def config_available_name(self):
+        return self.__control.config().getAlias()
+
+    # ------------------------------------------------------------------
+    #    Shutter domain (Phase 3 slice 11)
+    # ------------------------------------------------------------------
+    # shutter_close_time/manual_state/mode/open_time (read_X/write_X methods
+    # right below) are NOT `@attribute`-decorated: they're added dynamically
+    # at runtime (init_device, only if the hardware actually has shutter
+    # capability) via self.add_attribute(...), which always uses the
+    # old-style (self, attr) callback signature regardless of the device
+    # class being high- or low-level - verified against a real
+    # DeviceTestContext. Their bodies need no change at all and are left
+    # as-is; only their position moved, to sit next to shutter_ctrl_is_available.
+    @attribute(dtype=bool, access=AttrWriteType.READ, doc="True if the camera has a shutter control")
+    @core.DEB_MEMBER_FUNCT
+    def shutter_ctrl_is_available(self):
+        return self.__control.shutter().hasCapability()
 
     ## @brief Write current shutter state if in manual mode
     # True-Open, False-Close
@@ -1652,398 +2252,6 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
         shutter.setCloseTime(data)
 
-    @core.DEB_MEMBER_FUNCT
-    def read_saving_directory(self, attr):
-        saving = self.__control.saving()
-
-        attr.set_value(saving.getDirectory(self.__SavingStream))
-
-    @core.DEB_MEMBER_FUNCT
-    def write_saving_directory(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-        saving.setDirectory(data, self.__SavingStream)
-
-    @core.DEB_MEMBER_FUNCT
-    def read_saving_prefix(self, attr):
-        saving = self.__control.saving()
-
-        attr.set_value(saving.getPrefix(self.__SavingStream))
-
-    @core.DEB_MEMBER_FUNCT
-    def write_saving_prefix(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-        prefix = data
-
-        directory = saving.getDirectory(self.__SavingStream)
-        suffix = saving.getSuffix(self.__SavingStream)
-        overwritePolicy = saving.getOverwritePolicy(self.__SavingStream)
-        if overwritePolicy == core.CtSaving.OverwritePolicy.Abort:
-            matchFiles = glob.glob(os.path.join(directory, "%s*%s" % (prefix, suffix)))
-            lastnumber = _getLastFileNumber(prefix, suffix, matchFiles)
-        else:
-            lastnumber = -1
-        saving.setPrefix(prefix, self.__SavingStream)
-        saving.setNextNumber(lastnumber + 1, self.__SavingStream)
-
-    @core.DEB_MEMBER_FUNCT
-    def read_saving_suffix(self, attr):
-        saving = self.__control.saving()
-
-        attr.set_value(saving.getSuffix(self.__SavingStream))
-
-    @core.DEB_MEMBER_FUNCT
-    def write_saving_suffix(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-
-        saving.setSuffix(data, self.__SavingStream)
-
-    @core.DEB_MEMBER_FUNCT
-    def read_saving_next_number(self, attr):
-        saving = self.__control.saving()
-
-        attr.set_value(saving.getNextNumber(self.__SavingStream))
-
-    @core.DEB_MEMBER_FUNCT
-    def write_saving_next_number(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-
-        saving.setNextNumber(data, self.__SavingStream)
-
-    @core.DEB_MEMBER_FUNCT
-    def read_saving_frame_per_file(self, attr):
-        saving = self.__control.saving()
-
-        attr.set_value(saving.getFramesPerFile(self.__SavingStream))
-
-    @core.DEB_MEMBER_FUNCT
-    def write_saving_frame_per_file(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-
-        saving.setFramesPerFile(data, self.__SavingStream)
-
-    @core.DEB_MEMBER_FUNCT
-    def read_saving_every_n_frames(self, attr):
-        saving = self.__control.saving()
-
-        attr.set_value(saving.getEveryNFrames(self.__SavingStream))
-
-    @core.DEB_MEMBER_FUNCT
-    def write_saving_every_n_frames(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-
-        saving.setEveryNFrames(data, self.__SavingStream)
-
-    @core.DEB_MEMBER_FUNCT
-    def read_saving_format(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(saving.getFormatAsString(self.__SavingStream))
-
-    @core.DEB_MEMBER_FUNCT
-    def write_saving_format(self, attr):
-        data = attr.get_write_value()
-        value = data.upper()
-        saving = self.__control.saving()
-
-        if not value in self.__SavingFormat:
-            PyTango.Except.throw_exception(
-                "WrongData",
-                "Wrong value %s: %s" % ("saving_format", value),
-                "LimaCCD Class",
-            )
-        else:
-            saving.setFormatAsString(value, self.__SavingStream)
-            saving.setFormatSuffix(self.__SavingStream)
-
-    @core.DEB_MEMBER_FUNCT
-    def read_saving_overwrite_policy(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(
-            getDictKey(
-                self.__SavingOverwritePolicy,
-                saving.getOverwritePolicy(self.__SavingStream),
-            )
-        )
-
-    @core.DEB_MEMBER_FUNCT
-    def write_saving_overwrite_policy(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-        value = getDictValue(self.__SavingOverwritePolicy, data.upper())
-        if value is None:
-            PyTango.Except.throw_exception(
-                "WrongData",
-                "Wrong value %s: %s" % ("saving_overwrite_policy", data.upper()),
-                "LimaCCD Class",
-            )
-        else:
-            saving.setOverwritePolicy(value, self.__SavingStream)
-
-    @core.DEB_MEMBER_FUNCT
-    def read_saving_use_hw_comp(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(saving.getUseHwComp(self.__SavingStream))
-
-    @core.DEB_MEMBER_FUNCT
-    def write_saving_use_hw_comp(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-        saving.setUseHwComp(data, self.__SavingStream)
-
-    @core.DEB_MEMBER_FUNCT
-    def read_saving_stream_active(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(saving.getStreamActive(self.__SavingStream))
-
-    @core.DEB_MEMBER_FUNCT
-    def write_saving_stream_active(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-        saving.setStreamActive(self.__SavingStream, data)
-
-    ## @brief get the maximum number of task for concurrent writing (saving)
-    #
-    @RequiresSystemFeature("core.CtSaving.getMaxConcurrentWritingTask")
-    @core.DEB_MEMBER_FUNCT
-    def read_saving_max_writing_task(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(saving.getMaxConcurrentWritingTask())
-
-    ## @brief set the maximum number of task for concurrent writing (saving)
-    #
-    @RequiresSystemFeature("core.CtSaving.setMaxConcurrentWritingTask")
-    @core.DEB_MEMBER_FUNCT
-    def write_saving_max_writing_task(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-
-        saving.setMaxConcurrentWritingTask(data)
-
-    ## @brief get the codec used for jp2k compression
-    #
-    @RequiresSystemFeature("core.CtSaving.getJp2kCompressionCodec")
-    @core.DEB_MEMBER_FUNCT
-    def read_saving_jp2k_codec(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(getDictKey(
-                self.__SavingJp2kCompressionCodec,
-                saving.getJp2kCompressionCodec(),
-            )
-        )
-
-    ## @brief set the codec used for jp2k compression
-    #
-    @RequiresSystemFeature("core.CtSaving.setJp2kCompressionCodec")
-    @core.DEB_MEMBER_FUNCT
-    def write_saving_jp2k_codec(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-
-        value = getDictValue(self.__SavingJp2kCompressionCodec, data.upper())
-        if value is None:
-            PyTango.Except.throw_exception(
-                "WrongData",
-                "Wrong value %s: %s" % ("saving_jp2k_codec", data.upper()),
-                "LimaCCD Class",
-            )
-        else:
-            saving.setJp2kCompressionCodec(value)
-
-    ## @brief set the maximum number of task for concurrent writing (saving)
-    #
-    @RequiresSystemFeature("core.CtSaving.getJp2kCompressionRatio")
-    @core.DEB_MEMBER_FUNCT
-    def read_saving_jp2k_comp_ratio(self, attr):
-        saving = self.__control.saving()
-        attr.set_value(saving.getJp2kCompressionRatio())
-
-    ## @brief set the maximum number of task for concurrent writing (saving)
-    #
-    @RequiresSystemFeature("core.CtSaving.setJp2kCompressionRatio")
-    @core.DEB_MEMBER_FUNCT
-    def write_saving_jp2k_comp_ratio(self, attr):
-        data = attr.get_write_value()
-        saving = self.__control.saving()
-
-        saving.setJp2kCompressionRatio(data)
-
-    ##@brief Read possible modules
-    #
-    def read_debug_modules_possible(self, attr):
-        attr.set_value(LimaCCDs._debugModuleList)
-
-    ##@brief Read list of module which are in debug
-    #
-    @core.DEB_MEMBER_FUNCT
-    def read_debug_modules(self, attr):
-        NameList = core.DebParams.getModuleFlagsNameList()
-        attr.set_value(NameList)
-
-    ##@brief set debug module list
-    #
-    @core.DEB_MEMBER_FUNCT
-    def write_debug_modules(self, attr):
-        data = attr.get_write_value()
-        core.DebParams.setModuleFlagsNameList(data)
-
-    ##@biref Read possible modules
-    #
-    def read_debug_types_possible(self, attr):
-        attr.set_value(LimaCCDs._debugTypeList)
-
-    ##@brief Read list of module which are in debug
-    #
-    @core.DEB_MEMBER_FUNCT
-    def read_debug_types(self, attr):
-        NameList = core.DebParams.getTypeFlagsNameList()
-
-        if NameList:
-            attr.set_value(NameList)
-        else:
-            attr.set_value([""])
-
-    ##@brief set debug module list
-    #
-    @core.DEB_MEMBER_FUNCT
-    def write_debug_types(self, attr):
-        data = attr.get_write_value()
-        core.DebParams.setTypeFlagsNameList(data)
-
-    def read_video_active(self, attr):
-        video = self.__control.video()
-        attr.set_value(video.isActive())
-
-    def write_video_active(self, attr):
-        video = self.__control.video()
-        data = attr.get_write_value()
-        video.setActive(data)
-
-    def read_video_live(self, attr):
-        video = self.__control.video()
-        attr.set_value(video.getLive())
-
-    def write_video_live(self, attr):
-        video = self.__control.video()
-        data = attr.get_write_value()
-        if data:
-            video.startLive()
-        else:
-            video.stopLive()
-
-    def read_video_exposure(self, attr):
-        video = self.__control.video()
-        attr.set_value(video.getExposure())
-
-    def write_video_exposure(self, attr):
-        video = self.__control.video()
-        data = attr.get_write_value()
-        video.setExposure(data)
-
-    def read_video_gain(self, attr):
-        video = self.__control.video()
-        attr.set_value(video.getGain())
-
-    def write_video_gain(self, attr):
-        video = self.__control.video()
-        data = attr.get_write_value()
-        video.setGain(data)
-
-    def read_video_bin(self, attr):
-        video = self.__control.video()
-        binValue = video.getBin()
-
-        attr.set_value([binValue.getX(), binValue.getY()])
-
-    def write_video_bin(self, attr):
-        data = attr.get_write_value()
-
-        video = self.__control.video()
-        binValue = core.Bin(*data)
-        video.setBin(binValue)
-
-    def read_video_roi(self, attr):
-        video = self.__control.video()
-        roi = video.getRoi()
-        point = roi.getTopLeft()
-        size = roi.getSize()
-
-        attr.set_value([point.x, point.y, size.getWidth(), size.getHeight()])
-
-    def write_video_roi(self, attr):
-        data = attr.get_write_value()
-        video = self.__control.video()
-        roi = core.Roi(*data)
-        video.setRoi(roi)
-
-    def read_video_last_image(self, attr):
-        video = self.__control.video()
-        self._videoStr = _video_image_2_struct(video.getLastImage())
-        attr.set_value("VIDEO_IMAGE", self._videoStr)
-
-    def read_video_last_image_counter(self, attr):
-        video = self.__control.video()
-        attr.set_value(video.getLastImageCounter())
-
-    def read_plugin_type_list(self, attr):
-        className2deviceName = get_sub_devices()
-        attr.set_value(
-            [x.lower().replace("deviceserver", "") for x in className2deviceName.keys()]
-        )
-
-    def read_plugin_list(self, attr):
-        returnList = []
-        for key, value in get_sub_devices().items():
-            returnList.append(key.lower().replace("deviceserver", ""))
-            returnList.append(value)
-        attr.set_value(returnList)
-
-    def read_shared_memory_names(self, attr):
-        try:
-            shared_memory = self.__control.display()
-            shared_memory_names = shared_memory.getNames()
-        except Exception:
-            shared_memory_names = ["", ""]
-        attr.set_value(shared_memory_names)
-
-    def write_shared_memory_names(self, attr):
-        self.__shared_memory_names = attr.get_write_value()
-        try:
-            shared_memory = self.__control.display()
-            shared_memory.setNames(*self.__shared_memory_names)
-        except Exception:
-            pass
-
-    def read_shared_memory_active(self, attr):
-        try:
-            shared_memory = self.__control.display().isActive()
-        except Exception:
-            shared_memory = False
-        attr.set_value(shared_memory)
-
-    def write_shared_memory_active(self, attr):
-        data = attr.get_write_value()
-        try:
-            self.__control.display().setActive(data)
-        except Exception:
-            pass
-
-    def read_config_available_module(self, attr):
-        config = self.__control.config()
-        attr.set_value(config.getAvailableModule())
-
-    def read_config_available_name(self, attr):
-        config = self.__control.config()
-        attr.set_value(config.getAlias())
-
-    def read_shutter_ctrl_is_available(self, attr):
-        is_available = self.__control.shutter().hasCapability()
-        attr.set_value(is_available)
-
     @RequiresSystemFeature("core.BufferHelper.Parameters")
     def readBufferParam(self, attr, param=None, getter=None, setter=None):
         buffer_param = getter()
@@ -2064,25 +2272,72 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
         setattr(buffer_param, param_name, val)
         setter(buffer_param)
 
-    @core.DEB_MEMBER_FUNCT
-    def read_buffer_malloc_trim_pad(self, attr):
-        if not SystemHasFeature("core.CtBuffer.getMallocTrimPad"):
-            raise RuntimeError("buffer_malloc_trim_pad not supported in "
-                               "this version")
-        buffer = self.__control.buffer()
-        malloc_trim_pad = buffer.getMallocTrimPad()
-        deb.Return("malloc_trim_pad=%s" % malloc_trim_pad)
-        attr.set_value(malloc_trim_pad)
+    # ------------------------------------------------------------------
+    #    Buffer domain (Phase 3 slice 10)
+    # ------------------------------------------------------------------
+    # buffer_alloc_*/acc_buffer_*/saving_zbuffer_* had no explicit
+    # read_X/write_X in the legacy code - see _make_buffer_param_fget_fset's
+    # docstring above the class. acc_buffer_*/saving_zbuffer_* are grouped
+    # with the other acc_*/saving_* attributes by name instead of here, even
+    # though they're built with the same helper - see the accumulation and
+    # saving domain sections.
+    _buffer_alloc_init_mem_fget, _buffer_alloc_init_mem_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.buffer(), "Alloc", "initMem"
+    )
+    buffer_alloc_init_mem = attribute(
+        dtype=bool, access=AttrWriteType.READ_WRITE,
+        doc="Whether to initialize (force-allocate) HW plugin buffer memory right away",
+        fget=_buffer_alloc_init_mem_fget, fset=_buffer_alloc_init_mem_fset,
+    )
 
+    _buffer_alloc_duration_policy_fget, _buffer_alloc_duration_policy_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.buffer(), "Alloc", "durationPolicy", enum_key="durationPolicy"
+    )
+    buffer_alloc_duration_policy = attribute(
+        dtype=str, access=AttrWriteType.READ_WRITE,
+        doc="Duration policy for HW plugin buffers: EPHEMERAL or PERSISTENT",
+        fget=_buffer_alloc_duration_policy_fget, fset=_buffer_alloc_duration_policy_fset,
+    )
+
+    _buffer_alloc_size_policy_fget, _buffer_alloc_size_policy_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.buffer(), "Alloc", "sizePolicy", enum_key="sizePolicy"
+    )
+    buffer_alloc_size_policy = attribute(
+        dtype=str, access=AttrWriteType.READ_WRITE,
+        doc="Pool size policy for HW plugin buffers: AUTOMATIC or FIXED",
+        fget=_buffer_alloc_size_policy_fget, fset=_buffer_alloc_size_policy_fset,
+    )
+
+    _buffer_alloc_req_mem_size_percent_fget, _buffer_alloc_req_mem_size_percent_fset = _make_buffer_param_fget_fset(
+        lambda self: self.__control.buffer(), "Alloc", "reqMemSizePercent"
+    )
+    buffer_alloc_req_mem_size_percent = attribute(
+        dtype=float, access=AttrWriteType.READ_WRITE,
+        doc="Max percentage of system memory usable for HW plugin buffers",
+        fget=_buffer_alloc_req_mem_size_percent_fget, fset=_buffer_alloc_req_mem_size_percent_fset,
+    )
+
+    # buffer_max_number: dispatched via __Attribute2FunctionBase's
+    # "MaxNumber" override in the legacy code (read-only, no enum).
+    @attribute(dtype=int, access=AttrWriteType.READ, doc="The maximum number of image buffers that can be allocated for the frame size")
     @core.DEB_MEMBER_FUNCT
-    def write_buffer_malloc_trim_pad(self, attr):
-        if not SystemHasFeature("core.CtBuffer.setMallocTrimPad"):
-            raise RuntimeError("buffer_malloc_trim_pad not supported in "
-                               "this version")
-        malloc_trim_pad = attr.get_write_value()
+    def buffer_max_number(self):
+        return self.__control.buffer().getMaxNumber()
+
+    @attribute(dtype=tango.CmdArgType.DevULong64, access=AttrWriteType.READ_WRITE, doc="Pad parameter passed to malloc_trim after buffer alloc")
+    @RequiresSystemFeature("core.CtBuffer.getMallocTrimPad")
+    @core.DEB_MEMBER_FUNCT
+    def buffer_malloc_trim_pad(self):
+        malloc_trim_pad = self.__control.buffer().getMallocTrimPad()
+        deb.Return("malloc_trim_pad=%s" % malloc_trim_pad)
+        return malloc_trim_pad
+
+    @buffer_malloc_trim_pad.setter
+    @RequiresSystemFeature("core.CtBuffer.setMallocTrimPad")
+    @core.DEB_MEMBER_FUNCT
+    def buffer_malloc_trim_pad(self, malloc_trim_pad):
         deb.Param("malloc_trim_pad=%s" % malloc_trim_pad)
-        buffer = self.__control.buffer()
-        buffer.setMallocTrimPad(malloc_trim_pad)
+        self.__control.buffer().setMallocTrimPad(malloc_trim_pad)
 
     # ==================================================================
     #
@@ -2095,6 +2350,10 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     #    Description: return a list of authorized values if any
     #    argout: DevVarStringArray
     # ------------------------------------------------------------------
+    @command(
+        dtype_in=str, doc_in="Attribute name",
+        dtype_out=(str,), doc_out="Authorized string value list",
+    )
     @core.DEB_MEMBER_FUNCT
     def getAttrStringValueList(self, attr_name):
         valueList = []
@@ -2132,13 +2391,14 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
     ##@brief prepare an acquisition
     #
+    @command
     @core.DEB_MEMBER_FUNCT
     def prepareAcq(self):
         self.__control.prepareAcq()
         self._push_status()
 
         # check that the tag is different from previous acq (if not AcqTagNone)
-        tag = self.acq_tag
+        tag = self._acq_tag
         if tag == self.AcqTagNone or tag != self.last_acq_tag:
             self.last_acq_tag = tag
             deb.Trace("Preparing a new acq. with tag %s (0x%08x)" % (tag, tag))
@@ -2154,6 +2414,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
     ##@brief start an acquisition
     #
+    @command
     @core.DEB_MEMBER_FUNCT
     def startAcq(self):
         self.__control.startAcq()
@@ -2161,6 +2422,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
     ##@brief stop an acquisition
     #
+    @command
     @core.DEB_MEMBER_FUNCT
     def stopAcq(self):
         self.__control.stopAcq()
@@ -2168,6 +2430,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
     ##@brief abort an acquisition
     #
+    @command
     @core.DEB_MEMBER_FUNCT
     def abortAcq(self):
         self.__control.abortAcq()
@@ -2175,6 +2438,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
     ##@brief reset acquisition
     #
+    @command
     @core.DEB_MEMBER_FUNCT
     def reset(self):
         self.__control.reset()
@@ -2186,6 +2450,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
     ##@brief set images heaaders
     #
+    @command(dtype_in=(str,), doc_in="ImageId0 SEPARATOR imageHeader0,ImageId1 SEPARATOR imageHeader1...")
     @core.DEB_MEMBER_FUNCT
     def setImageHeader(self, headers_str):
         control = self.__control
@@ -2212,6 +2477,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
     ##@brief reset common header
     #
+    @command
     @core.DEB_MEMBER_FUNCT
     def resetCommonHeader(self):
         control = self.__control
@@ -2220,6 +2486,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
     ##@brief reset frames header
     #
+    @command
     @core.DEB_MEMBER_FUNCT
     def resetFrameHeaders(self):
         control = self.__control
@@ -2228,6 +2495,10 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
     ##@brief get image data
     #
+    @command(
+        dtype_in=int, doc_in="Image number(0-N)",
+        dtype_out=tango.CmdArgType.DevVarCharArray, doc_out="Image data",
+    )
     @core.DEB_MEMBER_FUNCT
     def getImage(self, image_id):
         data = self.__control.ReadImage(image_id)
@@ -2317,6 +2588,10 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
     ##@brief get image data
     #
+    @command(
+        dtype_in=int, doc_in="Image number(0-N)",
+        dtype_out=tango.CmdArgType.DevEncoded, doc_out="Encoded image (DATA_ARRAY)",
+    )
     @core.DEB_MEMBER_FUNCT
     def readImage(self, frame_number):
         deb.Param("readImage: frame_number=%d" % frame_number)
@@ -2328,6 +2603,10 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     ##@brief get last image data (if new image since last_frame_number)
     #
     # @returns Image if new image available since last_frame_number else None
+    @command(
+        dtype_in=int, doc_in="Last image number(0-N)",
+        dtype_out=tango.CmdArgType.DevEncoded, doc_out="Encoded image (DATA_ARRAY)",
+    )
     @core.DEB_MEMBER_FUNCT
     def readLastImage(self, last_frame_number=-1):
         deb.Param("readLastImage: last_frame_number=%d" % last_frame_number)
@@ -2351,6 +2630,10 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     ##@brief get the data for an image sequence
     #
     # @params start,end[,step[,acq_tag]]
+    @command(
+        dtype_in=tango.CmdArgType.DevVarLong64Array, doc_in="Start,End[,Step,[AcqTag]]",
+        dtype_out=tango.CmdArgType.DevEncoded, doc_out="Encoded image(s) (DATA_ARRAY)",
+    )
     @core.DEB_MEMBER_FUNCT
     def readImageSeq(self, frame_seq):
         deb.Param("frame_seq=%s" % frame_seq)
@@ -2385,6 +2668,10 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     ##@brief get base image data
     #
     # image before post processing
+    @command(
+        dtype_in=int, doc_in="Image number(0-N)",
+        dtype_out=tango.CmdArgType.DevVarCharArray, doc_out="Base image data",
+    )
     @core.DEB_MEMBER_FUNCT
     def getBaseImage(self, image_id):
         data = self.__control.ReadBaseImage(image_id)
@@ -2395,6 +2682,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     ##@brief manual write image
     #
     #
+    @command(dtype_in=int, doc_in="Image number(0-N)")
     @core.DEB_MEMBER_FUNCT
     def writeImage(self, image_id):
         saving = self.__control.saving()
@@ -2403,6 +2691,10 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     ##@brief get saturated images
     #
     # @params image_id if < 0 read the last image
+    @command(
+        dtype_in=int, doc_in="Image number",
+        dtype_out=tango.CmdArgType.DevVarUShortArray, doc_out="The image counter",
+    )
     @core.DEB_MEMBER_FUNCT
     def readAccSaturatedImageCounter(self, image_id):
         acc = self.__control.accumulation()
@@ -2416,6 +2708,11 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     ##@brief get saturated sum counter
     #
     # @params from_image_id the starting image id
+    @command(
+        dtype_in=int, doc_in="From image id",
+        dtype_out=tango.CmdArgType.DevVarLongArray,
+        doc_out="Nb of results per image, then sum counters per raw image",
+    )
     @core.DEB_MEMBER_FUNCT
     def readAccSaturatedSumCounter(self, from_image_id):
         acc = self.__control.accumulation()
@@ -2430,6 +2727,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     ##@brief set the mask file for saturated counters
     #
     # @params file_path the full path of mask image or '' -> unset Mask
+    @command(dtype_in=str, doc_in="Full path of mask file, empty string (\"\") to unset the mask")
     @core.DEB_MEMBER_FUNCT
     def setAccSaturatedMask(self, file_path):
         if file_path:
@@ -2448,11 +2746,12 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     #    Description: Close the shutter manual
     #    argout: DevVoid
     # ------------------------------------------------------------------
+    @command
     @core.DEB_MEMBER_FUNCT
     def closeShutterManual(self):
         shutter = self.__control.shutter()
 
-        if shutter.getModeList().count(core.ShutterManual):
+        if shutter.getModeList().count(core.ShutterMode.ShutterManual):
             shutter.setState(False)
 
     # ------------------------------------------------------------------
@@ -2461,13 +2760,15 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     #    Description: Open the shutter manual
     #    argout: DevVoid
     # ------------------------------------------------------------------
+    @command
     @core.DEB_MEMBER_FUNCT
     def openShutterManual(self):
         shutter = self.__control.shutter()
 
-        if shutter.getModeList().count(core.ShutterManual):
+        if shutter.getModeList().count(core.ShutterMode.ShutterManual):
             shutter.setState(True)
 
+    @command(dtype_in=str, doc_in="Plugin type", dtype_out=str, doc_out="Device name")
     @core.DEB_MEMBER_FUNCT
     def getPluginDeviceNameFromType(self, pluginType):
         pluginType2deviceName = dict(
@@ -2481,475 +2782,47 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
     # ----------------------------------------------------------------------------
     #                         Configuration Mgt
     # ----------------------------------------------------------------------------
+    @command(dtype_in=(str,), doc_in="config name,module1,module2,...,modulen")
     @core.DEB_MEMBER_FUNCT
     def configStore(self, args):
         config_name = args.pop(0)
         config = self.__control.config()
         config.store(config_name, args)
 
+    @command(dtype_in=str, doc_in="config name")
     @core.DEB_MEMBER_FUNCT
     def configApply(self, config_name):
         config = self.__control.config()
         config.apply(config_name)
 
+    @command(dtype_in=str, doc_in="config name")
     @core.DEB_MEMBER_FUNCT
     def configPop(self, config_name):
         config = self.__control.config()
         config.pop(config_name)
 
+    @command(dtype_in=str, doc_in="config name")
     @core.DEB_MEMBER_FUNCT
     def configDelete(self, config_name):
         config = self.__control.config()
         config.remove(config_name)
 
+    @command
     @core.DEB_MEMBER_FUNCT
     def configFileSave(self):
         config = self.__control.config()
         config.save()
 
+    @command
     @core.DEB_MEMBER_FUNCT
     def configFileLoad(self):
         config = self.__control.config()
         config.load()
 
+    @command(dtype_in=int, doc_in="Stream number")
     @core.DEB_MEMBER_FUNCT
     def setSavingStream(self, streamNb):
         self.__SavingStream = streamNb
-
-
-# ==================================================================
-#
-#    LimaCCDsClass class definition
-#
-# ==================================================================
-class LimaCCDsClass(PyTango.DeviceClass):
-    #    Class Properties
-    class_property_list = {}
-
-    #    Device Properties
-    device_property_list = {
-        "LimaCameraType": [PyTango.DevString, "Camera Plugin name", []],
-        "NbProcessingThread": [
-            PyTango.DevString,
-            "Number of thread for processing",
-            [2],
-        ],
-        "AccBufferParameters": [
-            PyTango.DevString,
-            "Accumulation Buffer alloc. params: "
-            "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0.0-100.0>",
-            [""],
-        ],
-        "AccThresholdCallbackModule": [
-            PyTango.DevString,
-            "Plugin name file which manage threshold",
-            [],
-        ],
-        "ConfigurationFilePath": [
-            PyTango.DevString,
-            "Configuration file path",
-            [os.path.join(os.path.expanduser("~"), "lima_%s.cfg" % instance_name)],
-        ],
-        "ConfigurationDefaultName": [
-            PyTango.DevString,
-            "Default configuration name",
-            ["default"],
-        ],
-        "ImageOpMode": [
-            PyTango.DevString,
-            "Configure the image op mode. One of 'HardOnly', 'SoftOnly', 'HardAndSoft'.",
-            [],
-        ],
-        "MaxVideoFPS": [PyTango.DevDouble, "Maximum number of FPS for video", [30.0]],
-        "UserDetectorName": [
-            PyTango.DevString,
-            "A user detector identifier, e.g frelon-saxs",
-            [],
-        ],
-        "UserInstrumentName": [
-            PyTango.DevString,
-            "The instrument name, e.g ESRF-ID02",
-            [],
-        ],
-        "BufferMaxMemory": [
-            PyTango.DevString,
-            "The maximum among of memory (RAM) Lima should use to allocate the frame buffers, e.g 50 %, default is 70%",
-            [],
-        ],
-        "BufferAllocParameters": [
-            PyTango.DevString,
-            "HW Buffer alloc. params: "
-            "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0.0-100.0> [default: <initMem=1, reqMemSizePercent=70.0>]",
-            [""],
-        ],
-        "BufferMallocTrimPad": [
-            PyTango.DevULong64,
-            "Pad parameter passed to malloc_trim after buffer alloc",
-            [0],
-        ],
-        "TangoEvent": [PyTango.DevBoolean, "Activate Tango event", [False]],
-        "SavingMaxConcurrentWritingTask": [
-            PyTango.DevShort,
-            "Maximum concurrent writing tasks",
-            [1],
-        ],
-        "SavingZBufferParameters": [
-            PyTango.DevString,
-            "Saving ZBuffer alloc. params: "
-            "<initMem=0|1, durationPolicy=EPHEMERAL|PERSISTENT, sizePolicy=AUTOMATIC|FIXED, reqMemSizePercent=0.0-100.0>",
-            [""],
-        ],
-    }
-
-    #    Command definitions
-    cmd_list = {
-        "gc": [[PyTango.DevVoid, ""], [PyTango.DevVoid, ""]],
-        "openShutterManual": [[PyTango.DevVoid, ""], [PyTango.DevVoid, ""]],
-        "closeShutterManual": [[PyTango.DevVoid, ""], [PyTango.DevVoid, ""]],
-        "getAttrStringValueList": [
-            [PyTango.DevString, "Attribute name"],
-            [PyTango.DevVarStringArray, "Authorized String value list"],
-        ],
-        "prepareAcq": [[PyTango.DevVoid, ""], [PyTango.DevVoid, ""]],
-        "startAcq": [[PyTango.DevVoid, ""], [PyTango.DevVoid, ""]],
-        "stopAcq": [[PyTango.DevVoid, ""], [PyTango.DevVoid, ""]],
-        "abortAcq": [[PyTango.DevVoid, ""], [PyTango.DevVoid, ""]],
-        "reset": [[PyTango.DevVoid, ""], [PyTango.DevVoid, ""]],
-        "setImageHeader": [
-            [
-                PyTango.DevVarStringArray,
-                "ImageId0 SEPARATOR imageHeader0,ImageId1 SEPARATOR imageHeader1...",
-            ],
-            [PyTango.DevVoid, ""],
-        ],
-        "resetCommonHeader": [[PyTango.DevVoid, ""], [PyTango.DevVoid, ""]],
-        "resetFrameHeaders": [[PyTango.DevVoid, ""], [PyTango.DevVoid, ""]],
-        "getImage": [
-            [PyTango.DevLong, "The image number"],
-            [PyTango.DevVarCharArray, "The data image"],
-        ],
-        "getBaseImage": [
-            [PyTango.DevLong, "The image number"],
-            [PyTango.DevVarCharArray, "The base data image"],
-        ],
-        "readAccSaturatedImageCounter": [
-            [PyTango.DevLong, "The image number"],
-            [PyTango.DevVarUShortArray, "The image counter"],
-        ],
-        "readAccSaturatedSumCounter": [
-            [PyTango.DevLong, "From image id"],
-            [
-                PyTango.DevVarLongArray,
-                "number of result for each images,sum counter of raw image #0 of image #0,sum counter of raw image #1 of image #0,...",
-            ],
-        ],
-        "setAccSaturatedMask": [
-            [PyTango.DevString, "Full path of mask file"],
-            [PyTango.DevVoid, ""],
-        ],
-        "writeImage": [[PyTango.DevLong, "Image id"], [PyTango.DevVoid, ""]],
-        "readImage": [
-            [PyTango.DevLong, "Image id"],
-            [PyTango.DevEncoded, "DATA_ARRAY with requested image"],
-        ],
-        "readLastImage": [
-            [PyTango.DevLong, "Last image id"],
-            [PyTango.DevEncoded, "DATA_ARRAY with requested image"],
-        ],
-        "readImageSeq": [
-            [PyTango.DevVarLong64Array, "Image id seq: start,end[,step[,acq_tag]]"],
-            [PyTango.DevEncoded, "DATA_ARRAY with requested images"],
-        ],
-        "getPluginDeviceNameFromType": [
-            [PyTango.DevString, "plugin type"],
-            [PyTango.DevString, "device name"],
-        ],
-        "configStore": [
-            [PyTango.DevVarStringArray, "config name,module1,module2,...,modulen"],
-            [PyTango.DevVoid, ""],
-        ],
-        "configApply": [[PyTango.DevString, "config name"], [PyTango.DevVoid, ""]],
-        "configPop": [[PyTango.DevString, "config name"], [PyTango.DevVoid, ""]],
-        "configDelete": [[PyTango.DevString, "config name"], [PyTango.DevVoid, ""]],
-        "configFileSave": [[PyTango.DevVoid, ""], [PyTango.DevVoid, ""]],
-        "configFileLoad": [[PyTango.DevVoid, ""], [PyTango.DevVoid, ""]],
-        "setSavingStream": [[PyTango.DevLong, "Stream number"], [PyTango.DevVoid, ""]],
-    }
-
-    #    Attribute definitions
-    attr_list = {
-        "lima_version": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ]],
-        "lima_type": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ]],
-        "camera_type": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ]],
-        "camera_model": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ]],
-        "user_detector_name": [
-            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE],
-            {
-                "label": "user detector name",
-                "description": "A user defined detector name, will be saved in the saved file header",
-            },
-        ],
-        "user_instrument_name": [
-            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE],
-            {
-                "label": "instrument/beamline name",
-                "description": "the instrument/beamline name, will be saved in the saved file header",
-            },
-        ],
-        "camera_pixelsize": [
-            [PyTango.DevDouble, PyTango.SPECTRUM, PyTango.READ, 2],
-            {
-                "label": "Pixel size:x_size, y_size",
-                "unit": "meter",
-                "standard unit": "meter",
-                "display unit": "meter",
-                "format": "%f",
-                "description": "Size of the pixel in meter",
-            },
-        ],
-        "acq_status": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ]],
-        "acq_status_fault_error": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ]],
-        "acq_tag": [[PyTango.DevULong64, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "acc_expo_time": [[PyTango.DevDouble, PyTango.SCALAR, PyTango.READ]],
-        "acc_nb_frames": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ]],
-        "acc_dead_time": [[PyTango.DevDouble, PyTango.SCALAR, PyTango.READ]],
-        "acc_live_time": [[PyTango.DevDouble, PyTango.SCALAR, PyTango.READ]],
-        "acc_saturated_active": [
-            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "acc_saturated_threshold": [
-            [PyTango.DevLong64, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "acc_saturated_cblevel": [
-            [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "acc_buffer_init_mem": [
-            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "acc_buffer_duration_policy": [
-            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "acc_buffer_size_policy": [
-            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "acc_buffer_req_mem_size_percent": [
-            [PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "acq_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "acc_time_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "acq_nb_frames": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "acq_expo_time": [[PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "acc_max_expo_time": [[PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "acc_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "acc_filter": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "acc_operation": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "acc_threshold_before": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "acc_offset_before": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "acc_out_type": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "acc_hw_nb_buffers": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "concat_nb_frames": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "latency_time": [[PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "valid_ranges": [
-            [PyTango.DevDouble, PyTango.SPECTRUM, PyTango.READ, 4],
-            {
-                "label": "valid time ranges: min_exposure, max_exposure, min_latency, max_latency",
-                "unit": "second",
-                "standard unit": "second",
-                "display unit": "second",
-                "format": "%f",
-                "description": "min_exposure, max_exposure, min_latency, max_latency",
-            },
-        ],
-        "acq_trigger_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "image_roi": [[PyTango.DevLong, PyTango.SPECTRUM, PyTango.READ_WRITE, 4]],
-        "image_sizes": [
-            [PyTango.DevULong, PyTango.SPECTRUM, PyTango.READ, 4],
-            {
-                "label": "Image sizes:Signed, Depth, Width, Height",
-                "unit": "",
-                "standard unit": "",
-                "display unit": "",
-                "format": "%d",
-                "description": "Signed ,nb bytes of depth, nb pixels of width and nb pixels of height",
-            },
-        ],
-        "image_max_dim": [
-            [PyTango.DevULong, PyTango.SPECTRUM, PyTango.READ, 2],
-            {
-                "label": "Width, Height",
-                "unit": "pixel",
-                "format": "%d",
-                "description": "Max width and height in pixel",
-            },
-        ],
-        "image_type": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ]],
-        "image_width": [[PyTango.DevULong, PyTango.SCALAR, PyTango.READ]],
-        "image_height": [[PyTango.DevULong, PyTango.SCALAR, PyTango.READ]],
-        "image_bin": [[PyTango.DevULong, PyTango.SPECTRUM, PyTango.READ_WRITE, 2]],
-        "image_bin_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "image_flip": [[PyTango.DevBoolean, PyTango.SPECTRUM, PyTango.READ_WRITE, 2]],
-        "image_rotation": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "last_image_acquired": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ]],
-        "last_base_image_ready": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ]],
-        "last_image_ready": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ]],
-        "last_image": [[PyTango.DevEncoded, PyTango.SCALAR, PyTango.READ]],
-        "last_image_saved": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ]],
-        "last_counter_ready": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ]],
-        "image_events_push_data": [
-            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "image_events_max_rate": [
-            [PyTango.DevFloat, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "ready_for_next_image": [[PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ]],
-        "ready_for_next_acq": [[PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ]],
-        "saving_directory": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "saving_prefix": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "saving_suffix": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "saving_next_number": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "saving_format": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "saving_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "saving_managed_mode": [
-            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "saving_overwrite_policy": [
-            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "saving_use_hw_comp": [
-            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "saving_frame_per_file": [
-            [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "saving_every_n_frames": [
-            [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "saving_common_header": [
-            [PyTango.DevString, PyTango.SPECTRUM, PyTango.READ_WRITE, 65535]
-        ],
-        "saving_header_delimiter": [
-            [PyTango.DevString, PyTango.SPECTRUM, PyTango.READ_WRITE, 3]
-        ],
-        "saving_index_format": [
-            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "saving_statistics": [[PyTango.DevDouble, PyTango.SPECTRUM, PyTango.READ, 4]],
-        "saving_statistics_history": [
-            [PyTango.DevLong, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "saving_statistics_log_enable": [
-            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "saving_max_writing_task": [
-            [PyTango.DevShort, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "saving_stream_active": [
-            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "saving_zbuffer_init_mem": [
-            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "saving_zbuffer_duration_policy": [
-            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "saving_zbuffer_size_policy": [
-            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "saving_zbuffer_req_mem_size_percent": [
-            [PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "saving_jp2k_codec": [
-            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "saving_jp2k_comp_ratio": [
-            [PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "debug_modules_possible": [
-            [
-                PyTango.DevString,
-                PyTango.SPECTRUM,
-                PyTango.READ,
-                len(LimaCCDs._debugModuleList),
-            ]
-        ],
-        "debug_modules": [
-            [
-                PyTango.DevString,
-                PyTango.SPECTRUM,
-                PyTango.READ_WRITE,
-                len(LimaCCDs._debugModuleList),
-            ]
-        ],
-        "debug_types_possible": [
-            [
-                PyTango.DevString,
-                PyTango.SPECTRUM,
-                PyTango.READ,
-                len(LimaCCDs._debugTypeList),
-            ]
-        ],
-        "debug_types": [
-            [
-                PyTango.DevString,
-                PyTango.SPECTRUM,
-                PyTango.READ_WRITE,
-                len(LimaCCDs._debugTypeList),
-            ]
-        ],
-        "video_active": [[PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "video_live": [[PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "video_exposure": [[PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "video_gain": [[PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "video_mode": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "video_source": [[PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]],
-        "video_roi": [[PyTango.DevLong, PyTango.SPECTRUM, PyTango.READ_WRITE, 4]],
-        "video_bin": [[PyTango.DevULong, PyTango.SPECTRUM, PyTango.READ_WRITE, 2]],
-        "video_last_image": [
-            [PyTango.DevEncoded, PyTango.SCALAR, PyTango.READ],
-            {
-                "label": "the video image",
-                "unit": "",
-                "standard unit": "",
-                "display unit": "",
-                "format": "%d",
-                "description": "video image as encoded",
-            },
-        ],
-        "video_last_image_counter": [[PyTango.DevLong64, PyTango.SCALAR, PyTango.READ]],
-        "plugin_type_list": [[PyTango.DevString, PyTango.SPECTRUM, PyTango.READ, 256]],
-        "plugin_list": [[PyTango.DevString, PyTango.SPECTRUM, PyTango.READ, 256]],
-        "shared_memory_names": [
-            [PyTango.DevString, PyTango.SPECTRUM, PyTango.READ_WRITE, 2]
-        ],
-        "shared_memory_active": [
-            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "config_available_module": [
-            [PyTango.DevString, PyTango.SPECTRUM, PyTango.READ, 1024]
-        ],
-        "config_available_name": [
-            [PyTango.DevString, PyTango.SPECTRUM, PyTango.READ, 1024]
-        ],
-        "buffer_alloc_init_mem": [
-            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "buffer_alloc_duration_policy": [
-            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "buffer_alloc_size_policy": [
-            [PyTango.DevString, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "buffer_alloc_req_mem_size_percent": [
-            [PyTango.DevDouble, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "buffer_max_number": [[PyTango.DevLong, PyTango.SCALAR, PyTango.READ]],
-        "buffer_malloc_trim_pad": [
-            [PyTango.DevULong64, PyTango.SCALAR, PyTango.READ_WRITE]
-        ],
-        "shutter_ctrl_is_available": [
-            [PyTango.DevBoolean, PyTango.SCALAR, PyTango.READ]
-        ],
-    }
 
 
 def declare_camera_n_commun_to_tango_world(util):
@@ -3237,7 +3110,7 @@ def main(args=None, event_loop=None):
 
     try:
         py = PyTango.Util(args)
-        py.add_TgClass(LimaCCDsClass, LimaCCDs, "LimaCCDs")
+        py.add_TgClass(LimaCCDs.TangoClassClass, LimaCCDs, "LimaCCDs")
         try:
             declare_camera_n_commun_to_tango_world(py)
         except Exception:

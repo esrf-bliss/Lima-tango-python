@@ -51,10 +51,91 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
       - `file_pattern`: `setFilePattern` only exists on the LOADER-mode frame getter (`FrameLoader`), not
         `FrameBuilder` (GENERATOR, the default) - fails by design outside LOADER mode, not a real bug.
       None of the 41 BLISS tests exercise these three, which is why they went unnoticed.
-- [ ] **Phase 3 — Migrate `LimaCCDs.py`**: split by functional domain, `PyTango.Util` →
-      `tango.server.run()`.
+- [x] **Phase 3 — Migrate `LimaCCDs.py`** (issue #97, branch `migration-phase3-limaccds`) - **DONE,
+      validated: 41/41 on the full BLISS baseline against the entirely migrated class.** 141
+      attributes, 31 commands, 32 device properties. **Structural constraint discovered**: unlike
+      Mask.py/Simulator.py (standalone devices), a single Tango device class can't be half low-level/half
+      high-level - BLISS touches attributes across nearly every domain on a normal scan, so the full
+      BLISS baseline can only validate the class once it's *entirely* ported, not domain by domain.
+      Working method: port the whole class mechanically (skeleton + `init_device` first - it's the
+      ~370-line prerequisite every domain depends on - then each domain: identification, acquisition,
+      accumulation, image, saving, debug, video, buffer, shutter, plugin/config), with a targeted
+      `DeviceTestContext` smoke test per domain as it's ported, then one full BLISS baseline run at the
+      end. `PyTango.Util` bootstrap in `main()` stays untouched (confirmed in Phase 0: it only needs
+      `LimaCCDs.TangoClassClass` instead of the old `LimaCCDsClass`) - same for `_get_control()`,
+      `declare_camera_n_commun_to_tango_world()`, `export_default_plugins()`, and the other module-level
+      helpers, since they operate on `PyTango.Util`/`PyTango.Database` generically, not on `LimaCCDs`'s
+      base class.
+      - [x] Skeleton + device properties + `init_device` (merged with the old `__init__`).
+      - [x] Identification domain: lima_version, lima_type, camera_type, camera_model,
+            user_detector_name, user_instrument_name, camera_pixelsize.
+      - [x] Debug domain: debug_modules(_possible), debug_types(_possible).
+      - [x] Acquisition-status domain: acq_status, acq_status_fault_error, acq_tag (storage renamed to
+            `self._acq_tag` - collided with the new attribute descriptor; fixed the other reader,
+            `prepareAcq`, too, not yet migrated itself but affected by the rename).
+      - [x] Acquisition domain: acq_mode, acc_time_mode (routed to CtAcquisition despite the "acc_"
+            name - `__Name2SubClass` special-cases it, confirmed against real core), acq_trigger_mode,
+            acq_nb_frames, acq_expo_time, concat_nb_frames, latency_time, valid_ranges.
+      - [x] Accumulation domain: acc_max_expo_time, acc_mode, acc_filter, acc_operation,
+            acc_threshold_before, acc_offset_before, acc_hw_nb_buffers, acc_expo_time, acc_nb_frames,
+            acc_dead_time, acc_live_time, acc_saturated_active, acc_saturated_threshold (DevLong64,
+            same reasoning as acq_tag), acc_saturated_cblevel, acc_out_type. `acc_buffer_*` deferred to
+            the buffer domain slice.
+      - [x] Image domain: image_roi, image_sizes, image_max_dim, image_type, image_width, image_height,
+            image_bin, image_bin_mode, image_flip, image_rotation, last_image (DevEncoded), last_image_
+            acquired/ready/saved, last_base_image_ready, last_counter_ready, image_events_push_data,
+            image_events_max_rate, ready_for_next_image, ready_for_next_acq.
+      - [x] Saving domain: saving_common_header, saving_header_delimiter, saving_index_format,
+            saving_statistics(_history/_log_enable), saving_directory, saving_prefix, saving_suffix,
+            saving_next_number, saving_frame_per_file, saving_every_n_frames, saving_format,
+            saving_mode, saving_managed_mode, saving_overwrite_policy, saving_use_hw_comp,
+            saving_stream_active, saving_max_writing_task, saving_jp2k_codec, saving_jp2k_comp_ratio.
+            `saving_zbuffer_*` deferred to the buffer domain slice.
+      - [x] Video domain: video_active, video_live, video_exposure, video_gain, video_mode,
+            video_source, video_bin, video_roi, video_last_image (DevEncoded),
+            video_last_image_counter (DevLong64).
+      - [x] Buffer domain: buffer_alloc_*, acc_buffer_*, saving_zbuffer_* via a new module-level
+            `_make_buffer_param_fget_fset()` helper (LimaCCDs-specific, not in AttrHelper.py - no camera
+            plugin has this pattern), buffer_max_number, buffer_malloc_trim_pad.
+      - [x] Shutter domain: shutter_ctrl_is_available migrated to `@attribute`. shutter_close_time/
+            manual_state/mode/open_time need no change at all - they're added dynamically at runtime
+            via `self.add_attribute(...)`, which keeps working with old-style `(self, attr)` callbacks
+            on a high-level `Device` unchanged (verified). Confirmed the Simulator camera has shutter
+            capability, so this path is genuinely exercised by the final full BLISS baseline run.
+      - [ ] Known minor deviations to double-check at the end: `RequiresSystemFeature`'s error message
+            regex-matches the old `read_X`/`write_X` method name to word the message - since attributes
+            are now named without that prefix, the fallback wording ("method X" instead of "attr. X
+            [read]") kicks in when a feature is missing. Cosmetic only (still raises the same
+            RuntimeError), but affects every `@RequiresSystemFeature`-guarded attribute migrated so far.
+      - [x] Plugin/config domain (last attribute domain): plugin_type_list, plugin_list,
+            shared_memory_names, shared_memory_active, config_available_module,
+            config_available_name. **All 141 attributes are now migrated.**
+      - [x] The ~29 commands: bodies needed zero changes (commands already used the modern return-based
+            convention, unlike attributes), just `@command(dtype_in=, dtype_out=)` decorators, explicit
+            `tango.CmdArgType.*` for the array types. **All attributes and commands are now migrated.**
+            Found (and, per user request, fixed) another pre-existing bug verifying against real core:
+            `closeShutterManual`/`openShutterManual` referenced `core.ShutterManual`, which doesn't
+            exist (`core.ShutterMode.ShutterManual` does) - both had always raised `AttributeError`,
+            before and after the migration itself. This one fix is a deliberate, requested exception to
+            the "preserve pre-existing bugs" rule applied everywhere else in this migration.
+      - [x] Deleted `LimaCCDsClass` (the ~430-line orphaned low-level companion class) and the two
+            orphaned duplicate method blocks (accumulation/latency/valid_ranges, last_image*/
+            image_events_*/ready_for_next_*) left behind mid-migration. Updated `main()`:
+            `py.add_TgClass(LimaCCDs.TangoClassClass, LimaCCDs, "LimaCCDs")`.
+      - [ ] Still dead but deliberately left alone (low risk, low value to chase further right now):
+            `__getattr__`, `get_buffer_param_attr`, `readBufferParam`, `writeBufferParam` - only ever
+            reachable through the old `read_X`/`write_X` naming-convention lookup, which no
+            longer happens now that every attribute is a real descriptor. `tests/test_tango.py` also
+            breaks (was already excluded from the conda CI recipe's test run) - `LimaCCDs.LimaCCDsClass`
+            no longer exists; folds into the Phase 5 test rewrite already planned.
+      - [x] Full BLISS baseline run against the completely migrated class: **41/41 passed**
+            (`tests/controllers_sw/test_lima_simulator.py`, real `LimaCCDs` + `Simulator` server, env
+            restored after). Phase 3 is complete.
 - [ ] **Phase 4 — Camera ecosystem**: `camera/simulator` (done in Phase 2) → 1-2 representative cameras
-      (e.g. `camera/pilatus`) as proof → long tail migrated at each maintainer's own pace.
+      as proof → long tail migrated at each maintainer's own pace.
+      - [x] `Basler.py` (basler#44/!45) and `Maxipix.py` (maxipix#15/!16) migrated to `tango.server`,
+            validated with a mocked `DeviceTestContext` smoke test (no real hardware here); real
+            hardware validation pending before merge. `camera/pilatus` still pending as a further case.
 - [ ] **Phase 5 — Cleanup**: remove `AttrHelper.py`; replace the mocked `tests/test_tango.py`.
 
 ## Mapping guide (from the Mask.py + Simulator.py pilots)
