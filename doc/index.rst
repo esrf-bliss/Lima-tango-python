@@ -678,6 +678,7 @@ Today there are about  8 standard plugin devices:
 
 * LimaTacoCCD: extra interface for TACO clients, it only provides commands (TACO does not have attribute !), it is still used at ESRF for SPEC.
 * LiveViewer:  extra interface  to provide a live view of the last acquired image, can be used from atkpanel.
+* H264VideoStream: extra interface to stream the live video feed as H264 over WebRTC, and to capture full-size JPEG/PNG snapshots.
 
 If you need to implement your own plugin device we can provide you some example codes, use the mailing-list lima@esrf.fr to get help.
 
@@ -696,3 +697,4 @@ If you need to implement your own plugin device we can provide you some example 
   plugins/roicollection
   plugins/limatacoccd
   plugins/liveviewer
+  plugins/h264videostream
