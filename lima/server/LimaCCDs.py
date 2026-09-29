@@ -3041,7 +3041,6 @@ def export_default_plugins():
     util = PyTango.Util.instance()
     className2deviceName = get_sub_devices()
     masterDeviceName = className2deviceName.get("LimaCCDs", None)
-    created_any_device = False
     if masterDeviceName:
         beamlineName, _, cameraName = masterDeviceName.split("/")
         for module_name in plugins.__all__:
@@ -3069,17 +3068,10 @@ def export_default_plugins():
                     print("create device", specificDevice.__name__, deviceName)
                     try:
                         util.create_device(specificDevice.__name__, deviceName)
-                        created_any_device = True
                     except Exception:
                         import traceback
 
                         traceback.print_exc()
-        if created_any_device:
-            # Refresh the class/device map cached by get_sub_devices() so that
-            # devices created above (e.g. via getPluginDeviceNameFromType,
-            # plugin_list, plugin_type_list) are visible within this same
-            # server run, instead of only after a subsequent restart.
-            get_sub_devices(cache=False)
 
 
 def _set_control_ref(ctrl_ref):
