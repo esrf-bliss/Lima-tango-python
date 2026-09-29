@@ -132,7 +132,10 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
             (`tests/controllers_sw/test_lima_simulator.py`, real `LimaCCDs` + `Simulator` server, env
             restored after). Phase 3 is complete.
 - [ ] **Phase 4 — Camera ecosystem**: `camera/simulator` (done in Phase 2) → 1-2 representative cameras
-      (e.g. `camera/pilatus`) as proof → long tail migrated at each maintainer's own pace.
+      as proof → long tail migrated at each maintainer's own pace.
+      - [x] `Basler.py` (basler#44/!45) and `Maxipix.py` (maxipix#15/!16) migrated to `tango.server`,
+            validated with a mocked `DeviceTestContext` smoke test (no real hardware here); real
+            hardware validation pending before merge. `camera/pilatus` still pending as a further case.
 - [ ] **Phase 5 — Cleanup**: remove `AttrHelper.py`; replace the mocked `tests/test_tango.py`.
 
 ## Mapping guide (from the Mask.py + Simulator.py pilots)
