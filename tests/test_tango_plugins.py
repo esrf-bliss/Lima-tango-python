@@ -1,54 +1,30 @@
 """
-Hermetic tests for the generic post-processing plugin devices (Mask,
-RoiCounter, BackgroundSubstraction, FlatField, RoiCollection, Roi2Spectrum):
-real lima.core + Simulator camera bindings, no Tango database and no BLISS.
-See test_tango_server.py for the rationale/harness notes shared with this
-file, and MIGRATION_ROADMAP.md for the plugin migration status (only
-Mask.py is on the high-level API so far; the others are tested here
-unmigrated, to prove old-style/high-level coexistence - see the mapping
-guide).
+Hermetic tests for the generic post-processing plugins (Mask, RoiCounter,
+BackgroundSubstraction, FlatField, RoiCollection, Roi2Spectrum): real
+lima.core + Simulator bindings, no Tango database and no BLISS. Only
+Mask.py is migrated so far; the rest are tested unmigrated, to prove
+old-style/high-level coexistence.
 
-Each plugin device shares the running control object with LimaCCDs through
-the same `_control_ref` weakref mechanism used in production (LimaCCDs's
-`_set_control_ref()` calls `<plugin_module>.set_control_ref()` for every
-loaded plugin) - wired up here from the shared `lima_control` fixture
-(conftest.py), for the same reason `LimaCCDs.control` is injected there.
-`Simulator.get_control()` registers native callbacks on the camera
-interface that cannot be registered twice in the same process, so it must
-be built exactly once per test session - shared with test_tango_server.py
-through that fixture rather than called again here.
+Each plugin gets the shared control via `set_control_ref()` (the same
+`_control_ref` weakref mechanism LimaCCDs uses in production), from the
+`lima_control` fixture in conftest.py.
 
-A `tango.server.Device` (Mask, and LimaCCDs itself) can't be registered in
-the same `MultiDeviceTestContext` as a classical low-level PyTango.DeviceClass
-device (pytango raises "mixing HLAPI and classical API in devices_info is
-not supported") - every device below is therefore registered through its
-`[DeviceClass, DeviceImpl]` pair (the same classical form `util.add_class()`
-accepts in production), including the already-migrated Mask and LimaCCDs via
-their auto-generated `.TangoClassClass`.
+`MultiDeviceTestContext` can't mix a `tango.server.Device` (Mask, LimaCCDs)
+with a classical low-level one in the same call, so every device here is
+registered via its `[DeviceClass, DeviceImpl]` pair (the same form
+`util.add_class()` accepts).
 
-All plugins here are started together in a *single* shared context (one
-`MultiDeviceTestContext`, module-scoped fixture) rather than one context per
-test: opening several separate `MultiDeviceTestContext(process=False, ...)`
-in sequence within the same process was observed to segfault (the native
-Tango/CORBA layer doesn't tear down cleanly between them - the same root
-cause noted for DeviceTestContext in the Basler/Maxipix smoke tests). A
-single shared context with several plugins active simultaneously is fine
-and mirrors real deployments (a `LimaCCDs` server commonly runs several
-post-processing plugins at once) - it does require each plugin to be given
-a distinct `RunLevel` first (`BasePostProcess.RunLevel`, writable only while
-the device is OFF): the native `SoftOpExternalMgr` raises "task already
-active on that level" if two operators default to the same level (0).
-`BackgroundSubstraction` occupies its own level *and* level+1 internally
-(background-image-update task, then the substraction task) - leave a gap.
+All plugins are started together in one shared context rather than one per
+test: separate sequential `MultiDeviceTestContext`s segfault the native
+CORBA/ORB layer within one process. Running several at once mirrors real
+deployments, but needs a distinct `RunLevel` per plugin (writable only
+while OFF) - the native `SoftOpExternalMgr` rejects two operators on the
+same level. `BackgroundSubstraction` occupies its level *and* level+1.
 
-PeakFinder.py is excluded: `Start()` + a plain acquisition + `readPeaks()`
-against the Simulator's default frame segfaults even in complete isolation,
-with no plugin combination involved - a pre-existing native crash unrelated
-to any migration work (the file is untouched), not chased further here.
-LimaTacoCCD.py is excluded on purpose (legacy SPEC compatibility shim, kept
-for 2 beamlines, not part of the tango.server migration effort). Memcached.py
-(needs a real memcached server) and LiveViewer.py (needs a live viewer/
-display) are excluded as impractical to run hermetically.
+Excluded: `PeakFinder.py` (segfaults on Start()+acquire+readPeaks() even
+alone - pre-existing, unrelated to migration), `LimaTacoCCD.py` (legacy
+SPEC shim, kept for 2 beamlines), `Memcached.py`/`LiveViewer.py` (need a
+real memcached server / display).
 """
 import time
 import weakref

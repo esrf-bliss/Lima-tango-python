@@ -2,22 +2,11 @@
 Hermetic tests for the LimaCCDs Tango device server: real lima.core +
 Simulator camera bindings, no Tango database and no BLISS.
 
-This is a fast, local complement to (not a replacement for) the BLISS
-end-to-end baseline (bliss.git: tests/controllers_sw/test_lima_simulator.py,
-via lima_simulator_context) - see MIGRATION_ROADMAP.md. That suite is the
-only one exercising the real client-facing behavior (scans, controllers);
-this one exists to catch server-side regressions fast, in this repo's own
-CI, without a BLISS/Redis/Beacon environment.
-
-LimaCCDs.init_device() normally resolves its camera control object by
-querying the real Tango database for the sibling camera device's class and
-properties (see LimaCCDs._get_control() / EnvHelper.get_lima_camera_type()).
-There is no database in a DeviceTestContext, so the `lima_control` fixture
-(conftest.py) injects the control object directly through the same
-short-circuit _get_control() uses for its own caching (a module-level
-`control` global), and stubs get_sub_devices() (queries the DB for sibling
-devices; every caller uses dict .get()/.keys(), so an empty dict is a safe
-no-op here).
+Fast local complement to (not a replacement for) the BLISS end-to-end
+baseline (bliss.git: tests/controllers_sw/test_lima_simulator.py) - see
+MIGRATION_ROADMAP.md. The `lima_control` fixture (conftest.py) injects the
+control object directly (bypassing the DB-driven camera-type discovery
+DeviceTestContext can't provide).
 """
 import glob
 import os
@@ -179,10 +168,7 @@ def test_debug_attributes(lima_ccds):
 
 
 def test_shutter_manual_commands(lima_ccds):
-    # Regression test: closeShutterManual/openShutterManual used to reference
-    # core.ShutterManual, which doesn't exist (core.ShutterMode.ShutterManual
-    # does) - both always raised AttributeError. Fixed during the Phase 3
-    # migration (see MIGRATION_ROADMAP.md).
+    # Regression test for the core.ShutterManual bug fixed in Phase 3.
     assert lima_ccds.shutter_ctrl_is_available
     lima_ccds.closeShutterManual()
     lima_ccds.openShutterManual()
@@ -221,8 +207,7 @@ def test_saving_next_number_autoincrement(lima_ccds, tmp_path):
 
 
 def test_plugin_config_attributes(lima_ccds):
-    # No post-processing plugin loaded in this hermetic control - just check
-    # the attributes are reachable and correctly typed (empty is expected).
+    # No plugin loaded in this control, so both are expected empty.
     assert lima_ccds.plugin_type_list == ()
     assert lima_ccds.plugin_list == ()
 
