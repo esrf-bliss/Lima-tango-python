@@ -134,9 +134,21 @@ plumbing). See git history of this file for the exact run recipe if it needs rep
 - [ ] **Phase 4 — Camera ecosystem**: `camera/simulator` (done in Phase 2) → 1-2 representative cameras
       as proof → long tail migrated at each maintainer's own pace.
       - [x] `Basler.py` (basler#44/!45) and `Maxipix.py` (maxipix#15/!16) migrated to `tango.server`,
-            validated with a mocked `DeviceTestContext` smoke test (no real hardware here); real
-            hardware validation pending before merge. `camera/pilatus` still pending as a further case.
-- [ ] **Phase 5 — Cleanup**: remove `AttrHelper.py`; replace the mocked `tests/test_tango.py`.
+            validated on real hardware (lid00lima3, BLISS scans, zero issues). `camera/pilatus` still
+            pending as a further case.
+- [ ] **Phase 5 — Cleanup**: remove `AttrHelper.py`.
+      - [x] Replaced the mocked `tests/test_tango.py` with `tests/test_tango_server.py` (26 tests:
+            LimaCCDs+Simulator) and `tests/test_tango_plugins.py` (6 tests: Mask/RoiCounter/
+            BackgroundSubstraction/FlatField/RoiCollection/Roi2Spectrum, run together against one shared
+            control - each needs a distinct `RunLevel` or the native `SoftOpExternalMgr` rejects the
+            second one). Hermetic `DeviceTestContext`/`MultiDeviceTestContext`, real bindings, no Tango
+            DB/BLISS needed. Fast local complement to the BLISS baseline, wired into `conda/meta.yaml`
+            (adds `lima-camera-simulator` as a test-only dependency; the two files run as separate
+            `pytest` invocations - more than one Tango test-context lifecycle per process segfaults the
+            native CORBA/ORB layer). `PeakFinder.py` excluded: segfaults on `Start()`+acquire+
+            `readPeaks()` even alone, pre-existing and unrelated to any migration work, not chased
+            further. `LimaTacoCCD.py` excluded on purpose (legacy SPEC compatibility, kept for 2
+            beamlines). `Memcached.py`/`LiveViewer.py` excluded (need a real memcached server / display).
 
 ## Mapping guide (from the Mask.py + Simulator.py pilots)
 
