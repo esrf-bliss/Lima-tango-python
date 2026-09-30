@@ -43,7 +43,7 @@ test:
     - pytest
     - pytest-mock
     - fabio
-    - lima-camera-simulator
+    - lima-camera-simulator-tango
   imports:
     - lima.server
   commands:
