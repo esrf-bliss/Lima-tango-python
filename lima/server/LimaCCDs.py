@@ -567,7 +567,7 @@ class LimaCCDs(PyTango.LatestDeviceImpl):
 
         if SystemHasFeature("core.CtSaving.Jp2kCompressionCodec"):
             self.__SavingJp2kCompressionCodec = {
-                "OPENJPEG": core.CtSaving.Jp2kCompressionCodec.JP2KOpenJPEG,
+                "OPENJPH": core.CtSaving.Jp2kCompressionCodec.JP2KOpenJPH,
                 "KAKADU": core.CtSaving.Jp2kCompressionCodec.JP2KKakadu,
             }
 
