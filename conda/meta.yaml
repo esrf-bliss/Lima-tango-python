@@ -43,10 +43,16 @@ test:
     - pytest
     - pytest-mock
     - fabio
+    - lima-camera-simulator
   imports:
     - lima.server
   commands:
-    - pytest -k "not test_tango" tests
+    # test_tango_server.py and test_tango_plugins.py each open their own
+    # Tango test-context lifecycle (DeviceTestContext / MultiDeviceTestContext);
+    # running more than one such lifecycle in the same process segfaults the
+    # native CORBA/ORB layer, so they're run in separate pytest invocations.
+    - pytest tests --ignore=tests/test_tango_plugins.py
+    - pytest tests/test_tango_plugins.py
 
 about:
   home: https://github.com/esrf-bliss/Lima
