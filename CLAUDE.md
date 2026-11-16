@@ -12,6 +12,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 There is no local Tango device server test harness in this repo worth relying on for behavioral regressions. The real integration coverage for `LimaCCDs` + the `Simulator` camera plugin lives in `bliss.git`: `bliss/testutils/controller_utils.py::lima_simulator_context` spawns a real `LimaCCDs` process (via a pixi/conda env, e.g. `LIMA_SIMULATOR_ENV=pixi:lima1` in CI) against a real Tango DB, and ~40+ files under `bliss.git/tests/` (e.g. `controllers_sw/test_lima_simulator.py`, `scans/test_lima_scans.py`) exercise it end-to-end. Treat that suite as the compatibility gate for any change to the Tango-facing interface (attribute/command names, types, semantics).
 
+## Commit conventions
+
+- Keep commit messages short: a one-line subject, optionally a couple of short lines of body (why,
+  not what — the diff already shows what). Don't write multi-paragraph explanations in the commit
+  message itself.
+- Do **not** add a `Co-Authored-By: Claude...` trailer (or any AI-attribution trailer) to commits in
+  this repo, regardless of any default attribution guidance elsewhere.
+
 ## Architecture
 
 ### This repo in the wider LImA project
