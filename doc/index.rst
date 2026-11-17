@@ -597,6 +597,122 @@ with  **big-endian** byte order  and no alignment::
 
 
 
+Writing / migrating a camera Tango device
+------------------------------------------
+
+Every camera device server (``camera/<name>/tango/<Name>.py``) and the
+generic plugin devices in this repository (``lima/server/plugins/*.py``)
+follow one of two coexisting patterns:
+
+* the historical **low-level** PyTango API
+  (``PyTango.LatestDeviceImpl``/``Device_4Impl``, a companion
+  ``<Name>Class(PyTango.DeviceClass)`` declaring ``attr_list``/``cmd_list``/
+  ``device_property_list`` as raw dicts, ``read_X``/``write_X``/``is_X_allowed``
+  dispatched by name), used by most camera plugins today;
+* the modern **high-level** API (``tango.server.Device``, ``@attribute``,
+  ``@command``, ``device_property``), used by ``LimaCCDs`` itself and by the
+  cameras/plugins already migrated.
+
+Both styles can be registered in the very same ``LimaCCDs`` server process: a
+class built with ``tango.server.Device`` exposes a ``TangoClassClass``
+attribute that is a real ``tango.DeviceClass`` subclass, a drop-in for
+``util.add_class(...)`` exactly like the old hand-written ``<Name>Class``. The
+extension point every camera/plugin module must implement -
+``get_tango_specific_class_n_device()``, returning either a
+``(DeviceClass, DeviceImpl)`` pair or an object exposing ``.TangoClassClass`` -
+is unchanged by the migration, and so is
+``declare_camera_n_commun_to_tango_world()`` in ``LimaCCDs.py``, which loads
+and registers every camera/plugin module the same way regardless of which
+style it uses.
+
+Mapping from the low-level pattern
+''''''''''''''''''''''''''''''''''
+
++-------------------------------------+-----------------------------------------------------------+
+| **Low-level**                       | **High-level**                                            |
++=====================================+===========================================================+
+| ``device_property_list`` dict entry | ``device_property(...)``                                  |
++-------------------------------------+-----------------------------------------------------------+
+| ``attr_list`` dict entry            | ``@attribute`` / ``attribute(...)``                       |
++-------------------------------------+-----------------------------------------------------------+
+| ``cmd_list`` dict entry             | ``@command``                                              |
++-------------------------------------+-----------------------------------------------------------+
+| ``read_X``/``write_X``              | ``fget=``/``fset=``                                       |
++-------------------------------------+-----------------------------------------------------------+
+| ``is_X_allowed``                    | a same-named method (the naming convention still applies) |
++-------------------------------------+-----------------------------------------------------------+
+
+Attributes and properties keep the same naming conventions on both sides
+(e.g. the **Acquisition** module's ``acq_<attr-name>`` prefixing described
+above), so the attribute/property/command reference earlier in this page
+stays valid regardless of which style a given device actually uses.
+
+``AttrHelper.make_fget_fset()``
+'''''''''''''''''''''''''''''''
+
+``AttrHelper.get_attr_4u()`` is the ``__getattr__``-based dispatch used by the
+low-level pattern: it maps ``read_foo_bar``/``write_foo_bar`` to
+``interface.getFooBar``/``interface.setFooBar`` by naming convention, with an
+optional per-instance enum dict for string-valued attributes.
+``AttrHelper.make_fget_fset()`` is its high-level equivalent, building a
+static ``(fget, fset)`` pair for ``attribute(fget=, fset=)``:
+
+.. code-block:: python
+
+    from lima.server import AttrHelper
+
+    _fget, _fset = AttrHelper.make_fget_fset(
+        "mode", lambda self: self._SimuCamera.getFrameGetter(),
+        lambda self: self._SimuCamera, enum=_Mode,
+    )
+    mode_attr = attribute(name="mode", dtype=str,
+                           access=AttrWriteType.READ_WRITE,
+                           fget=_fget, fset=_fset)
+
+* ``interfaces`` are one or more ``f(device_self) -> target`` callables,
+  tried in order - the first whose target has ``getX``/``setX`` is used, the
+  same fallback the low-level pattern allowed implicitly.
+* ``enum`` is the same ``{"STRING_KEY": underlying_value}`` dict convention
+  as the low-level per-attribute enum, translated both ways.
+* A plain-assignment ``attribute(name=..., fget=, fset=)`` (not a method
+  decorator) is used on purpose whenever an attribute shares its name with a
+  ``device_property`` of the same name - the property is only read once, at
+  ``init_device``, for the initial hardware configuration, and only
+  ``attribute(name=...)`` lets the Tango-visible name be decoupled from the
+  Python identifier (``device_property()`` has no such override).
+
+Known pitfalls
+'''''''''''''''
+
+* A method decorated with ``core.DEB_MEMBER_FUNCT``/``DEB_GLOBAL_FUNCT`` must
+  not call a bare ``super()`` - it rebuilds the function object and chokes on
+  the implicit ``__class__`` closure cell a zero-arg ``super()`` creates. Call
+  the parent class by name instead, e.g. ``Device.init_device(self)``.
+* The legacy ``__getattr__`` catch-all some plugins inherit from
+  ``BasePostProcess`` only ever gated *attributes* in practice - old PyTango
+  never resolved it for *commands*. Don't add a ``state == ON`` guard to a
+  command when porting it unless the original low-level code actually
+  enforced one.
+* A bug noticed while porting a device is very likely pre-existing, not a
+  migration regression - check it against the unmigrated code before
+  "fixing" it, and leave it alone if it already misbehaved the same way
+  before porting.
+
+Reference examples
+''''''''''''''''''
+
+* ``lima/server/plugins/Mask.py`` - a small, standalone plugin device: the
+  simplest complete example.
+* ``lima/server/LimaCCDs.py`` - the main device, fully migrated: every
+  attribute/command/property domain, including ``AttrHelper.make_fget_fset()``
+  usage and a device-specific dispatch helper
+  (``_make_buffer_param_fget_fset()``) for a buffer-parameters pattern no
+  camera plugin needs.
+* ``camera/simulator/tango/Simulator.py`` and any already-migrated camera
+  plugin (see the per-camera pages below) for the pattern applied to a real
+  detector device.
+
+
 Camera devices
 --------------------
 Each camera has a configuration device with its own property/attribute/command lists.
