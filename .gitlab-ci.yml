@@ -22,7 +22,7 @@ deploy-devel:
     - build-noarch
   script:
     - cp -Rf dist/* /conda-devel/
-    - conda index --channeldata /conda-devel/
+    - flock /conda-devel/.reindex.lock -c "conda index --channeldata /conda-devel/"
   tags:
     - linux
     - conda
@@ -41,7 +41,7 @@ deploy-stable:
     - build-noarch
   script:
     - cp -Rf dist/* /conda/
-    - conda index --channeldata /conda/
+    - flock /conda/.reindex.lock -c "conda index --channeldata /conda/"
   tags:
     - linux
     - conda
