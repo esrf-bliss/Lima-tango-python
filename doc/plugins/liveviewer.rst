@@ -2,7 +2,7 @@ LiveViewer
 ===========
 
 This device was create for backward compatibility with former graphical applications used at ESRF by the diagnostic group for the monitoring
-of the electron beam. It is no longer maintain. Instead we recommend to use the video API provided via the main device LimaCCDs.
+of the electron beam. It is no longer maintained. Instead we recommend to use the video API provided via the main device LimaCCDs.
 
 Nevertheless you will find here the of the available properties, attributes and commands.
 

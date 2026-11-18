@@ -162,7 +162,7 @@ class LimaViewer(PyTango.LatestDeviceImpl):
                 self.shape_ccd[:2]
             )
 
-        attr.set_value(self.attr_Image_ccd_read, self.shape_ccd[1], self.shape_ccd[0])
+        attr.set_value(self.attr_Image_ccd_read)
 
         # ----- PROTECTED REGION END -----#  //  LimaViewer.Image_ccd_read
 

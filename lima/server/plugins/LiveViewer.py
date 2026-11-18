@@ -357,18 +357,13 @@ class LiveViewer(PyTango.LatestDeviceImpl):
     #
     @core.DEB_MEMBER_FUNCT
     def read_Image(self, attr):
-
-        dim = self.image.getImageDim()
-
         data = self.control.ReadImage(-1)
         self._flat_image = data.buffer
         release = getattr(data, "releaseBuffer", None)
         if release:
             release()
 
-        attr.set_value(
-            self._flat_image, dim.getSize().getWidth(), dim.getSize().getHeight()
-        )
+        attr.set_value(self._flat_image)
 
     ## @brief Read the last Image in JPEG format (DevEncoded)
     #
